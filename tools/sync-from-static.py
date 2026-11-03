@@ -45,10 +45,11 @@ import body from '../partials/body.html?raw';
 <body>
 <Fragment set:html={body} />
 <script>
-  import '../scripts/dither.js';
-  import '../scripts/fan.js';
-  import '../scripts/motion.js';
-  import '../scripts/ring.js';
+  // fetched once the first frame is painted (the loader up), so that paint never waits on them; a tab
+  // in the background paints no frame, and fetches them a moment later all the same
+  let go = () => { go = () => {}; import('../scripts/dither.js'); import('../scripts/fan.js'); import('../scripts/motion.js'); import('../scripts/ring.js'); };
+  requestAnimationFrame(() => setTimeout(() => go()));
+  setTimeout(() => go(), 250);
 </script>
 </body>
 </html>
