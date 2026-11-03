@@ -432,8 +432,8 @@ html.loading { overflow: hidden; }
 .price-terms span:last-child { white-space: nowrap; }
 
 /* ----- the end ----- */
-/* Figma's footer frame keeps 240 above its title and 240 under its note, the page's end */
-.foot { position: relative; padding-block: var(--section) calc(240 * var(--px)); align-content: start; }
+/* Figma's footer frame keeps 240 above its title; under its note the ring of the work (ring.js) ends the page */
+.foot { position: relative; padding-block: var(--section) 0; align-content: start; }
 .foot h2 {
   grid-column: 1 / span 6; grid-row: 1;
   display: flex; flex-direction: column; align-items: flex-end; gap: calc(24 * var(--px));
@@ -458,6 +458,9 @@ html.loading { overflow: hidden; }
 .foot-mark { grid-column: 2; grid-row: 3; font-size: var(--f20); line-height: 1.2; letter-spacing: -.05em; }
 .foot-made { grid-column: 10 / -1; grid-row: 3; display: grid; grid-template-columns: subgrid; font-size: var(--f20); line-height: 1.2; letter-spacing: -.05em; }
 .foot-made .serif { grid-column: 2 / -1; letter-spacing: -.05em; }
+/* the fan's pages once more, round a ring (ring.js), across the whole screen under the note */
+.foot-ring { grid-column: 1 / -1; grid-row: 4; margin: calc(24 * var(--px)) calc(-1 * var(--gap)) 0; height: max(360px, calc(680 * var(--px))); pointer-events: none; }
+.foot-ring canvas { display: block; width: 100%; height: 100%; }
 .foot-made > span { text-box: trim-both cap alphabetic; }   /* trimmed to the caps as the note and the (*) are, so the three start on one line */
 .foot-note span { display: block; }
 .foot-note span:nth-child(2) { padding-left: 3.35em; }   /* Figma's second line, set in 67 */
@@ -543,6 +546,7 @@ html.loading { overflow: hidden; }
   .foot-mark { display: none; }
   .foot .foot-note { margin-top: calc(40px + var(--nudge, 0px)); max-width: 26em; }
   .foot .foot-made { margin-top: 2lh; display: flex; gap: 1.2em; }
+  .foot-ring { margin: 16px -16px 0; height: 62vw; min-height: 300px; }
   .qr { width: 96px; order: 1; }
 }
 /* a tablet held upright, as Figma's Tablet frames (768 wide) have it: the small type a size up; the
