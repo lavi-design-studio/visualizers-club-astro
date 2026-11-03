@@ -136,16 +136,25 @@ const RULED = '.hero-intro p, .hero-refund, .hero-promise .stack > *';
 // (measured), and the lines' cap middles, the middles of their marks too (a Vietnamese capital's mark
 // over it to the dot under), and pitch (but not of the runs skip names, as numbers in another face), the
 // copies the scroll's slip makes of the text (v-ghost) and what is only for a screen reader left out.
-// The baseline is the browser's own, read off a probe set on it (the canvas's ascent is whole pixels)
-function inkOf(els, origin, skip = () => false) {
-  const g = document.createElement('canvas').getContext('2d'), range = document.createRange();
+// The baseline is the browser's own, read off a probe set on it (the canvas's ascent is whole pixels).
+// With only lines asked for (inkOf.LINES), each run of text is read a line at a time, not a letter
+const inkG = document.createElement('canvas').getContext('2d'), inkCache = new Map();
+const glyph = (font, ch) => {                            // a letter's ink in a font, measured once
+  const key = font + ' ' + ch;
+  let m = inkCache.get(key);
+  if (!m) { inkG.font = font; const t = inkG.measureText(ch); m = { a: t.actualBoundingBoxAscent, d: t.actualBoundingBoxDescent, fa: t.fontBoundingBoxAscent }; inkCache.set(key, m); }
+  return m;
+};
+function inkOf(els, origin, skip = () => false, only = '') {
+  const range = document.createRange();
   const lines = [], ink = [];
   for (const el of els) {
     const cs = getComputedStyle(el), fs = parseFloat(cs.fontSize), up = cs.textTransform === 'uppercase', counts = !skip(el);
-    g.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-    const mH = g.measureText('H'), cap = mH.actualBoundingBoxAscent;
-    const marks = (g.measureText('Ẩ').actualBoundingBoxAscent - g.measureText('Ọ').actualBoundingBoxDescent) / 2;
-    let asc = mH.fontBoundingBoxAscent;
+    const font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    if (only === inkOf.LINES && !counts) continue;
+    const mH = glyph(font, 'H'), cap = mH.a;
+    const marks = (glyph(font, 'Ẩ').a - glyph(font, 'Ọ').d) / 2;
+    let asc = mH.fa;
     {
       const first = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: t => t.data.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP }).nextNode();
       if (first && first.parentElement === el) {
@@ -161,19 +170,30 @@ function inkOf(els, origin, skip = () => false) {
     }
     const pitch = parseFloat(cs.lineHeight) || fs * 1.2;
     const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: t => t.parentElement.closest('v-ghost, .sr-only') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const line = base => { if (counts && !lines.some(l => Math.abs(l.base - base) < 1)) lines.push({ base, mid: base - cap / 2, marks: base - marks, pitch, fs }); };
+    if (only === inkOf.LINES) {
+      // a line of a run is a box of its own (its letters' boxes share its top)
+      for (let t; (t = walk.nextNode());) {
+        if (!t.data.trim()) continue;
+        range.selectNodeContents(t);
+        for (const r of range.getClientRects()) if (r.width) line(r.top - origin.top + asc);
+      }
+      continue;
+    }
     for (let t; (t = walk.nextNode());) for (let k = 0; k < t.length; k++) {
       const ch = t.data[k];
       if (!ch.trim()) continue;
       range.setStart(t, k); range.setEnd(t, k + 1);
       const r = range.getBoundingClientRect();
       if (!r.width) continue;
-      const base = r.top - origin.top + asc, m = g.measureText(up ? ch.toUpperCase() : ch);
-      ink.push({ x0: r.left - origin.left, x1: r.right - origin.left, top: base - m.actualBoundingBoxAscent, bottom: base + m.actualBoundingBoxDescent, fs });
-      if (counts && !lines.some(l => Math.abs(l.base - base) < 1)) lines.push({ base, mid: base - cap / 2, marks: base - marks, pitch, fs });
+      const base = r.top - origin.top + asc, m = glyph(font, up ? ch.toUpperCase() : ch);
+      ink.push({ x0: r.left - origin.left, x1: r.right - origin.left, top: base - m.a, bottom: base + m.d, fs });
+      line(base);
     }
   }
   return { lines: lines.sort((a, b) => a.mid - b.mid), ink };
 }
+inkOf.LINES = 'lines';
 // hairlines at ys across left to right, in box, each broken round the ink of every letter it would run
 // through, a little either side of it, as text-decoration-skip-ink does: no mark is ever crossed
 // (each on a whole device pixel of the page, not of its box, which may sit between two, and as thick
@@ -247,7 +267,7 @@ function byRules() {
   const texts = () => $$('.by-label, .by-syllabus li > *', frame), num = el => el.matches('.serif');
   let fr = frame.getBoundingClientRect();
   const first = time.getBoundingClientRect().bottom - fr.top - 1;
-  const { lines } = inkOf(texts(), fr, num);
+  const { lines } = inkOf(texts(), fr, num, inkOf.LINES);
   if (!lines.length) { root.classList.remove('measuring'); return; }
   const P = lines[0].pitch;
   // (on a narrow screen, where the lines are loose, each is centred with its marks: from a capital's
@@ -260,7 +280,7 @@ function byRules() {
     const end = left.getBoundingClientRect().bottom - fr.top, n = Math.ceil((end - first) / P - .01);
     last = first + n * P; left.style.paddingBottom = `${last - end}px`;
   } else {
-    const { lines: set } = inkOf(texts(), fr, num);
+    const { lines: set } = inkOf(texts(), fr, num, inkOf.LINES);
     last = first + (Math.ceil((set.at(-1).mid - first) / P) + 2) * P;   // the rule under the last line, an empty line, then this (not drawn)
   }
   fr = frame.getBoundingClientRect();
@@ -321,10 +341,10 @@ function pageRules() {
     // the note's row lowered (--nudge) so "liên hệ qua" is a whole number of its lines over it
     sec.style.setProperty('--nudge', '0px');
     {
-      const [n0] = inkOf([note], sr).lines, [l0] = inkOf([$('.foot-label', sec)], sr).lines;
+      const [n0] = inkOf([note], sr, undefined, inkOf.LINES).lines, [l0] = inkOf([$('.foot-label', sec)], sr, undefined, inkOf.LINES).lines;
       if (n0 && l0) { const d = n0.marks - l0.marks, k = Math.max(1, Math.round(d / n0.pitch)); sec.style.setProperty('--nudge', `${k * n0.pitch - d}px`); }
     }
-    const nt = at(note).top, ys = [], { lines: rows } = inkOf([note], sr);
+    const nt = at(note).top, ys = [], { lines: rows } = inkOf([note], sr, undefined, inkOf.LINES);
     if (rows.length) {
       // at the note's 24: half a line either side of each line's middle (from a capital's mark over it
       // to the dot under), the rest 24 apart up to 20 or more under the title
@@ -785,6 +805,27 @@ const vnoise = (x, y) => {
   return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
 };
 const fbm = (x, y) => vnoise(x, y) * .5 + vnoise(x * 2, y * 2) * .25 + vnoise(x * 4, y * 4) * .125;   // 0 … .875
+// fbm over a W × H grid of cells, value for value as fbm(x * k + ox, y * k + oy), with each octave's
+// lattice hashed once (a few hundred corners) instead of four times a cell, and each cell's own
+// column weights and row weights worked out once per column and row
+function fbmField(W, H, k, ox, oy) {
+  const out = new Float32Array(W * H);
+  for (const [s, amp] of [[1, .5], [2, .25], [4, .125]]) {
+    const ix = new Int32Array(W), fx = new Float64Array(W), iy = new Int32Array(H), fy = new Float64Array(H);
+    for (let x = 0; x < W; x++) { const v = (x * k + ox) * s; ix[x] = Math.floor(v); const f = v - ix[x]; fx[x] = f * f * (3 - 2 * f); }
+    for (let y = 0; y < H; y++) { const v = (y * k + oy) * s; iy[y] = Math.floor(v); const f = v - iy[y]; fy[y] = f * f * (3 - 2 * f); }
+    const x0 = ix[0], y0 = iy[0], nx = ix[W - 1] - x0 + 2, ny = iy[H - 1] - y0 + 2, lat = new Float64Array(nx * ny);
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) lat[j * nx + i] = hash(x0 + i, y0 + j);
+    for (let y = 0; y < H; y++) {
+      const r = (iy[y] - y0) * nx, gy = fy[y];
+      for (let x = 0; x < W; x++) {
+        const c0 = r + ix[x] - x0, a = lat[c0], b = lat[c0 + 1], c = lat[c0 + nx], d = lat[c0 + nx + 1], gx = fx[x];
+        out[y * W + x] += amp * (a + (b - a) * gx + (c - a) * gy + (a - b - c + d) * gx * gy);
+      }
+    }
+  }
+  return out;
+}
 // Level up, spacers and all, comes in in its colours turned about (a magenta ground going on from By
 // Lavi's) and is turned back as its middle is reached, along the front coming up it from its foot: a
 // magenta layer over it in difference (index.html .level-flip), drawn where it is still turned
@@ -792,17 +833,20 @@ function flipper() {
   const canvas = $('.level-flip'), g = canvas.getContext('2d'), band = $('.level');
   const cells = document.createElement('canvas'), cg = cells.getContext('2d');
   let img = null, W = 0, H = 0, unit = 1, cell = 1, field = null, p = -1;
-  const fit = () => {
+  // the cells' size and count for the band as it is laid out now
+  const measure = () => {
     const dpr = devicePixelRatio || 1, px = $('main').clientWidth / 1728;
-    unit = Math.max(1, Math.round(CELL * px * dpr));    // a cell in device pixels, whole
-    cell = unit / dpr;
-    W = Math.ceil(band.clientWidth / cell); H = Math.ceil(band.clientHeight / cell);
+    const u = Math.max(1, Math.round(CELL * px * dpr)), c = u / dpr;    // a cell in device pixels, whole
+    return [u, c, Math.ceil(band.clientWidth / c), Math.ceil(band.clientHeight / c)];
+  };
+  const fit = () => {
+    [unit, cell, W, H] = measure();
     Object.assign(canvas.style, { width: `${W * cell}px`, height: `${H * cell}px` });
     canvas.width = W * unit; canvas.height = H * unit; cells.width = W; cells.height = H;
     img = cg.createImageData(W, H);
-    field = new Float32Array(W * H);
-    const k = CELL / GRAIN, spread = SPREAD / CELL;
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) field[y * W + x] = (fbm(x * k + 3.1, y * k + 7.7) - .44) * spread;
+    const spread = SPREAD / CELL;
+    field = fbmField(W, H, CELL / GRAIN, 3.1, 7.7);
+    for (let i = 0; i < field.length; i++) field[i] = (field[i] - .44) * spread;
   };
   // q: how far the band is turned back, 0 (all turned about) to 1 (all its own colours). It is turned
   // back as the middle comes up from half way down the screen to its top (levelUp): the front starts
@@ -827,7 +871,11 @@ function flipper() {
     g.clearRect(0, 0, canvas.width, canvas.height);
     g.drawImage(cells, 0, 0, W * unit, H * unit);
   };
-  new ResizeObserver(() => { img = null; if (p >= 0) { const q = p; p = -1; draw(q); } }).observe(band);
+  // (made again only when the cells change: the observer's first call, as it starts, changes nothing)
+  new ResizeObserver(() => {
+    if (img && measure().join() === [unit, cell, W, H].join()) return;
+    img = null; if (p >= 0) { const q = p; p = -1; draw(q); }
+  }).observe(band);
   return draw;
 }
 
@@ -922,15 +970,19 @@ function levelUp() {
 // drawn as what it looks like from in front: the width times the angle's cosine, about the mast
 // (x 60.5 in assets/rooster.svg). It is put back, unseen, when the print goes back to being the fan's
 // Where WebGL is there, the rooster is a solid metal vane instead (vane3d.js), turned in 3D, and the
-// flat one only stands in for it while the print is the fan's
+// flat one only stands in for it while the print is the fan's. The solid one is built as the fan is
+// first scrolled into (a third of the way down it, long before its last print), not as the page loads
 const MAST = 60.5;
-async function vane() {
+function vane() {
   const finale = $('#finale'), turn = { a: 0 };
-  const solid = await import('./vane3d.js').then(m => m.mount(finale)).catch(() => null);
+  let solid = null, up = false;
+  const build = () => import('./vane3d.js').then(m => m.mount(finale)).then(s => { solid = s; $('#vane').removeAttribute('transform'); if (up) { s.show(true); draw(); } }, () => {});
+  ScrollTrigger.create({ trigger: '#fan', start: 'top+=30% top', once: true, onEnter: build });
   const draw = () => solid ? solid.angle(turn.a)
     : $('#vane').setAttribute('transform', `translate(${MAST} 0) scale(${Math.cos(turn.a * Math.PI / 180).toFixed(4)} 1) translate(${-MAST} 0)`);
   let tl;
   finale.addEventListener('finale', e => {
+    up = e.detail;
     tl?.kill(); turn.a = 0; draw();
     solid?.show(e.detail);
     if (!e.detail) return;
@@ -1077,22 +1129,25 @@ async function start() {
   gridKey();
   // the footer's clip stands still under reduced motion
   if (reduce) { root.classList.remove('intro'); $('.foot-media video')?.pause(); await loader(); rules(); byRules(); pageRules(); strip(); camera(); settled = true; return; }
+  // (each part set up in a task of its own, so the page is never held up long while the loader shows)
+  const pause = () => new Promise(r => setTimeout(r, 0));
   await loader(async fan => {
-    byRules();
-    pageRules();
+    byRules(); await pause();
+    pageRules(); await pause();
     strip(fan?.lenis);
     camera();
     headings();
     reveal();
-    portrait();
-    levelUp();
+    portrait(); await pause();
+    levelUp(); await pause();
     xray();
-    await vane();                                        // the solid vane is built (and its shader compiled) here, not mid-deal
-    price();
+    vane();
+    price(); await pause();
     // the fan's eased scroll drives the triggers, in the same frame as the scene
     fanLenis = fan?.lenis;
     fan?.lenis.on('scroll', ScrollTrigger.update);
     if (fan) warp(fan.lenis);
+    await pause();
     ScrollTrigger.sort();                                // by where they sit: Level up's pin makes room for what comes after it
     ScrollTrigger.addEventListener('refresh', snapSoon);
     ScrollTrigger.addEventListener('scrollEnd', snapSoon);   // Level up's pin moves what follows it by a fraction while it holds

@@ -13,8 +13,8 @@ os.makedirs(f'{dst}/src/scripts', exist_ok=True); os.makedirs(f'{dst}/src/styles
 for f in ('motion.js', 'fan.js', 'dither.js', 'vane3d.js', 'ring.js'):
     s = open(f'{src}/{f}', encoding='utf-8').read()
     if f == 'fan.js':
-        a = "img.src = new URL(`assets/fan/${file}.webp`, import.meta.url).href;"
-        assert a in s; s = s.replace(a, "img.src = `${import.meta.env.BASE_URL}assets/fan/${file}.webp`;   // public/assets")
+        a = "const url = new URL(`assets/fan/${file}.webp`, import.meta.url).href;"
+        assert a in s; s = s.replace(a, "const url = `${import.meta.env.BASE_URL}assets/fan/${file}.webp`;   // public/assets")
         a = "await fetch(new URL('assets/rooster.svg', import.meta.url))"
         assert a in s; s = s.replace(a, "await fetch(`${import.meta.env.BASE_URL}assets/rooster.svg`)")
     if f == 'ring.js':
@@ -61,6 +61,8 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
   // fan.js waits at its top level (top-level await), which needs the newest output
   vite: { build: { target: 'esnext' } },
+  // the page's CSS in the page itself, so nothing holds up its first paint (it is one page, 9 KB)
+  build: { inlineStylesheets: 'always' },
 });
 """)
 print('ported')

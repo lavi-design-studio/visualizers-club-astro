@@ -19,11 +19,14 @@ const WORKS = [
   ['dizai-2', 'Dizai'], ['freshspawn-2', 'FreshSpawn'], ['surfclub-2', 'SurfClub'], ['simons-2', "Simon's"],
   ['dizai-3', 'Dizai'], ['freshspawn-3', 'FreshSpawn'], ['surfclub-3', 'SurfClub'], ['simons-3', "Simon's"],
 ];
-// every page is decoded before the fan is built (decode() works off the main thread), so no frame
-// waits on one
+// every page is decoded before the fan is built, off the main thread, into a bitmap held rows top
+// down (the shader reads it that way up), so handing it to the GPU is a copy and no frame waits on a
+// decode; where createImageBitmap can't, an image decoded ahead
 const pages = await Promise.all(WORKS.map(async ([file]) => {
+  const url = `${import.meta.env.BASE_URL}assets/fan/${file}.webp`;   // public/assets
+  try { return await createImageBitmap(await (await fetch(url)).blob()); } catch {}
   const img = new Image();
-  img.src = `${import.meta.env.BASE_URL}assets/fan/${file}.webp`;   // public/assets
+  img.src = url;
   await img.decode();
   return img;
 }));
@@ -151,7 +154,7 @@ const fragmentShader = /* glsl */`
   uniform sampler2D uMap; uniform float uFlat;
   varying vec2 vUv; varying vec3 vN, vV;
   void main() {
-    vec4 c = texture2D(uMap, vUv);
+    vec4 c = texture2D(uMap, vec2(vUv.x, 1.0 - vUv.y));   // the pictures are held rows top down (flipY off)
     // a print seen from behind is the back of the sheet: its picture only shows through, faded (most
     // of its colour gone and much darker), so the fan reads the right way round
     if (!gl_FrontFacing) c.rgb = mix(vec3(dot(c.rgb, vec3(0.2126, 0.7152, 0.0722))), c.rgb, 0.35) * 0.4;
@@ -172,8 +175,7 @@ function build() {
     let t;
     if (k < WORKS.length) t = new THREE.Texture(pages[k]);
     else { lastCanvas = document.createElement('canvas'); lastCanvas.width = FX; lastCanvas.height = FY; layLast(stage.clientWidth, stage.clientHeight, true); t = new THREE.Texture(lastCanvas); }
-    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.needsUpdate = true;
-    renderer.initTexture(t);                          // upload now, not on the first frame that shows it
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.flipY = false; t.needsUpdate = true;
     const m = new THREE.Mesh(geo, new THREE.ShaderMaterial({
       uniforms: { uMap: { value: t }, uFlat: { value: 0 }, uBend: { value: 0 }, uW: { value: CW }, uR0: { value: params.core }, uMid: { value: 0 } },
       vertexShader, fragmentShader, side: THREE.DoubleSide,
@@ -182,9 +184,12 @@ function build() {
     return m;
   });
   hero = cards[N - 1];
-  renderer.compile(scene, camera);
 }
 build();
+// each print handed to the GPU in a task of its own, then the shader made (off the main thread where
+// the browser can), all before the first frame is drawn, so no frame waits on them
+for (const m of cards) { renderer.initTexture(m.material.uniforms.uMap.value); await new Promise(r => setTimeout(r, 0)); }
+await renderer.compileAsync(scene, camera);
 
 // ----- the timeline, all on scroll -----
 //   0   → .38  the row runs in towards the hub like a conveyor; each print, as it reaches the hub,
@@ -617,7 +622,7 @@ export function quads() {
 // and for the page's x-ray: each print's edge as drawn last frame (bent as the shader bends it, cut
 // where it passes behind the camera, in the viewport's pixels), its name, its picture's size, how far
 // it is from the camera, and whether its face or its back is seen. Nothing while the scene is not drawn
-const PAGES = [...WORKS.map(([, name], k) => [name, pages[k].naturalWidth, pages[k].naturalHeight]), ['You have enough love for design?', DW, DH]];
+const PAGES = [...WORKS.map(([, name], k) => [name, pages[k].naturalWidth || pages[k].width, pages[k].naturalHeight || pages[k].height]), ['You have enough love for design?', DW, DH]];
 export function outlines() {
   if (!active || !drawn) return [];
   const r = renderer.domElement.getBoundingClientRect(), sx = r.width / stageW, sy = r.height / stageH, NEAR = -camera.near * 1.01;

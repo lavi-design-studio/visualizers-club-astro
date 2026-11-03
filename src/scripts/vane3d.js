@@ -23,6 +23,9 @@ export async function mount(svg) {
   const shapes = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="${path().getAttribute('d')}"/></svg>`).paths.flatMap(p => SVGLoader.createShapes(p));
   const geo = new THREE.ExtrudeGeometry(shapes, { depth: DEPTH, bevelEnabled: true, bevelThickness: .6, bevelSize: .4, bevelSegments: 2, curveSegments: 6 });
   geo.translate(-MAST, -H / 2, -DEPTH / 2);
+  // (built in steps, each a task of its own, so none holds the page up for long)
+  const pause = () => new Promise(r => setTimeout(r, 0));
+  await pause();
 
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, premultipliedAlpha: false });
   // a canvas pixel a dither cell, CELL CSS pixels square (2 on a phone), scaled up with no smoothing
@@ -50,6 +53,7 @@ export async function mount(svg) {
   panel(1.5, 9, -6, 1, 6, 5); panel(9, 1.6, 0, 8, 4, 3); panel(2.5, 7, 7, 0, 3, 4);
   panel(1.2, 8, 3, 2, -7, 5); panel(.7, 9, -1.6, 0, 9, 4);
   scene.environment = pmrem.fromScene(studio, .03).texture;
+  await pause();
   // hammered metal: a height field of soft dents, as a normal map, so the light breaks up over the
   // flat faces instead of lying on them in one tone
   const N = 256, hc = document.createElement('canvas'); hc.width = hc.height = N;
@@ -69,6 +73,7 @@ export async function mount(svg) {
   }
   const normalMap = new THREE.DataTexture(nd, N, N); normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
   normalMap.repeat.set(1 / 45, 1 / 45); normalMap.needsUpdate = true;   // the extrusion's uvs are the SVG's units
+  await pause();
 
   const mat = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, metalness: 1, roughness: .35, envMapIntensity: 1, normalMap, normalScale: new THREE.Vector2(.4, .4) });
   // the reference's dither: a cell lights (the pale tint) where its brightness clears its 4x4 Bayer
