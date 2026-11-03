@@ -257,7 +257,9 @@ addEventListener('resize', () => { cancelAnimationFrame(ruling); ruling = reques
 // line apart from there to one empty line under its last (on a narrow screen, to the strip's top, which
 // is moved onto the grid); they run from the page's edge to the strip (across the screen when narrow)
 // and break round the letters' ink. Measured with the scroll's reveal off (.measuring)
-function byRules() {
+// (pause, when given: awaited between its measures, so under the loader none is a long task; without
+// it, as on a resize, it runs through at once)
+async function byRules(pause) {
   const frame = $('.by-frame'), left = $('.by-left'), ruled = $('.by-ruled'), time = $('.by-time'), stripEl = $('.by-strip');
   const narrow = matchMedia('(max-width: 899px)').matches;
   let box = $('.by-rules', frame);
@@ -269,6 +271,7 @@ function byRules() {
   const first = time.getBoundingClientRect().bottom - fr.top - 1;
   const { lines } = inkOf(texts(), fr, num, inkOf.LINES);
   if (!lines.length) { root.classList.remove('measuring'); return; }
+  if (pause) await pause();
   const P = lines[0].pitch;
   // (on a narrow screen, where the lines are loose, each is centred with its marks: from a capital's
   // mark over it to the dot under, so the rule over it is as far from its marks as the one under from
@@ -283,11 +286,13 @@ function byRules() {
     const { lines: set } = inkOf(texts(), fr, num, inkOf.LINES);
     last = first + (Math.ceil((set.at(-1).mid - first) / P) + 2) * P;   // the rule under the last line, an empty line, then this (not drawn)
   }
+  if (pause) await pause();
   fr = frame.getBoundingClientRect();
   const { ink } = inkOf(texts(), fr, num);
   const ys = [];
   for (let y = first + P; y < last - P / 2; y += P) ys.push(y);
   lay(box, ys, 0, narrow ? fr.width : stripEl.getBoundingClientRect().left - fr.left, ink);
+  if (pause) await pause();
   // on the right, the list under "chuẩn bị" ruled the same way, from the strip to the page's edge: a
   // rule over its first line, one under each
   if (!narrow) {
@@ -300,7 +305,7 @@ function byRules() {
   root.classList.remove('measuring');
 }
 let byRuling = 0;
-addEventListener('resize', () => { cancelAnimationFrame(byRuling); byRuling = requestAnimationFrame(byRules); });
+addEventListener('resize', () => { cancelAnimationFrame(byRuling); byRuling = requestAnimationFrame(() => byRules()); });
 
 // ----- 2c. the price's and the footer's rules -----
 // hairlines across the page as Figma's Frames 21 and 22 have them, each broken round the letters' ink:
@@ -309,7 +314,8 @@ addEventListener('resize', () => { cancelAnimationFrame(byRuling); byRuling = re
 // with the type): each of the note's lines centred, its marks and all, between two rules a line apart,
 // and on up from there evenly a line apart, to the last that keeps at least five sixths of a line
 // under the title and the clip. Measured as the type rests (.measuring)
-function pageRules() {
+// (pause as byRules takes it)
+async function pageRules(pause) {
   root.classList.add('measuring');
   const layer = sec => {
     let b = $(':scope > .page-rules', sec);
@@ -334,6 +340,7 @@ function pageRules() {
       tidy(lay(layer(sec), Array.from({ length: n + 2 }, (_, k) => at(k)), 0, sr.width, ink));
     }
   }
+  if (pause) await pause();
   {
     const sec = $('.foot'), sr = sec.getBoundingClientRect();
     const at = el => { const r = el.getBoundingClientRect(); return { top: r.top - sr.top, bottom: r.bottom - sr.top }; };
@@ -352,6 +359,7 @@ function pageRules() {
       ys.push(...rows.map(r => r.marks + P / 2));
       do ys.unshift(ys[0] - P); while (ys[0] - P >= above + 5 * P / 6);
     }
+    if (pause) await pause();
     const { ink } = inkOf($$('h2 .line, .foot-media figcaption, .foot-note span, .foot-label, .foot-links a, .foot-mark, .foot-made > span', sec), sr);
     { const q = $('.qr', sec).getBoundingClientRect(); if (q.width) ink.push({ x0: q.left - sr.left, x1: q.right - sr.left, top: q.top - sr.top, bottom: q.bottom - sr.top, fs: 12 }); }   // the QR code broken round too
     tidy(lay(layer(sec), ys, 0, sr.width, ink));
@@ -359,7 +367,7 @@ function pageRules() {
   root.classList.remove('measuring');
 }
 let pageRuling = 0;
-addEventListener('resize', () => { cancelAnimationFrame(pageRuling); pageRuling = requestAnimationFrame(pageRules); });
+addEventListener('resize', () => { cancelAnimationFrame(pageRuling); pageRuling = requestAnimationFrame(() => pageRules()); });
 
 // the quote in the strip, running down it as a marquee does (its words read upward), along the band on
 // a narrow screen; quicker as the page scrolls. Still under reduced motion
@@ -728,9 +736,10 @@ function xray() {
   });
 }
 
+let heroRuled = null;
 function intro() {
-  // ruled where the type will rest, before it is set down to rise
-  const ruled = rules();
+  // ruled where the type will rest, before it is set down to rise (under the loader, when it ran)
+  const ruled = heroRuled ?? rules();
   const lines = riseIn($$('.hero-title .line'));
   const small = [$('.hero-bar'), ...$$('.hero-intro > *'), $('.hero-refund'), ...$$('.hero-promise > li'), $('.hero-scroll')];
   gsap.set(lines, { yPercent: RISE });
@@ -892,8 +901,9 @@ function flipper() {
 // the course's eight levels, as the syllabus names them
 const LEVELS = ['brief', 'grid', 'chữ', 'màu', 'claude', 'website', 'motion', 'critique'];
 // masks of the page's dither, from none of a cell's pixels kept to all of them, a Bayer 4x4 tile each,
-// in device pixels (a cell about 2 CSS pixels before the tag's own scale)
-const MASKS = (() => {
+// in device pixels (a cell about 2 CSS pixels before the tag's own scale); made as Level up is set up
+let MASKS;
+const masksOf = () => {
   const m = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5], dpr = devicePixelRatio || 1, cell = Math.max(1, Math.round(2 * dpr));
   return Array.from({ length: 17 }, (_, k) => {
     const c = document.createElement('canvas'); c.width = c.height = 4 * cell;
@@ -901,8 +911,11 @@ const MASKS = (() => {
     for (let i = 0; i < 16; i++) if (m[i] < k) g.fillRect((i % 4) * cell, (i >> 2) * cell, cell, cell);
     return { url: `url(${c.toDataURL()})`, size: `${4 * cell / dpr}px` };
   });
-})();
-function levelUp() {
+};
+// (pause as byRules takes it)
+async function levelUp(pause) {
+  MASKS = masksOf();
+  if (pause) await pause();
   const R = .75, H = 245.4733, Y = 670.2942;
   const tags = $$('.level-col').map(col => $$('.level-tag', col));
   // a tag's dither: the smallest is half dust at the stair's inner end and keeps it as it shrinks away
@@ -946,7 +959,10 @@ function levelUp() {
   };
   const turn = flipper();
   if (reduce) { set(8); turn(1); return; }
-  set(0); turn(0);
+  set(0);
+  if (pause) await pause();
+  turn(0);
+  if (pause) await pause();
   // turned back by the scroll, as its middle comes up from half way down the screen to fill it
   const STEP = .45, pad = () => parseFloat(getComputedStyle($('.level')).paddingTop);
   ScrollTrigger.create({
@@ -1025,8 +1041,10 @@ function reveal() {
 }
 // the slip's dither: a 4x4 Bayer tile per density (a quarter of the cells to three quarters), kept
 // wherever the cell's threshold is under the density, as a mask; drawn in device pixels, a cell a whole
-// number of them (about 2 CSS pixels), so the mask is never smoothed between cells
-const DITHER = (() => {
+/// number of them (about 2 CSS pixels), so the mask is never smoothed between cells; made as the slip is
+// set up
+let DITHER;
+const ditherOf = () => {
   const m = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
   const dpr = devicePixelRatio || 1, cell = Math.max(1, Math.round(2 * dpr));
   root.style.setProperty('--dither-size', `${4 * cell / dpr}px`);
@@ -1036,8 +1054,10 @@ const DITHER = (() => {
     for (let i = 0; i < 16; i++) if ((m[i] + .5) / 16 < d) g.fillRect((i % 4) * cell, (i >> 2) * cell, cell, cell);
     return `url(${c.toDataURL()})`;
   });
-})();
-function warp(lenis) {
+};
+// (pause as byRules takes it: the copies are made a few blocks a task)
+async function warp(lenis, pause) {
+  DITHER = ditherOf();
   const els = [...new Set(WARP.flatMap(sel => $$(sel)))].filter(e => !e.matches('.by-photo, .by-cam'));
   let v = 0, on = false, level = -1;
   const lit = els.map(() => false), made = els.map(() => false);
@@ -1063,7 +1083,10 @@ function warp(lenis) {
   };
   // made with the rest of the page's setup, under the loader, so none is made mid-scroll; after a resize,
   // as each block next bends
-  els.forEach(ghosts); made.fill(true);
+  for (let i = 0, t = performance.now(); i < els.length; i++) {
+    ghosts(els[i]); made[i] = true;
+    if (pause && performance.now() - t > 8) { await pause(); t = performance.now(); }
+  }
   addEventListener('resize', () => { $$('v-ghost').forEach(g => g.remove()); made.fill(false); });
   gsap.ticker.add((time, dt) => {
     // Lenis eases the scroll over a second, so a wheel flick runs at only ~12px a frame at its peak:
@@ -1132,21 +1155,24 @@ async function start() {
   // (each part set up in a task of its own, so the page is never held up long while the loader shows)
   const pause = () => new Promise(r => setTimeout(r, 0));
   await loader(async fan => {
-    byRules(); await pause();
-    pageRules(); await pause();
+    await pause();
+    await byRules(pause); await pause();
+    await pageRules(pause); await pause();
     strip(fan?.lenis);
-    camera();
-    headings();
-    reveal();
+    camera(); await pause();
+    headings(); await pause();
+    reveal(); await pause();
     portrait(); await pause();
-    levelUp(); await pause();
+    await levelUp(pause); await pause();
     xray();
     vane();
     price(); await pause();
     // the fan's eased scroll drives the triggers, in the same frame as the scene
     fanLenis = fan?.lenis;
     fan?.lenis.on('scroll', ScrollTrigger.update);
-    if (fan) warp(fan.lenis);
+    if (fan) await warp(fan.lenis, pause);
+    // the hero's rules, laid where its type will rest and hidden for the intro to draw (as intro would)
+    heroRuled = rules(); gsap.set(heroRuled, { clipPath: 'inset(0 100% 0 0)' });
     await pause();
     ScrollTrigger.sort();                                // by where they sit: Level up's pin makes room for what comes after it
     ScrollTrigger.addEventListener('refresh', snapSoon);

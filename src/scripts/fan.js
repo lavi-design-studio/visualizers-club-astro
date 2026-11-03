@@ -122,6 +122,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'hi
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setClearColor(0x000000);
 stage.prepend(renderer.domElement);
+await new Promise(r => setTimeout(r, 0));          // (the fan built in a task of its own, after the renderer's)
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(32, 1, .1, 200);
 

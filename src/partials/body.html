@@ -11,6 +11,12 @@
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let n = 0, shown = 0, done, last = performance.now();
     window.loaderPile = new Promise(r => (done = r));
+    // the GPU's first WebGL context holds up the thread that makes it (a tenth of a second on a phone):
+    // one is made first in a worker, off the page's thread, so the fan's own, later, is quick
+    try {
+      const warm = new Worker(URL.createObjectURL(new Blob(["try { new OffscreenCanvas(1, 1).getContext('webgl2') } catch {} postMessage(0)"], { type: 'text/javascript' })));
+      window.warmGL = warm;                      // (kept: its context, let go, would take the warmth with it)
+    } catch {}
     const tick = now => {
       shown = Math.min(n / files.length * 100, shown + (now - last) * (still ? 1 : .06)); last = now;
       count.textContent = `${Math.floor(shown)}%`;
