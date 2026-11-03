@@ -1,0 +1,774 @@
+/* The landing page as the Figma file lays it out (The Visualizers Club, Section 1, five frames
+   top to bottom), on the design's own grid: 1728 wide, 12 columns, 16 margins and gutters. Every
+   length is the design's, in --px: one design pixel at the page's width. Below 900 the columns
+   stack. The hero's picture is the show work fan itself (fan.js), which opens out from there to
+   fill the screen as the page scrolls. */
+@font-face { font-family: "PP Neue World"; src: url(/fonts/PPNeueWorld-SemiExtendedUltralight.woff2) format("woff2"); font-weight: 200; font-display: swap; }
+@font-face { font-family: "PP Migra"; src: url(/fonts/PPMigra-ExtralightItalic.woff2) format("woff2"); font-weight: 200; font-style: italic; font-display: swap; }
+@font-face { font-family: "ABC Areal"; src: url(/fonts/ABCAreal-Regular.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "ABC Areal"; src: url(/fonts/ABCAreal-Medium.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+
+:root {
+  --ground: #000;
+  --magenta: #c239c7;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--ground); }
+body {
+  margin: 0; background: var(--ground); color: var(--magenta);
+  font: 400 16px/1 "ABC Areal", system-ui, sans-serif; text-transform: uppercase;
+  overflow-x: clip; -webkit-font-smoothing: antialiased;
+}
+main { container-type: inline-size; }
+main > * {
+  --px: calc(100cqi / 1728);
+  --gap: calc(16 * var(--px));
+  --f16: max(11px, calc(16 * var(--px)));
+  --f20: max(12px, calc(20 * var(--px)));
+  --f40: max(20px, calc(40 * var(--px)));
+  /* the small type's own design pixel: --px, but never under 0.6px, where --f20 stops shrinking (12px),
+     so the gaps and offsets between small lines keep to the type below about 1040 wide */
+  --tu: max(.6px, var(--px));
+  --f160: calc(160 * var(--px));
+  --section: calc(240 * var(--px));   /* every section under the fan: 240 above, 240 below */
+  --spacer: calc(372 * var(--px));    /* Figma's black spacers, round Level up */
+}
+h1, h2, p, ol, ul, figure { margin: 0; padding: 0; font: inherit; }
+ol, ul { list-style: none; }
+a { color: inherit; }
+/* text sits on its caps, as Figma trims it */
+main :is(h1, h2, p, li, figcaption, .line) { text-box: trim-both cap alphabetic; }
+.line { display: block; }
+.display { font-family: "PP Neue World", serif; font-weight: 200; font-size: var(--f160); line-height: 1; }
+.serif { font-family: "PP Migra", serif; font-style: italic; font-weight: 200; }
+.pre { white-space: pre-wrap; }
+br.tb { display: none; }                 /* a line break only the tablet's layout has */
+.grid {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap); padding-inline: var(--gap);
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+
+/* ----- the fan, with the hero over its start ----- */
+.fan { position: relative; height: calc(var(--hero-h, 100svh) + 700svh); }
+/* the stage is as tall as the screen at its tallest (a phone's toolbar gone), so the prints and the
+   last one always cover it; what sits at its foot ("scroll") keeps to the screen at its shortest */
+.fan-stage { position: sticky; top: 0; height: 100vh; height: 100lvh; overflow: hidden; }
+.fan-stage canvas { display: block; width: 100%; height: 100%; }
+/* ----- the loader, after Codrops' GridFlow: black, a small stack of the students' sites beside a
+   counter going to 100%, each site popping up onto the stack as it arrives; motion.js then flies the
+   stack out onto the hero's fan, each card growing big on its way and settling into its place ----- */
+/* the scrollbar's room is kept while the loader holds the page still, so letting it go changes no width
+   (and wakes no resize: the dithers, Level up's turn, the fan) */
+html { scrollbar-gutter: stable; }
+html.loading { overflow: hidden; }
+.loader {
+  --u: calc(100vw / 1728);
+  position: fixed; inset: 0; z-index: 50; background: #000; color: var(--magenta);
+  display: grid; place-items: center;
+}
+.loader-row { display: flex; align-items: center; gap: max(14px, calc(20 * var(--u))); }
+.loader-pile { position: relative; width: max(64px, calc(96 * var(--u))); aspect-ratio: 1728 / 1117; }
+.loader-card { position: absolute; inset: 0; overflow: hidden; will-change: transform; backface-visibility: hidden; }
+.loader-veil { position: absolute; inset: 0; background: #000; opacity: 0; will-change: opacity; }
+.loader-card img { display: block; width: 100%; height: 100%; object-fit: cover; will-change: transform; }
+.loader-count { margin: 0; font: 200 max(28px, calc(56 * var(--u))) / 1 "PP Neue World", serif; letter-spacing: -.02em; font-variant-numeric: tabular-nums; min-width: 3.4ch; text-box: trim-both cap alphabetic; }
+
+/* the last print once it fills the screen: the same drawing as its texture, in the same place
+   (viewBox = the texture, slice = the cover fit the scene gives it), but sharp text in the DOM */
+/* kept on a layer of its own (will-change), drawn before it shows, so fading it in costs no frame */
+.finale { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; transform: scale(1.002); text-transform: none; will-change: opacity; }
+
+.hero {
+  position: absolute; inset: 0 0 auto; z-index: 1;
+  height: 100vh; height: 100svh; align-content: start;
+}
+/* the hero is always one screen: its type is Figma's at the page's width, smaller where the screen is
+   too short for that (wider than Figma's frame), and the fan's picture fills what is left under it */
+@media (min-width: 900px) {
+  .hero {
+    --px: min(100cqi / 1728, 100svh / 1117);
+    --gap: calc(16 * var(--px));
+    --f16: max(11px, calc(16 * var(--px)));
+    --f20: max(12px, calc(20 * var(--px)));
+    --f40: max(20px, calc(40 * var(--px)));
+    --f160: calc(160 * var(--px));
+    --tu: max(.6px, var(--px));
+    grid-template-rows: auto 1fr;
+  }
+  .hero > :is(.hero-intro, .hero-refund, .hero-promise) { align-self: start; }
+}
+.hero-bar {
+  position: absolute; top: calc(21 * var(--px)); left: var(--gap); right: var(--gap);
+  display: flex; justify-content: space-between;
+  font-size: var(--f16); letter-spacing: -.05em;
+}
+.hero-bar a { text-underline-position: from-font; }
+.hero-title {
+  grid-column: 4 / span 6; grid-row: 1; margin-top: calc(21 * var(--px));   /* Figma's 840 x 364 box, columns 4 to 9 */
+  display: flex; flex-direction: column; gap: var(--gap); text-align: center;
+}
+.hero-title .serif { letter-spacing: -.01em; }
+.hero-intro, .hero-refund, .hero-promise { grid-row: 2; margin-top: calc(32 * var(--px)); font-size: var(--f20); line-height: 1.2; position: relative; }
+.hero-intro { grid-column: 1 / span 3; display: flex; flex-direction: column; gap: calc(4.6 * var(--tu)); letter-spacing: -.02em; }
+.hero-intro .c { text-align: center; }
+.hero-refund { grid-column: 6 / span 2; text-align: center; letter-spacing: -.02em; }
+.hero-promise {
+  grid-column: 9 / -1; justify-self: end; width: calc(454 * var(--tu));
+  display: flex; flex-direction: column; align-items: flex-end; gap: calc(8 * var(--tu));
+  letter-spacing: -.01em;
+}
+/* pieces laid over each other as Figma's groups are: offsets in the small type's design pixels */
+.stack { display: grid; }
+.stack > * {
+  grid-area: 1 / 1;
+  margin-left: calc(var(--ml, 0) * var(--tu)); margin-top: calc(var(--mt, 0) * var(--tu));
+  width: calc(var(--w) * var(--tu));
+}
+.num { font-family: "PP Neue World", serif; font-weight: 200; width: auto; letter-spacing: 0; }
+/* the x-ray lens over the page (motion.js xray): a canvas of the screen's make-up, seen through a circle */
+.xr-lens { position: fixed; left: 0; top: 0; z-index: 45; border-radius: 50%; overflow: hidden; pointer-events: none; will-change: transform; clip-path: circle(0px at 50% 50%); visibility: hidden; }
+.xr-lens canvas { position: absolute; left: 0; top: 0; will-change: transform; }
+.xr-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--magenta); }
+/* the lens's switch, in the screen's bottom right corner: "Reveal", its state, and a track the knob
+   slides along (filled when on), on a black plate so it reads on the black and on By Lavi's magenta */
+.xr-toggle {
+  position: fixed; right: var(--gap, 16px); bottom: var(--gap, 16px); z-index: 46;
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  appearance: none; background: #000; color: var(--magenta); border: 0; border-radius: 0;
+  font: 500 var(--f16)/1 "ABC Areal", sans-serif; letter-spacing: -.01em; text-transform: uppercase; cursor: pointer;
+}
+.xr-state { min-width: 2.2em; }
+.xr-track { position: relative; flex: none; width: 30px; height: 16px; border: 1px solid var(--magenta); border-radius: 8px; transition: background-color .25s; }
+.xr-knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--magenta); transition: transform .3s cubic-bezier(.2, .8, .2, 1), background-color .25s; }
+.xr-toggle[aria-checked="true"] .xr-track { background: var(--magenta); }
+.xr-toggle[aria-checked="true"] .xr-knob { transform: translateX(14px); background: #000; }
+.xr-toggle:hover .xr-track { box-shadow: 0 0 0 1px var(--magenta); }
+.xr-toggle:focus-visible { outline: 1px solid var(--magenta); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .xr-track, .xr-knob { transition: none; } }
+.intro .xr-toggle { visibility: hidden; }
+/* the rules under the small type (motion.js rules): hairlines across the page, broken round the letters */
+.hero-rules { position: absolute; inset: 0; pointer-events: none; }
+.hero-rule { position: absolute; left: 0; right: 0; height: var(--hair, 1px); }
+.hero-rule i { position: absolute; top: 0; height: var(--hair, 1px); background: var(--magenta); }
+.fan-slot {
+  grid-column: 4 / -1; grid-row: 2; justify-self: start; margin-top: calc(51 * var(--px)); margin-bottom: calc(6.5 * var(--px));
+  width: calc(1203 * var(--px)); align-self: stretch; min-height: 0;
+}
+/* "scroll" rides the sticky stage, at the foot of the screen through the whole fan (Figma has it 20 up
+   from the hero's foot, centred). It sits over the prints, but the last one, flying at us, goes over
+   it: fan.js cuts that print's shape out of it, and the DOM copy of the print covers it after */
+.hero-scroll {
+  position: absolute; left: 0; right: 0; bottom: calc(20 * var(--px) + 100lvh - 100svh); margin-inline: auto; width: max-content;
+  font-size: var(--f20); line-height: 1.2; letter-spacing: -.02em;
+  text-decoration: none; text-box: trim-both cap alphabetic;
+}
+.hero-scroll:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-position: from-font; }
+
+/* ----- by lavi ----- */
+/* Figma's Frame 20: a ruled frame across the page (a rule over it, one under it), in three: the title,
+   the session's length and the syllabus on the left (columns 1 to 8, its rules from the page's edge to
+   the strip), a black strip in column 9 with the quote running up it, and on the right (10 to 12) the
+   credits, the portrait and the note over a rule, then the picture frame under the class's name. The syllabus
+   is on one line grid with the left's rules (motion.js byRules), each line between two of them */
+.by { background: var(--magenta); color: #000; padding: calc(209 * var(--px)) 0 calc(47 * var(--px)); }
+.by-frame { position: relative; border-block: 1px solid #000; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+.by-left, .by-right { display: grid; grid-template-columns: subgrid; align-content: start; }
+.by-left { grid-column: 1 / span 8; grid-row: 1; }
+.by-right { grid-column: 10 / -1; grid-row: 1; }
+/* the left's rules run from the page's edge to the strip: a gutter past the columns either side */
+.by-head, .by-time, .by-side { position: relative; }   /* (the right column's rules are motion.js byRules') */
+/* one rule under the session's length, none under the title (Figma's Frame 20: its length 32 under it) */
+.by-time::after { content: ""; position: absolute; left: calc(-1 * var(--gap)); right: calc(-1 * var(--gap)); bottom: 0; border-bottom: 1px solid #000; }
+.by-head { grid-column: 1 / -1; padding: calc(31 * var(--px)) 0 0; }
+.by-head h2 { display: flex; flex-direction: column; gap: calc(16 * var(--px)); text-align: center; }
+.by-head h2 .serif { letter-spacing: -.01em; }
+.by-time { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding: calc(32 * var(--px)) 0 calc(17 * var(--px)); font-size: var(--f40); letter-spacing: -.05em; }
+.by-time span { display: block; text-box: trim-both cap alphabetic; }
+.by-time span:first-child { grid-column: 2 / span 2; }
+.by-time span:last-child { grid-column: 6 / span 2; }
+.by-ruled { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-content: start; font-size: var(--f20); line-height: 1.2; letter-spacing: -.01em; }
+.by-ruled :is(p, li, span) { text-box: normal; }
+.by-label { grid-column: 4; }
+.by-syllabus { grid-column: 5 / span 4; display: flex; flex-direction: column; font-weight: 500; }
+.by-syllabus li { display: grid; grid-template-columns: calc(126 * var(--px)) 1fr; column-gap: var(--gap); align-items: baseline; }
+.by-syllabus .serif { text-align: right; letter-spacing: -.05em; }
+.by-rules { position: absolute; inset: 0; pointer-events: none; }
+.by-rules div { position: absolute; left: 0; right: 0; height: var(--hair, 1px); }
+.by-rules i { position: absolute; top: 0; height: var(--hair, 1px); background: #000; }
+/* the strip: column 9, black, the quote running up it (motion.js strip) */
+.by-strip { grid-column: 9; grid-row: 1; position: relative; overflow: hidden; background: #000; color: var(--magenta); }
+.by-strip-run { position: absolute; left: 50%; top: 100%; white-space: nowrap; font-size: var(--f40); line-height: 1; text-transform: uppercase; will-change: transform; }
+.by-strip-run span { display: inline-block; padding-right: .6em; }
+.by-side {
+  grid-column: 1 / -1; margin-top: calc(34 * var(--px)); padding-bottom: calc(6 * var(--px));
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--gap); align-content: start;
+  font-weight: 500; font-size: var(--f20); letter-spacing: -.05em;
+}
+.by-made { grid-column: 1 / -1; grid-row: 1; }
+.by-studio { grid-column: 2 / -1; grid-row: 1; align-self: end; }
+.by-years { grid-column: 1; grid-row: 2; justify-self: end; margin-top: calc(2 * var(--tu)); font-weight: 200; font-size: var(--f40); letter-spacing: -.05em; }
+.by-exp { grid-column: 2 / -1; grid-row: 2; margin-top: calc(7 * var(--tu)); display: grid; grid-template-columns: subgrid; row-gap: calc(8 * var(--tu)); }
+.by-exp > :first-child { grid-column: 1 / -1; }
+.by-exp > :nth-child(2) { text-align: right; }
+.by-photo { grid-column: 2 / -1; grid-row: 3; margin-top: calc(16 * var(--px)); aspect-ratio: 270 / 374; position: relative; }
+.by-photo canvas, .by-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.by-photo.dithered img { visibility: hidden; }
+.by-mark { grid-column: 1; grid-row: 4; justify-self: end; margin-top: calc(16 * var(--px)); font-family: "PP Neue World", serif; font-weight: 200; letter-spacing: 0; }
+.by-note {
+  grid-column: 2 / -1; grid-row: 4; margin-top: calc(16 * var(--px));
+  display: flex; flex-direction: column; gap: calc(34 * var(--tu));
+  font-size: var(--f16); line-height: 1.25; letter-spacing: -.01em;
+}
+.by-note div { display: flex; flex-direction: column; gap: calc(8 * var(--tu)); }
+/* the picture frame (motion.js camera): a picture the visitor puts in, dithered as the portrait is, the class's name over its
+   foot as a sticker (black type in a magenta outline) */
+.by-cam { grid-column: 1 / -1; justify-self: center; width: calc(412 * var(--px)); margin-top: calc(14 * var(--px)); padding-bottom: calc(21 * var(--px)); }
+.by-cam-box { position: relative; width: 100%; margin-inline: auto; aspect-ratio: 412 / 529; border-radius: calc(22 * var(--px)); overflow: hidden; background: var(--deep, #611c63); }
+.by-cam-box canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; visibility: hidden; }
+.by-cam.over .by-cam-box { box-shadow: inset 0 0 0 2px var(--magenta); }   /* a picture dragged over it */
+.by-cam.live canvas { visibility: visible; }
+.by-cam-idle, .by-cam-live { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; font-size: var(--f16); line-height: 1.25; text-align: center; color: var(--magenta); }
+.by-cam-idle { justify-content: center; padding-bottom: 20%; }
+.by-cam-live { flex-direction: row; justify-content: center; align-items: flex-start; padding-top: 14px; gap: 8px; visibility: hidden; }
+.by-cam.live .by-cam-idle { visibility: hidden; }
+.by-cam.live .by-cam-live { visibility: visible; }
+.by-cam-btn { appearance: none; background: #000; color: var(--magenta); border: 1px solid var(--magenta); border-radius: 0; padding: 9px 12px; font: 500 var(--f16)/1 "ABC Areal", sans-serif; text-transform: uppercase; cursor: pointer; }
+.by-cam-btn:hover, .by-cam-btn:focus-visible { background: var(--magenta); color: #000; }
+.by-cam-btn:focus-visible { outline: 1px solid #000; outline-offset: 2px; }
+.by-cam-tag {
+  position: relative; margin-top: calc(-55 * var(--px)); display: flex; flex-direction: column; gap: calc(8 * var(--px));
+  font-size: calc(40 * var(--px)); line-height: 1; text-align: center; color: #000; isolation: isolate;
+  /* a magenta ground round each word, rounded as a stroke with round joins: copies of the type in
+     rings round it, r out (8 at the design's size). Drawn behind every word, not each behind its own
+     (a copy of the word under it, ::before), so one word's ground never covers the word above */
+  --r: calc(8 * var(--px));
+  --ground:
+    calc(var(--r) * 1.0) calc(var(--r) * 0.0) var(--magenta),
+    calc(var(--r) * 0.985) calc(var(--r) * 0.174) var(--magenta),
+    calc(var(--r) * 0.94) calc(var(--r) * 0.342) var(--magenta),
+    calc(var(--r) * 0.866) calc(var(--r) * 0.5) var(--magenta),
+    calc(var(--r) * 0.766) calc(var(--r) * 0.643) var(--magenta),
+    calc(var(--r) * 0.643) calc(var(--r) * 0.766) var(--magenta),
+    calc(var(--r) * 0.5) calc(var(--r) * 0.866) var(--magenta),
+    calc(var(--r) * 0.342) calc(var(--r) * 0.94) var(--magenta),
+    calc(var(--r) * 0.174) calc(var(--r) * 0.985) var(--magenta),
+    calc(var(--r) * 0.0) calc(var(--r) * 1.0) var(--magenta),
+    calc(var(--r) * -0.174) calc(var(--r) * 0.985) var(--magenta),
+    calc(var(--r) * -0.342) calc(var(--r) * 0.94) var(--magenta),
+    calc(var(--r) * -0.5) calc(var(--r) * 0.866) var(--magenta),
+    calc(var(--r) * -0.643) calc(var(--r) * 0.766) var(--magenta),
+    calc(var(--r) * -0.766) calc(var(--r) * 0.643) var(--magenta),
+    calc(var(--r) * -0.866) calc(var(--r) * 0.5) var(--magenta),
+    calc(var(--r) * -0.94) calc(var(--r) * 0.342) var(--magenta),
+    calc(var(--r) * -0.985) calc(var(--r) * 0.174) var(--magenta),
+    calc(var(--r) * -1.0) calc(var(--r) * 0.0) var(--magenta),
+    calc(var(--r) * -0.985) calc(var(--r) * -0.174) var(--magenta),
+    calc(var(--r) * -0.94) calc(var(--r) * -0.342) var(--magenta),
+    calc(var(--r) * -0.866) calc(var(--r) * -0.5) var(--magenta),
+    calc(var(--r) * -0.766) calc(var(--r) * -0.643) var(--magenta),
+    calc(var(--r) * -0.643) calc(var(--r) * -0.766) var(--magenta),
+    calc(var(--r) * -0.5) calc(var(--r) * -0.866) var(--magenta),
+    calc(var(--r) * -0.342) calc(var(--r) * -0.94) var(--magenta),
+    calc(var(--r) * -0.174) calc(var(--r) * -0.985) var(--magenta),
+    calc(var(--r) * -0.0) calc(var(--r) * -1.0) var(--magenta),
+    calc(var(--r) * 0.174) calc(var(--r) * -0.985) var(--magenta),
+    calc(var(--r) * 0.342) calc(var(--r) * -0.94) var(--magenta),
+    calc(var(--r) * 0.5) calc(var(--r) * -0.866) var(--magenta),
+    calc(var(--r) * 0.643) calc(var(--r) * -0.766) var(--magenta),
+    calc(var(--r) * 0.766) calc(var(--r) * -0.643) var(--magenta),
+    calc(var(--r) * 0.866) calc(var(--r) * -0.5) var(--magenta),
+    calc(var(--r) * 0.94) calc(var(--r) * -0.342) var(--magenta),
+    calc(var(--r) * 0.985) calc(var(--r) * -0.174) var(--magenta),
+    calc(var(--r) * 0.75) calc(var(--r) * 0.0) var(--magenta),
+    calc(var(--r) * 0.724) calc(var(--r) * 0.194) var(--magenta),
+    calc(var(--r) * 0.65) calc(var(--r) * 0.375) var(--magenta),
+    calc(var(--r) * 0.53) calc(var(--r) * 0.53) var(--magenta),
+    calc(var(--r) * 0.375) calc(var(--r) * 0.65) var(--magenta),
+    calc(var(--r) * 0.194) calc(var(--r) * 0.724) var(--magenta),
+    calc(var(--r) * 0.0) calc(var(--r) * 0.75) var(--magenta),
+    calc(var(--r) * -0.194) calc(var(--r) * 0.724) var(--magenta),
+    calc(var(--r) * -0.375) calc(var(--r) * 0.65) var(--magenta),
+    calc(var(--r) * -0.53) calc(var(--r) * 0.53) var(--magenta),
+    calc(var(--r) * -0.65) calc(var(--r) * 0.375) var(--magenta),
+    calc(var(--r) * -0.724) calc(var(--r) * 0.194) var(--magenta),
+    calc(var(--r) * -0.75) calc(var(--r) * 0.0) var(--magenta),
+    calc(var(--r) * -0.724) calc(var(--r) * -0.194) var(--magenta),
+    calc(var(--r) * -0.65) calc(var(--r) * -0.375) var(--magenta),
+    calc(var(--r) * -0.53) calc(var(--r) * -0.53) var(--magenta),
+    calc(var(--r) * -0.375) calc(var(--r) * -0.65) var(--magenta),
+    calc(var(--r) * -0.194) calc(var(--r) * -0.724) var(--magenta),
+    calc(var(--r) * -0.0) calc(var(--r) * -0.75) var(--magenta),
+    calc(var(--r) * 0.194) calc(var(--r) * -0.724) var(--magenta),
+    calc(var(--r) * 0.375) calc(var(--r) * -0.65) var(--magenta),
+    calc(var(--r) * 0.53) calc(var(--r) * -0.53) var(--magenta),
+    calc(var(--r) * 0.65) calc(var(--r) * -0.375) var(--magenta),
+    calc(var(--r) * 0.724) calc(var(--r) * -0.194) var(--magenta),
+    calc(var(--r) * 0.5) calc(var(--r) * 0.0) var(--magenta),
+    calc(var(--r) * 0.462) calc(var(--r) * 0.191) var(--magenta),
+    calc(var(--r) * 0.354) calc(var(--r) * 0.354) var(--magenta),
+    calc(var(--r) * 0.191) calc(var(--r) * 0.462) var(--magenta),
+    calc(var(--r) * 0.0) calc(var(--r) * 0.5) var(--magenta),
+    calc(var(--r) * -0.191) calc(var(--r) * 0.462) var(--magenta),
+    calc(var(--r) * -0.354) calc(var(--r) * 0.354) var(--magenta),
+    calc(var(--r) * -0.462) calc(var(--r) * 0.191) var(--magenta),
+    calc(var(--r) * -0.5) calc(var(--r) * 0.0) var(--magenta),
+    calc(var(--r) * -0.462) calc(var(--r) * -0.191) var(--magenta),
+    calc(var(--r) * -0.354) calc(var(--r) * -0.354) var(--magenta),
+    calc(var(--r) * -0.191) calc(var(--r) * -0.462) var(--magenta),
+    calc(var(--r) * -0.0) calc(var(--r) * -0.5) var(--magenta),
+    calc(var(--r) * 0.191) calc(var(--r) * -0.462) var(--magenta),
+    calc(var(--r) * 0.354) calc(var(--r) * -0.354) var(--magenta),
+    calc(var(--r) * 0.462) calc(var(--r) * -0.191) var(--magenta),
+    calc(var(--r) * 0.25) calc(var(--r) * 0.0) var(--magenta),
+    calc(var(--r) * 0.177) calc(var(--r) * 0.177) var(--magenta),
+    calc(var(--r) * 0.0) calc(var(--r) * 0.25) var(--magenta),
+    calc(var(--r) * -0.177) calc(var(--r) * 0.177) var(--magenta),
+    calc(var(--r) * -0.25) calc(var(--r) * 0.0) var(--magenta),
+    calc(var(--r) * -0.177) calc(var(--r) * -0.177) var(--magenta),
+    calc(var(--r) * -0.0) calc(var(--r) * -0.25) var(--magenta),
+    calc(var(--r) * 0.177) calc(var(--r) * -0.177) var(--magenta);
+}
+.by-cam-tag span { display: block; position: relative; font-size: inherit; text-box: trim-both cap alphabetic; }
+.by-cam-tag span::before { content: attr(data-text); position: absolute; inset: 0; z-index: -1; color: transparent; text-shadow: var(--ground); text-box: trim-both cap alphabetic; }
+.by-cam-tag .serif { letter-spacing: -.01em; }
+
+/* ----- level up: "it's time to step up" in a clock face, over two stairs of LEVEL UP tags turned on
+   their side and running off the page's edges; the right stair is the left one in a mirror, its words
+   reading up the page where the left's read down. A black band 372 above and below (Figma's spacers)
+   round a middle a screen tall (pinned while its eight levels are stepped through): the stairs as wide
+   as the page's design pixel makes them, cut at the middle's top and foot, and the clock as big as fits */
+.level {
+  --lu: var(--px);                                     /* the band's own design pixel: the page's, bigger on a phone */
+  --face: min(1117 * var(--lu), 100svh - 2 * 24px);    /* the clock's size: Figma's, or the screen's height less a margin */
+  position: relative; height: calc(100svh + 2 * var(--spacer)); padding-block: var(--spacer); overflow: clip; isolation: isolate;
+  display: flex; align-items: center; justify-content: center;
+}
+/* Level up, until its middle is reached, in its colours turned about (a magenta ground going on from
+   By Lavi's, spacers and all, black tags): a magenta layer over it in difference, which motion.js
+   flipper takes away along a dithered front, the page's one turn */
+.level-flip { position: absolute; left: 0; top: 0; z-index: 5; image-rendering: pixelated; pointer-events: none; mix-blend-mode: difference; }
+/* the clock: a hairline face as tall as the band's middle, its hand a dot. It lies over the stairs in
+   difference, so it is the magenta on black and turns black where it crosses a tag */
+.level-clock { position: absolute; z-index: 1; left: 50%; top: 50%; width: var(--face); height: var(--face); transform: translate(-50%, -50%); overflow: visible; mix-blend-mode: difference; pointer-events: none; }
+.level-stack { position: relative; flex: none; width: calc(670.2942 * var(--lu)); height: 100svh; overflow: clip; }
+/* the stair as Figma builds it, a column 1117 wide with the tags growing down it, turned a quarter.
+   Every tag is the biggest one at a scale: each tier is three quarters of the next, so the stair is
+   one series and motion.js can run it on and on, every tag stepping in to the tier above it. --y is a
+   tag's top down the column and --k its scale. The column clips them: a tag goes out of sight past
+   its inner end, and the one stepping in at the page's edge (taller than the stair until it is in)
+   keeps to the stair's 1117 */
+.level-col {
+  position: absolute; left: 50%; top: 50%; width: max(calc(1117 * var(--lu)), 100svh); height: calc(670.2942 * var(--lu));
+  overflow: clip; transform: translate(-50%, -50%) rotate(90deg);
+}
+.mirrored .level-col { transform: translate(-50%, -50%) rotate(90deg) scaleY(-1); }
+/* the right stair's tags are the left's in a mirror, but their words turned back to read up the page */
+.mirrored .level-tag span { transform: scaleX(-1); }
+.level-tag {
+  position: absolute; left: 50%; top: 0; transform-origin: 50% 0;
+  transform: translateX(-50%) translateY(calc(var(--y) * var(--lu))) scale(var(--k));
+  display: flex; justify-content: center; padding: calc(32.237 * var(--lu));
+  background: var(--magenta); color: #000;
+  font-family: "PP Neue World", serif; font-weight: 200; font-size: calc(257.893 * var(--lu)); line-height: 1; white-space: nowrap;
+}
+.level-tag span { text-box: trim-both cap alphabetic; }
+.level-mid { position: relative; flex: none; width: calc(387.4116 * var(--lu)); display: flex; flex-direction: column; align-items: center; gap: calc(24 * var(--lu)); }
+.level-time { text-align: center; font-size: calc(40 * var(--lu)); line-height: 1; letter-spacing: -.04em; }
+/* the course as eight levels round the clock (motion.js levelUp): a mark and a name at each eighth,
+   the hand stepping from one to the next with the stair, the arc behind it the levels done, and the
+   level it is on named under "it's time" */
+.level-mark line { stroke: #c239c7; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.level-mark text { fill: #c239c7; font: 400 22px "ABC Areal", sans-serif; text-transform: uppercase; letter-spacing: -.02em; opacity: .45; transition: opacity .4s; }
+.level-mark.on text { opacity: 1; }
+.level-now { font-size: calc(20 * var(--lu)); line-height: 1; letter-spacing: -.02em; white-space: nowrap; }
+.level-now .serif { letter-spacing: -.01em; }
+.level-now span { display: inline-block; }
+
+/* ----- price ----- */
+.price { position: relative; padding-block: var(--section) calc(368 * var(--px)); row-gap: calc(24 * var(--px)); align-content: start; }   /* Figma's Frame 21: 1313 tall, its small type 32 under the title */
+/* the price's and the footer's rules, as Figma's Frames 21 and 22 have them (motion.js pageRules):
+   hairlines across the page, broken round the letters' ink; the price's small type stands on theirs */
+/* every drawn rule a whole number of the screen's pixels thick (--hair, motion.js: 1px, or the nearest
+   whole number of device pixels to it on a screen of 1.25 or 1.5), on a whole device pixel, so they
+   are all as thick as each other */
+.page-rules { position: absolute; inset: 0; pointer-events: none; }
+.page-rules div { position: absolute; left: 0; right: 0; height: var(--hair, 1px); }
+.page-rules i { position: absolute; top: 0; height: var(--hair, 1px); background: var(--magenta); }
+.price h2 { display: contents; }
+.price h2 > .line { align-self: end; }
+.price-dollars { grid-column: 2 / span 2; grid-row: 1; letter-spacing: -.01em; }
+.price-worth { grid-column: 4 / -1; grid-row: 1; }
+.price-every { grid-column: 5 / span 4; grid-row: 2; }
+.price-dong { grid-column: 9 / span 4; grid-row: 2; }
+.price-first, .price-fund, .price-year { grid-row: 3; margin-top: calc(8 * var(--px)); font-size: var(--f20); letter-spacing: -.05em; }
+.price-first { grid-column: 1 / span 4; display: flex; flex-direction: column; align-items: flex-end; }
+.price-first p:not(:last-child) { width: 100%; }
+.price-first p:last-child { width: calc(412 * var(--tu)); }
+.price-fund { grid-column: 5 / span 5; display: grid; grid-template-columns: subgrid; }
+.price-fund > p:first-child { grid-column: 1 / -1; }
+.price-fund > p:nth-child(2) { grid-column: 2 / -1; }
+.price-fund ul { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+.price-fund li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: baseline; }
+.price-fund li .serif { text-align: right; letter-spacing: -.01em; line-height: 0; }   /* the (*) is taller than the line: kept out of its height, so every line is the grid's */
+.price-fund li span:last-child { grid-column: 2 / -1; }
+.price-year { grid-column: 11 / span 2; text-align: right; }
+/* what the course gives, set against what the money is for: on the right, a line under the year, its
+   lines level with the fund's, each led by a (→) as the fund's are by a (*) */
+.price-gets { grid-column: 10 / -1; grid-row: 3; margin-top: calc(8 * var(--px) + 1lh); font-size: var(--f20); letter-spacing: -.05em; }
+.price-gets li { display: grid; grid-template-columns: 2.4em 1fr; align-items: baseline; }
+.price-gets li .serif { letter-spacing: -.01em; line-height: 0; }
+/* the small type on one line grid, as By Lavi's syllabus and the footer's note: each line 1.2 of its
+   size and nothing between, so its baselines, in all three columns and stacked on a narrow screen
+   (whole lines apart there), are a line apart and its rules even (motion.js pageRules) */
+.price :is(.price-first, .price-fund, .price-year, .price-gets) { line-height: 1.2; }
+.price :is(.price-first, .price-fund, .price-gets) :is(p, li, span), .price .price-year { text-box: normal; }
+.price-label { grid-column: 4 / span 2; grid-row: 4; margin-top: calc(69 * var(--px)); font-size: var(--f20); letter-spacing: -.05em; }   /* on the old price's baseline, as Figma's box of 27 sets it */
+.price-tag { grid-column: 6 / span 6; grid-row: 4; margin-top: calc(56 * var(--px)); display: flex; flex-direction: column; gap: var(--gap); }
+.price-was { font-size: var(--f40); text-decoration: line-through; text-decoration-skip-ink: none; text-underline-position: from-font; }
+.price-terms { display: grid; grid-template-columns: calc(412 * var(--tu)) auto; column-gap: var(--gap); font-size: var(--f20); letter-spacing: -.05em; }
+.price-terms span:last-child { white-space: nowrap; }
+
+/* ----- the end ----- */
+/* Figma's footer frame keeps 240 above its title and 240 under its note, the page's end */
+.foot { position: relative; padding-block: var(--section) calc(240 * var(--px)); align-content: start; }
+.foot h2 {
+  grid-column: 1 / span 6; grid-row: 1;
+  display: flex; flex-direction: column; align-items: flex-end; gap: calc(24 * var(--px));
+}
+.foot h2 .line { width: 100%; }
+.foot h2 .serif { letter-spacing: -.01em; }
+.foot h2 .line:last-child { width: calc(555 * var(--px)); }
+.foot-media { grid-column: 9 / span 3; grid-row: 1; display: flex; flex-direction: column; gap: calc(32 * var(--px)); }
+/* the clip, dithered as the portrait is (dither.js draws each frame onto the canvas over it) */
+.foot-clip { position: relative; aspect-ratio: 412 / 308; }
+.foot-clip video, .foot-clip canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+.foot-clip canvas { image-rendering: pixelated; }
+.foot-clip:not(.dithered) canvas { visibility: hidden; }
+.foot-media figcaption { font-size: var(--f20); line-height: 1.2; letter-spacing: -.05em; }
+.foot-note, .foot-label { font-size: var(--f20); letter-spacing: -.05em; }
+/* Figma's Frame 22: the contacts 33 under the title (its row of links, the QR code 4 lower, "liên hệ
+   qua" on their baseline), then 32 under the QR code the note between a (*) and "made by lavi design
+   studio", all on the note's first line. --nudge (motion.js pageRules) lowers that last row by what
+   puts "liên hệ qua" a whole number of the note's lines over it, so the rules centre both */
+.foot-note { grid-column: 6 / span 3; grid-row: 3; line-height: 1.2; }
+.foot :is(.foot-mark, .foot-note, .foot-made) { margin-top: calc(32 * var(--px) + var(--nudge, 0px)); }
+.foot-mark { grid-column: 2; grid-row: 3; font-size: var(--f20); line-height: 1.2; letter-spacing: -.05em; }
+.foot-made { grid-column: 10 / -1; grid-row: 3; display: grid; grid-template-columns: subgrid; font-size: var(--f20); line-height: 1.2; letter-spacing: -.05em; }
+.foot-made .serif { grid-column: 2 / -1; letter-spacing: -.05em; }
+.foot-made > span { text-box: trim-both cap alphabetic; }   /* trimmed to the caps as the note and the (*) are, so the three start on one line */
+.foot-note span { display: block; }
+.foot-note span:nth-child(2) { padding-left: 3.35em; }   /* Figma's second line, set in 67 */
+/* "liên hệ qua" sits on the links' row, two columns to their left, 16 below their top */
+.foot-label { grid-column: 4 / span 2; grid-row: 2; align-self: start; margin-top: calc(46 * var(--px)); }
+.foot-links { grid-column: 6 / -1; grid-row: 2; margin-top: calc(33 * var(--px)); display: grid; grid-template-columns: subgrid; align-items: start; }
+.foot-links li { font-size: var(--f40); letter-spacing: -.05em; }
+.foot-links a { text-decoration: none; }
+.foot-links a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
+.foot-links li:nth-child(2) { grid-column: 2; }
+.foot-links li:nth-child(3) { grid-column: 4; }
+.foot-links li:nth-child(4) { grid-column: 5; margin-top: calc(3 * var(--px)); }
+.foot-links li.qr { margin-top: calc(4 * var(--px)); }
+.qr { position: relative; width: calc(126 * var(--px)); aspect-ratio: 1; }
+.qr-code { position: absolute; inset: 0; }
+.qr img { position: absolute; display: block; }
+.qr .field { inset: 0; width: 100%; height: 100%; }
+.qr .eye { width: 21.212%; }
+.qr .pupil { width: 9.091%; }
+
+/* ----- phones and narrow windows: the columns stack ----- */
+@media (max-width: 899px) {
+  main > * {
+    --gap: 16px;
+    --f16: 12px; --f20: 13px; --f40: 22px;
+    --f160: 15.5cqi;
+    --section: 96px;
+    --spacer: 96px;
+  }
+  .grid { display: flex; flex-direction: column; padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+  .hero-promise, .by-note div { gap: 8px; }
+  .by-exp { row-gap: 8px; }
+  .hero { padding-bottom: 16px; display: flex; flex-direction: column; }
+  .hero-bar { position: static; margin-top: max(16px, env(safe-area-inset-top, 0px)); }
+  .hero-scroll { bottom: calc(16px + 100lvh - 100svh); }
+  .hero-title { margin-top: 32px; gap: 10px; }
+  .hero-intro, .hero-refund, .hero-promise { margin-top: 32px; }
+  .hero-intro { gap: 5px; }
+  .hero-intro .c { text-align: left; padding-left: 2.4em; }   /* Figma's centred line, set in as the others are when the columns stack */
+  .hero-refund { margin-top: 20px; text-align: left; max-width: 18em; }
+  .hero-promise { width: 100%; align-items: stretch; margin-top: 20px; }
+  .stack > * { margin-left: 0; margin-top: 0; width: auto; }
+  .stack > .pre { margin-left: 2.4em; white-space: normal; }
+  .stack > .later { grid-area: 2 / 1; margin: 5px 0 0 2.4em; }
+  .fan-slot { width: 100%; margin-top: 24px; flex: 1 1 0; min-height: 0; }   /* the rest of the screen under the type */
+
+  .price, .foot { padding-block: var(--section); }
+  /* the band at the page's scale would be a strip on a phone: it is drawn about twice as big, the
+     clock and the stairs running off the screen's sides, "it's time" readable in the middle */
+  .level { --lu: calc(100vw / 860); }
+  /* the clock inside the screen's width, its ticks and all, less the page's margins (or its height),
+     its levels' names and its hand drawn bigger in it so they stay readable at that size */
+  .level { --face: min((100vw - 32px) * 1117 / 1152, 100svh - 48px); }
+  .level-mark text { font-size: 24px; }
+  .level-hand { r: 16px; }
+
+
+  .price { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 10px; }
+  .price-dollars { grid-column: 1; }
+  .price-worth { grid-column: 2; }
+  .price-every { grid-column: 1 / -1; grid-row: 2; }
+  .price-dong { grid-column: 1 / -1; grid-row: 3; justify-self: end; }
+  .price-first, .price-fund, .price-year, .price-gets, .price-label, .price-tag { grid-column: 1 / -1; grid-row: auto; margin-top: 0; }
+  .price-first { margin-top: 56px; align-items: flex-start; }
+  .price-first p:last-child { width: auto; padding-left: 2.4em; }
+  .price-fund { margin-top: calc(2lh - 10px); display: flex; flex-direction: column; }   /* two empty lines (less the row's gap) */
+  .price-fund > p:nth-child(2) { padding-left: 2.4em; }
+  .price-fund ul { display: flex; flex-direction: column; }
+  .price-fund li { display: grid; grid-template-columns: 2.4em 1fr; column-gap: 0; }
+  .price-fund li .serif { text-align: left; }
+  .price-year { margin-top: calc(2lh - 10px); text-align: left; }
+  .price-gets { margin-top: calc(2lh - 10px); }   /* under the fund, two empty lines between */
+  .price-label { margin-top: 56px; }
+  .price-tag { margin-top: 16px; gap: 12px; }
+  .price-terms { grid-template-columns: auto auto; justify-content: space-between; }
+
+  .foot { padding-bottom: max(var(--section), env(safe-area-inset-bottom, 0px)); }
+  .foot h2 { margin-top: 0; gap: 12px; }
+  .foot h2 .line:last-child { width: 62%; }
+  .foot-media { margin-top: 40px; gap: 12px; }
+  .foot-label { margin-top: 40px; }
+  .foot-links { margin-top: 20px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .foot-mark { display: none; }
+  .foot .foot-note { margin-top: calc(40px + var(--nudge, 0px)); max-width: 26em; }
+  .foot .foot-made { margin-top: 2lh; display: flex; gap: 1.2em; }
+  .qr { width: 96px; order: 1; }
+}
+/* a tablet held upright, as Figma's Tablet frames (768 wide) have it: the small type a size up; the
+   hero, By Lavi, the footer and the last print set out again in columns. In px, Figma's at 768 */
+@media (min-width: 600px) and (max-width: 899px) {
+  main > * { --f16: 13px; --f20: 14.5px; --f40: 24px; }
+
+  /* the hero: an 80px title, then its small type in three columns, the fan's picture under them */
+  .hero, .by { --f20: 14px; }
+  .hero :is(.hero-intro, .hero-refund, .hero-promise), .by :is(.by-side, .by-note, .by-ruled) { letter-spacing: -.07em; line-height: 1.2; font-weight: 400; }
+  /* Figma sets these lines whole, their leading kept (not trimmed to the caps) */
+  .hero-intro p, .hero-refund, .hero-promise .stack > :not(.num) { text-box: normal; }
+  br.tb { display: inline; }
+  .hero { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto auto minmax(0, 1fr); column-gap: 17px; padding-inline: 16px; }
+  .hero-bar { grid-column: 1 / -1; grid-row: 1; }
+  .hero-title, .by-head h2 { font-size: 80px; gap: 8px; letter-spacing: -.02em; }
+  .hero-title .serif, .by-head h2 .serif { letter-spacing: -.04em; }
+  .hero-title { grid-column: 1 / -1; grid-row: 2; margin-top: 32px; }
+  .hero-intro, .hero-refund, .hero-promise { grid-row: 3; margin-top: 48px; }
+  .hero-intro { grid-column: 1; gap: 4px; }
+  .hero-intro .c { text-align: center; padding-left: 0; }
+  .hero-refund { grid-column: 2; text-align: center; max-width: none; }
+  .hero-promise { grid-column: 3; width: auto; align-items: flex-end; gap: 8px; }
+  .hero-promise li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; width: 100%; }
+  .hero-promise li:first-child { width: 136px; }
+  .hero-promise .stack > * { grid-area: auto; margin: 0; width: auto; }
+  .hero-promise .stack > .pre { grid-column: 2; white-space: pre-wrap; }
+  .hero-promise .stack > .later { grid-column: 2; grid-row: 2; }
+  .fan-slot { grid-column: 1 / -1; grid-row: 4; margin-top: 24px; width: 100%; height: auto; flex: none; }
+
+  /* the footer: its links in four columns, the QR code third as on the desktop, and the page ending 16 under them */
+  .foot { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+  .foot-links { display: grid; grid-template-columns: repeat(4, 109px); column-gap: 16px; align-items: start; gap: 0 16px; }
+  .qr { order: 0; }
+}
+/* a phone, after the tablet: the same type (a 48px title, 16px small type to read it by, with its
+   leading kept) and the same placing where a phone has room for it: the hero's intro, then its refund
+   centred, then the promises right, one under the other; By Lavi's right column (credits, portrait, note) right-aligned above
+   the syllabus; the footer's links in four columns, the QR code third */
+@media (max-width: 599px) {
+  .level-mark text { font-size: 34px; }   /* the clock's names, about 10px on a phone */
+  .level-hand { r: 22px; }
+  .level-time { font-size: 28px; }
+  .level-now { font-size: 16px; }
+  main > *, .hero, .by { --f16: 16px; --f20: 16px; }
+  .hero :is(.hero-intro, .hero-refund, .hero-promise), .by :is(.by-side, .by-note, .by-ruled) { letter-spacing: -.07em; line-height: 1.2; font-weight: 400; }
+  .hero-intro p, .hero-refund, .hero-promise .stack > :not(.num) { text-box: normal; }
+  br.tb { display: inline; }
+  .hero-title, .by-head h2 { font-size: 48px; gap: 6px; letter-spacing: -.02em; }
+  .hero-title .serif, .by-head h2 .serif { letter-spacing: -.04em; }
+
+  .hero { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto auto auto minmax(0, 1fr); column-gap: 17px; padding-inline: 16px; }
+  .hero-bar { grid-column: 1 / -1; grid-row: 1; }
+  .hero-title { grid-column: 1 / -1; grid-row: 2; margin-top: 32px; }
+  .hero-intro { grid-column: 1 / -1; grid-row: 3; margin-top: 32px; gap: 4px; }   /* across the screen, at 16px */
+  .hero-intro .c { text-align: center; padding-left: 0; }
+  .hero-refund { grid-column: 1 / -1; grid-row: 4; justify-self: center; margin-top: 20px; text-align: center; max-width: none; }
+  .hero-promise { grid-column: 1 / -1; grid-row: 5; justify-self: end; margin-top: 20px; width: min(100%, 300px); align-items: flex-end; gap: 8px; }
+  .hero-promise li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; width: 100%; }
+  .hero-promise li:first-child { width: 100%; }
+  .hero-promise .stack > * { grid-area: auto; margin: 0; width: auto; }
+  .hero-promise .stack > .pre { grid-column: 2; white-space: pre-wrap; }
+  .hero-promise .stack > .later { grid-column: 2; grid-row: 2; }
+  .fan-slot { grid-column: 1 / -1; grid-row: 6; margin-top: 24px; width: 100%; height: auto; flex: none; }
+
+
+  /* the price on the phone's four columns: the title keeps its own two-column setting; "11 (2026)"
+     sits on "lần đầu mở lớp"'s row, against the right edge */
+  .price { grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 16px; }
+  .price h2 { grid-column: 1 / -1; grid-row: 1; display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 10px; }
+  .price-first { grid-column: 1 / -1; grid-row: 2; }   /* "11 (2026)" on its first line's right */
+  .price-year { grid-column: 3 / -1; grid-row: 2; margin-top: 56px; justify-self: end; text-align: right; }
+  .price-fund { grid-row: 3; }
+  .price-gets { grid-row: 4; }
+  .price-label { grid-row: 5; }
+  .price-tag { grid-row: 6; }
+
+  .foot { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+  .foot-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 16px; align-items: start; }
+  .qr { order: 0; width: 100%; }
+}
+/* ----- motion (motion.js) ----- */
+.intro :is(.hero-bar, .hero-title, .hero-intro, .hero-refund, .hero-promise, .hero-scroll, .fan-stage, .hero-rules) { visibility: hidden; }
+/* a display line rises through its own box, cut off below; not at its baseline (the box is trimmed to
+   it) but .3em under it, where the deepest ink ends: the brackets and braces reach .26em below */
+.line.masked { clip-path: inset(-.5em -.5em -.3em -.5em); }
+.line .rise { display: block; text-box: trim-both cap alphabetic; }
+/* G: Figma's layout grid over the whole page, magenta on black and black on magenta */
+.grid-overlay {
+  --px: calc(var(--w, 100vw) / 1728); --gap: calc(16 * var(--px));
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap); padding-inline: var(--gap); pointer-events: none;
+  position: fixed; inset: 0 auto 0 0; width: var(--w, 100vw); z-index: 30;
+  mix-blend-mode: difference; opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s;
+}
+/* hidden, not just clear, while off: a full-screen blend layer costs every frame even at opacity 0 */
+/* a block of text rising into view from its own foot (motion.js reveal): lowered by its height times
+   1 - --rv and cut off below where its foot is */
+.rv { transform: translateY(calc((1 - var(--rv, 1)) * 100%)); clip-path: inset(-.4em -.4em calc((1 - var(--rv, 1)) * (100% + .3em) - .3em) -.4em); }
+/* (cut off .3em under the box at rest, not at its foot: the boxes are trimmed to the baseline, and the
+   dots under ạ, ộ, ụ reach below it; at the start it still cuts the whole box away) */
+/* the type as the page scrolls fast (motion.js warp): it stays whole, and what slips out from under it is
+   a copy of it (v-ghost, one over each box of plain text, its own padding and trim so its lines fall where
+   the box's do), in the dark magenta, offset either way along the scroll and broken into the page's dither
+   (a Bayer mask, its cells 2px), behind the type. The boxes are trimmed to the caps, so the slip reaches
+   past them: the mask is not clipped to the box (no-clip); where a browser can't do that the slip is left
+   solid rather than cut */
+v-ghost { display: none; }
+.warp v-ghost {
+  display: block; position: absolute; inset: 0; z-index: -1; padding: inherit; text-box: inherit;
+  pointer-events: none; user-select: none;
+  color: #611c63; -webkit-text-fill-color: #611c63;
+  translate: 0 calc(var(--split, 0) * 1px); text-shadow: 0 calc(var(--split, 0) * -2px) #611c63;
+}
+v-ghost * { color: inherit !important; -webkit-text-fill-color: currentColor; }
+v-ghost :is(img, svg, video, canvas) { visibility: hidden; }
+@supports (mask-clip: no-clip) {
+  .warp v-ghost { mask: var(--dither) 0 0 / var(--dither-size) repeat no-clip; }
+}
+.grid-overlay.on { opacity: 1; visibility: visible; transition-delay: 0s; }
+.grid-overlay span { background: rgba(194, 57, 199, .12); box-shadow: inset 1px 0 0 var(--magenta), inset -1px 0 0 var(--magenta); }
+.price-was.drawn { text-decoration: none; }
+.price-was .amount { position: relative; display: inline-block; text-box: trim-both cap alphabetic; }
+.price-was .strike { position: absolute; left: 0; right: 0; top: 50%; height: max(1px, .03em); background: currentColor; }
+.roll { position: relative; }
+.roll-final { visibility: hidden; }
+.roll-win { position: absolute; left: 0; top: 0; height: var(--cell); clip-path: inset(var(--cap-top, 0) -20% calc(var(--cell) - var(--cap-top, 0) - var(--cap-h, var(--cell))) -20%); }
+.roll-col, .roll-col span { display: block; }
+.roll-col span { height: var(--cell); line-height: var(--cell); }
+.roll.done .roll-final { visibility: visible; }
+.roll.done .roll-win { display: none; }
+/* By Lavi below 900: one column. The title, the session's length, the syllabus on its ruled lines
+   across the screen, the strip as a band with the quote running along it, then the credits, the
+   portrait and the note, and the picture frame with the class's name (side by side on a tablet) */
+@media (max-width: 899px) {
+  .by { padding: 96px 0 32px; }
+  .by-frame { display: flex; flex-direction: column; padding-inline: 16px; }
+  .by-left, .by-right { display: flex; flex-direction: column; }
+  .by-time::after { left: -16px; right: -16px; }
+  .by-head { padding: 24px 0 0; }
+  .by-time { display: flex; justify-content: space-between; padding: 16px 0 12px; font-size: 24px; letter-spacing: -.02em; }
+  .by-ruled { display: grid; grid-template-columns: 2.4em 1fr; column-gap: 8px; }
+  .by-label { grid-column: 1 / -1; }
+  .by-syllabus { grid-column: 1 / -1; }
+  .by-syllabus li { grid-template-columns: 2.4em 1fr; column-gap: 8px; }
+  /* the syllabus is long and its type small here: a looser line and looser letters to read it by (the
+     rules follow it, a line apart, each line centred between two), and the (1)...(8) kept out of the
+     lines' height so every line is the rules' pitch */
+  .by .by-ruled { line-height: 1.6; letter-spacing: -.02em; }
+  .by-syllabus .serif { line-height: 0; }
+  .by-strip { margin-inline: -16px; height: 48px; }
+  .by-strip-run { left: 0; top: 50%; font-size: 24px; }
+  .by-right { padding-top: 40px; }
+  .by-side { margin-top: 0; padding-bottom: 32px; width: 100%; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 0; row-gap: 0; }
+  .by-made { grid-column: 1 / -1; grid-row: 1; }
+  .by-studio { grid-column: 1 / -1; grid-row: 1; justify-self: end; align-self: end; margin: 0; }
+  .by-years { grid-column: 2; grid-row: 2; margin: 6px 16px 0 0; font-size: 24px; }
+  .by-exp { grid-column: 3; grid-row: 2; margin-top: 6px; grid-template-columns: auto auto; column-gap: 17px; row-gap: 6px; align-self: start; }
+  .by-photo { grid-column: 1 / -1; grid-row: 3; margin-top: 20px; width: 100%; aspect-ratio: 235 / 325; }
+  .by-mark { grid-column: 1 / -1; grid-row: 4; justify-self: start; margin: 20px 0 0 -27px; }
+  .by-note { grid-column: 1 / -1; grid-row: 4; margin-top: 20px; gap: 16px; font-size: var(--f20); line-height: 1.2; }
+  .by-note div { gap: 8px; }
+  .by-cam { width: 300px; margin-top: 0; padding-bottom: 16px; align-self: center; }   /* the frame's rule clear of the name's ground, the braces' tails and all */
+  .by-cam-box { width: 252px; border-radius: 16px; }
+  .by-cam-tag { margin-top: -40px; gap: 6px; font-size: 29px; --r: 6px; }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  .by-right { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
+  .by-side { grid-column: 1; width: min(100% - 27px, 300px); margin-left: 27px; }   /* room for the (*) hung in the margin */
+  .by-cam { grid-column: 2; }
+}
+@media (max-width: 599px) {
+  .by-strip { height: 40px; }
+  .by-strip-run { font-size: 20px; }
+  .by-side { width: min(100%, 300px); align-self: flex-end; }
+  .by-cam { margin-top: 8px; }
+}
+/* measured as it rests: the scroll's reveal and its bend, and the titles' rise, are off while the rules
+   are laid (motion.js) */
+.measuring :is(.rv, .rv *, .rise) { transform: none !important; translate: none !important; clip-path: none !important; }
+
+/* every section's title set as the hero's, the page's standard: the same size (on a screen of the
+   Figma's shape 160, smaller where the screen is short for it, as the hero's own --px is the lesser of
+   the width's and the height's), 16 between its lines, Neue World at its own spacing and Migra italic
+   at -1%; on a tablet 80 with 8 between, on a phone 48 with 6 between, at -2% and -4% (the price's
+   title shares its section's grid, whose rows are 24 apart: its own lines are pulled up to 16; the
+   footer's has 24 between, 12 on a tablet, 7 on a phone, as Figma's Frame 22). The price under the
+   price's title is set at the title's size, so the two always match */
+@media (min-width: 900px) {
+  :is(.by-head h2, .price h2, .foot h2, .price-now) { --tpx: min(100cqi / 1728, 100svh / 1117); font-size: calc(160 * var(--tpx)); }
+  .by-head h2 { gap: calc(16 * var(--tpx)); }
+  .foot h2 { gap: calc(24 * var(--tpx)); }
+  /* the clip and its caption at the title's scale too, so they end on its last line as in Figma's
+     Frame 22 (380 tall, side by side) and the rules start 32 under both */
+  .foot-media { --tpx: min(100cqi / 1728, 100svh / 1117); justify-self: start; width: calc(412 * var(--tpx)); gap: calc(32 * var(--tpx)); }
+  .foot-media figcaption { font-size: max(12px, calc(20 * var(--tpx))); }
+  .price-every, .price-dong { margin-top: calc(16 * var(--tpx) - 24 * var(--px)); }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  :is(.price h2, .foot h2, .price-now) { font-size: 80px; letter-spacing: -.02em; }
+  :is(.price h2, .foot h2) .serif { letter-spacing: -.04em; }
+  .foot h2 { gap: 12px; }
+  .price-every, .price-dong { margin-top: -2px; }
+}
+@media (max-width: 599px) {
+  :is(.price h2, .foot h2, .price-now) { font-size: 48px; letter-spacing: -.02em; }
+  :is(.price h2, .foot h2) .serif { letter-spacing: -.04em; }
+  .foot h2 { gap: 7px; }
+  .price h2 { row-gap: 6px; }
+}
+
+/* the hero's small type on one line grid, as ruled paper (motion.js rules draws the rules between its
+   lines): every line a line-height apart, in every column and at every size; no gaps between the
+   paragraphs or the items (the later line is two lines down: 48 = 2 x 24, the 20px type's line), and
+   the blocks a phone stacks one empty line apart */
+.hero :is(.hero-intro p, .hero-refund, .hero-promise li, .hero-promise .stack > *) { text-box: normal; }
+.hero .hero-intro, .hero .hero-promise { gap: 0; }
+@media (max-width: 599px) { .hero .hero-refund, .hero .hero-promise { margin-top: 1.2em; } }
+/* on a phone the body text, all of it in ABC Areal, at -1%: the titles, the numbers and the serif
+   (Neue World, Migra) keep their own spacing */
+@media (max-width: 599px) {
+  :root main :is(p, li, span, a, figcaption, button):not(.serif, .serif *, .display, .display *, .num, h1 *, h2 *) { letter-spacing: -.01em; }
+}
+/* the item's number (another face) on its first line's baseline, not its own */
+.hero .hero-promise .stack > :is(.num, .pre) { align-self: baseline; }
+
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-stopped { overflow: clip; }

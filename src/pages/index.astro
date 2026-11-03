@@ -1,0 +1,38 @@
+---
+// The landing page, as the static one in visualizers-club-prototypes/landing has it: its markup
+// (src/partials/body.html, set as written: its type uses braces Astro would read as code), its styles
+// (src/styles/landing.css) and its scripts (src/scripts), bundled; GSAP, Lenis and three from npm,
+// where the static page took them from a CDN by an import map
+import '../styles/landing.css';
+import body from '../partials/body.html?raw';
+---
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Visualizers Club</title>
+<meta name="description" content="Khoá học về bố cục, chữ, màu và phân cấp thị giác. Chương trình được thực hiện bởi Lavi Design Studio.">
+<meta name="theme-color" content="#000000">
+<script is:inline>
+  // the page opens on the loader (#loader) and the hero waits for its intro (motion.js); if they never
+  // come, the page shows anyway. The loader starts at the top, so it can hand its pile to the hero
+  document.documentElement.classList.add('loading');
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('intro');
+  setTimeout(() => { document.documentElement.classList.remove('intro', 'loading'); document.getElementById('loader')?.remove(); }, 9000);
+</script>
+<link rel="preload" href="/fonts/PPNeueWorld-SemiExtendedUltralight.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/PPMigra-ExtralightItalic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/ABCAreal-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/ABCAreal-Medium.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+<body>
+<Fragment set:html={body} />
+<script>
+  import '../scripts/dither.js';
+  import '../scripts/fan.js';
+  import '../scripts/motion.js';
+</script>
+</body>
+</html>

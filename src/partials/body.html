@@ -1,0 +1,222 @@
+<!-- the loader: the students' twelve sites, each flying onto a pile as it arrives, counted -->
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader-row"><div class="loader-pile"></div><p class="loader-count">0%</p></div>
+</div>
+<script>
+  // the same pages, in the same order, as the fan's (fan.js WORKS); the browser keeps them for it.
+  // The counter runs on to 100% at a steady pace, never past the share of the sites that are in
+  (() => {
+    const files = ['dizai-1', 'freshspawn-1', 'surfclub-1', 'simons-1', 'dizai-2', 'freshspawn-2', 'surfclub-2', 'simons-2', 'dizai-3', 'freshspawn-3', 'surfclub-3', 'simons-3'];
+    const pile = document.querySelector('.loader-pile'), count = document.querySelector('.loader-count');
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let n = 0, shown = 0, done, last = performance.now();
+    window.loaderPile = new Promise(r => (done = r));
+    const tick = now => {
+      shown = Math.min(n / files.length * 100, shown + (now - last) * (still ? 1 : .06)); last = now;
+      count.textContent = `${Math.floor(shown)}%`;
+      if (shown >= 100) setTimeout(done, still ? 0 : 350); else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    const land = (img, k) => {
+      const card = document.createElement('div');
+      card.className = 'loader-card'; card.append(img); pile.append(card);
+      Object.assign(card.dataset, { k, r: 0, tx: 0, ty: 0 });    // which print it is, and how it lies on the stack
+      n++;
+      // popped up onto the stack, as GridFlow's loader grows its images in
+      if (!still) card.animate([{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(.16, 1, .3, 1)' });
+    };
+    // they land in the fan's order, each on the one before, the first at the bottom: a print waits for
+    // the ones before it, and lands a beat after the last at the soonest
+    const ready = files.map(f => {
+      const img = new Image();
+      img.src = `assets/fan/${f}.webp`; img.alt = '';
+      return img.decode().catch(() => {}).then(() => img);
+    });
+    ready.reduce((prev, p, k) => prev.then(() => p).then(img => { land(img, k); return new Promise(r => setTimeout(r, still ? 0 : 160)); }), Promise.resolve());
+  })();
+</script>
+<main>
+  <section class="fan" id="fan" aria-label="Bài của học viên">
+    <div class="fan-stage" id="fanStage">
+      <ul class="sr-only" id="fanList"></ul>
+      <a class="hero-scroll" href="#fanSlot">scroll</a>
+      <svg class="finale" id="finale" viewBox="0 0 1728 1117" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+    </div>
+
+    <header class="hero grid" id="hero">
+      <nav class="hero-bar" aria-label="Trang">
+        <p>© 2026</p>
+        <a href="#lien-he">đăng ký</a>
+      </nav>
+      <h1 class="hero-title display">
+        <span class="line">the</span>
+        <span class="line serif">Visualizers</span>
+        <span class="line">{*)CLUB(*}</span>
+      </h1>
+      <div class="hero-intro">
+        <p>thử thách bản thân</p>
+        <p>vượt lên chính mình</p>
+        <p class="c">làm design xinh</p>
+        <p class="pre">                  Người dạy có nhiều chiếc cúp trong lòng người hâm mộ &lt;3<br>( ai thì người dạy chưa biết)</p>
+      </div>
+      <p class="hero-refund">học không được <br class="tb">thì cũng không refund</p>
+      <ol class="hero-promise">
+        <li class="stack">
+          <span class="num">(1)</span>
+          <span class="line pre" style="--ml: 32; --w: 269">                  Khoá học về bố cục, chữ, màu và phân cấp thị giác.</span>
+        </li>
+        <li class="stack">
+          <span class="num">(2)</span>
+          <span class="line pre" style="--ml: 35; --w: 409">                  Học cách đưa ra quyết định thiết kế có lý do đằng sau.</span>
+          <span class="line later" style="--ml: 178; --mt: 48; --w: 269">(hoặc là thích thì làm)</span>
+        </li>
+      </ol>
+      <div class="fan-slot" id="fanSlot" aria-hidden="true"></div>
+    </header>
+  </section>
+
+  <section class="by" aria-labelledby="by-title">
+    <div class="by-frame grid">
+      <div class="by-left">
+        <div class="by-head">
+          <h2 class="display" id="by-title"><span class="line">by lavi</span><span class="line serif">(C)26</span></h2>
+        </div>
+        <p class="by-time serif"><span>( 45’) → ( 60’)</span><span>each session</span></p>
+        <div class="by-ruled">
+          <p class="by-label">nội dung</p>
+          <ol class="by-syllabus">
+            <li><span class="serif">(1)</span><span>ĐỌC VÀ PHÂN TÍCH BRIEF<br>CHẮT LỌC KEYWORD TỪ BRIEF<br>BIẾN KEYWORD THÀNH MOODBOARD<br>DÙNG MOODBOARD SAO CHO HIỆU QUẢ</span></li>
+            <li><span class="serif">(2)</span><span>VÌ SAO GRID QUAN TRỌNG<br>DỰNG GRID VÀ POWER LINE<br>DÙNG grid TẠO NHỊP VÀ TENSION<br>5 LỖI GRID THƯỜNG GẶP</span></li>
+            <li><span class="serif">(3)</span><span>CHỌN TYPEFACE PHÙ HỢP<br>PHÂN CẤP VÀ TƯƠNG PHẢN TRONG CHỮ<br>TẠO NHỊP BẰNG LẶP LẠI VÀ BIẾN THỂ<br>CÂN BẰNG TENSION VỚI SỰ LIỀN MẠCH</span></li>
+            <li><span class="serif">(4)</span><span>màu trên thiết kế<br>PHỐI MÀU THEO CONCEPT<br>Màu trong web tương tác</span></li>
+            <li><span class="serif">(5)</span><span>LÀM VIỆC VỚI CLAUDE<br>CHUẨN BỊ FILE FIGMA CHO AI<br>KIỂM TRA TRƯỚC KHI BÀN GIAO</span></li>
+            <li><span class="serif">(6)</span><span>DỰNG WEBSITE CÙNG CLAUDE<br>TỐI ƯU CHO TABLET VÀ MOBILE<br>các quy tắc về kỹ thuật cần biết</span></li>
+            <li><span class="serif">(7)</span><span>LÀM MOTION CÙNG CLAUDE<br>MÔ TẢ CHUYỂN ĐỘNG THEO CONCEPT<br>kiểm tra lại website (QA)<br>ĐƯA WEBSITE go live</span></li>
+            <li><span class="serif">(8)</span><span>CRITIQUE VÀ TỔNG KẾT<br>TRÌNH BÀY DỰ ÁN CÁ NHÂN<br>GÓP Ý THEO TIÊU CHÍ KHOÁ HỌC<br>HƯỚNG ĐI TIẾP SAU KHOÁ</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="by-strip">
+        <p class="sr-only">The highest honour is the one held in the fans’ hearts.</p>
+        <div class="by-strip-run serif" aria-hidden="true"></div>
+      </div>
+      <div class="by-right">
+        <div class="by-side">
+          <p class="by-made">chương trình được<br>thực hiện bởi</p>
+          <p class="by-studio">lavi design studio</p>
+          <p class="by-years serif">(10)</p>
+          <div class="by-exp">
+            <p>năm kinh nghiệm</p>
+            <p>làm →</p>
+            <p>website</p>
+          </div>
+          <figure class="by-photo">
+            <canvas id="laviDither" aria-hidden="true"></canvas>
+            <img src="/assets/lavi.webp" alt="Lavi, người dạy" id="laviPhoto" width="810" height="971" loading="lazy" decoding="async">
+          </figure>
+          <p class="by-mark">(*)</p>
+          <div class="by-note">
+            <p>khóa học này sẽ được thực hiện với các chuyên gia, không phải các em bé phải cầm tay chỉ việc</p>
+            <div>
+              <p>chuẩn bị</p>
+              <p>một tâm hồn thật đẹp<br>một trái tim háo hức<br>một khoản chi trả cho thầy</p>
+            </div>
+          </div>
+        </div>
+        <div class="by-cam">
+          <div class="by-cam-box">
+            <canvas aria-label="Ảnh của bạn, dither trong palette của lớp" role="img"></canvas>
+            <div class="by-cam-idle">
+              <button class="by-cam-btn" type="button" data-cam="pick">tải ảnh lên</button>
+              <p>hoặc kéo ảnh vào đây<br>ảnh chỉ xử lý trên máy bạn,<br>không gửi đi đâu</p>
+            </div>
+            <div class="by-cam-live">
+              <button class="by-cam-btn" type="button" data-cam="save">tải xuống</button>
+              <button class="by-cam-btn" type="button" data-cam="pick">đổi ảnh</button>
+            </div>
+            <input class="by-cam-file" type="file" accept="image/*" hidden>
+          </div>
+          <p class="by-cam-tag" aria-hidden="true"><span class="display" data-text="the">the</span><span class="serif" data-text="Visualizers">Visualizers</span><span class="display" data-text="{*)CLUB(*}">{*)CLUB(*}</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="level" aria-labelledby="level-title">
+    <canvas class="level-flip" aria-hidden="true"></canvas>
+    <svg class="level-clock" viewBox="0 0 1117 1117" aria-hidden="true"><circle cx="558.5" cy="558.5" r="558" fill="none" stroke="#c239c7" vector-effect="non-scaling-stroke"/><circle class="level-arc" cx="558.5" cy="558.5" r="558" fill="none" stroke="#c239c7" stroke-width="7" pathLength="1" stroke-dasharray="0 1" transform="rotate(-90 558.5 558.5)"/><g class="level-mark"><line x1="558.5" y1="18.5" x2="558.5" y2="-17.5"/><text x="558.5" y="82.5" text-anchor="middle">01 brief</text></g><g class="level-mark"><line x1="940.3" y1="176.7" x2="965.8" y2="151.2"/><text x="912.1" y="228.9" text-anchor="end">02 grid</text></g><g class="level-mark"><line x1="1098.5" y1="558.5" x2="1134.5" y2="558.5"/><text x="1058.5" y="566.5" text-anchor="end">03 chữ</text></g><g class="level-mark"><line x1="940.3" y1="940.3" x2="965.8" y2="965.8"/><text x="912.1" y="906.1" text-anchor="end">04 màu</text></g><g class="level-mark"><line x1="558.5" y1="1098.5" x2="558.5" y2="1134.5"/><text x="558.5" y="1052.5" text-anchor="middle">05 claude</text></g><g class="level-mark"><line x1="176.7" y1="940.3" x2="151.2" y2="965.8"/><text x="204.9" y="906.1" text-anchor="start">06 website</text></g><g class="level-mark"><line x1="18.5" y1="558.5" x2="-17.5" y2="558.5"/><text x="58.5" y="566.5" text-anchor="start">07 motion</text></g><g class="level-mark"><line x1="176.7" y1="176.7" x2="151.2" y2="151.2"/><text x="204.9" y="228.9" text-anchor="start">08 critique</text></g><circle class="level-hand" cx="558.5" cy="1" r="12" fill="#c239c7"/></svg>
+    <div class="level-stack" aria-hidden="true"><div class="level-col"><span class="level-tag" style="--y: -0.922; --k: 0.421875"><span>level up</span></span><span class="level-tag" style="--y: 102.637; --k: 0.5625"><span>level up</span></span><span class="level-tag" style="--y: 240.716; --k: 0.75"><span>level up</span></span><span class="level-tag" style="--y: 424.821; --k: 1.0"><span>level up</span></span><span class="level-tag" style="--y: 670.294; --k: 1.333333"><span>level up</span></span></div></div>
+    <div class="level-mid"><h2 class="level-time display" id="level-title"><span class="sr-only">Level up: </span>it’s time<br>to step up</h2><p class="level-now" aria-hidden="true"><span class="level-num">lv.01</span> · <span class="level-name serif">brief</span></p></div>
+    <div class="level-stack mirrored" aria-hidden="true"><div class="level-col"><span class="level-tag" style="--y: -0.922; --k: 0.421875"><span>level up</span></span><span class="level-tag" style="--y: 102.637; --k: 0.5625"><span>level up</span></span><span class="level-tag" style="--y: 240.716; --k: 0.75"><span>level up</span></span><span class="level-tag" style="--y: 424.821; --k: 1.0"><span>level up</span></span><span class="level-tag" style="--y: 670.294; --k: 1.333333"><span>level up</span></span></div></div>
+  </section>
+
+  <section class="price grid" id="hoc-phi" aria-labelledby="price-title">
+    <h2 class="display" id="price-title">
+      <span class="line serif price-dollars">($$)</span>
+      <span class="line price-worth">worth</span>
+      <span class="line price-every">every</span>
+      <span class="line price-dong">dong</span>
+    </h2>
+    <div class="price-first">
+      <p>lần đầu mở lớp</p>
+      <p>cũng có thể là lần cuối</p>
+      <p>của năm 2026</p>
+    </div>
+    <div class="price-fund">
+      <p>đóng góp vào quỹ nuôi thầy</p>
+      <p>số tiền này sẽ được dùng cho:</p>
+      <ul>
+        <li><span class="serif">(*)</span><span>nuôi 2 con heo lắm lông</span></li>
+        <li><span class="serif">(*)</span><span>nuôi thầy đớp 3 bữa</span></li>
+        <li><span class="serif">(*)</span><span>quỹ đi nhậu</span></li>
+        <li><span class="serif">(*)</span><span>tiền mua game</span></li>
+        <li><span class="serif">(*)</span><span>tiền mua fonts và graphic assets khác</span></li>
+        <li><span class="serif">(*)</span><span>mở rộng content cho học sinh</span></li>
+      </ul>
+    </div>
+    <p class="price-year">11 (2026)</p>
+    <div class="price-gets">
+      <p>đổi lại, bạn nhận được:</p>
+      <ul>
+        <li><span class="serif">(→)</span><span>1 website của bạn, đã go live</span></li>
+        <li><span class="serif">(→)</span><span>1 dự án trình bày trước lớp</span></li>
+        <li><span class="serif">(→)</span><span>góp ý theo tiêu chí khoá học</span></li>
+        <li><span class="serif">(→)</span><span>quy trình figma → claude → web</span></li>
+        <li><span class="serif">(→)</span><span>lớp 10 người, thầy theo sát</span></li>
+      </ul>
+    </div>
+    <p class="price-label">cái giá phải trả</p>
+    <div class="price-tag">
+      <p class="price-was serif"><span class="sr-only">Giá gốc </span>8.000.000đ</p>
+      <p class="price-now display"><span class="sr-only">Giá ưu đãi </span>5.000.000đ</p>
+      <p class="price-terms"><span>ưu đãi cho mùa đâu tiên</span><span>sĩ số lớp 10 em</span></p>
+    </div>
+  </section>
+
+  <footer class="foot grid" id="lien-he">
+    <h2 class="display"><span class="line">the</span><span class="line serif">Visualizers</span><span class="line">CLUB</span></h2>
+    <figure class="foot-media">
+      <div class="foot-clip"><video src="/assets/yeah-bwoi.mp4" poster="/assets/yeah-bwoi.webp" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video><canvas aria-hidden="true"></canvas></div>
+      <figcaption>các em thấy bài học<br>tôi thấy 5 triệu</figcaption>
+    </figure>
+    <p class="foot-label">liên hệ qua</p>
+    <ul class="foot-links serif">
+      <li><a href="https://www.facebook.com/Lavi.Designer" target="_blank" rel="noopener" aria-label="Facebook">(FB)</a></li>
+      <li><a href="https://www.instagram.com/lavi.uidesigner/" target="_blank" rel="noopener" aria-label="Instagram">(IG)</a></li>
+      <li class="qr"><div class="qr-code" role="img" aria-label="Mã QR liên hệ">
+        <img class="field" src="/assets/qr-1.svg" alt="">
+        <img class="eye" src="/assets/qr-2.svg" alt="" style="left: 0; top: 0">
+        <img class="pupil" src="/assets/qr-3.svg" alt="" style="left: 6.0605%; top: 6.0605%">
+        <img class="eye" src="/assets/qr-4.svg" alt="" style="left: 78.788%; top: 0">
+        <img class="pupil" src="/assets/qr-5.svg" alt="" style="left: 84.848%; top: 6.0605%">
+        <img class="eye" src="/assets/qr-6.svg" alt="" style="left: 0; top: 78.788%">
+        <img class="pupil" src="/assets/qr-7.svg" alt="" style="left: 6.0605%; top: 84.848%">
+      </div></li>
+      <li><a href="https://discord.gg/PnndZMQuf" target="_blank" rel="noopener" aria-label="Discord">(DC)</a></li>
+    </ul>
+    <p class="foot-mark serif" aria-hidden="true">(*)</p>
+    <p class="foot-note"><span>sản phẩm này không phải là thuốc,</span> <span>không có tác dụng nếu bạn</span> <span>không chịu khó học bài</span></p>
+    <p class="foot-made"><span>made by</span><span class="serif">lavi design studio</span></p>
+  </footer>
+</main>

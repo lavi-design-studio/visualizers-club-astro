@@ -1,0 +1,20 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="11.4548" height="11.4544" viewBox="0 0 11.4548 11.4544" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Clip path group">
+<mask id="mask0_0_4" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="12" height="12">
+<g id="clip-path-corners-dot-color-0-1-0">
+<path id="Vector" d="M3.81818 0H0V3.81818H3.81818V0Z" fill="white"/>
+<path id="Vector_2" d="M7.63628 0H3.8181V3.81818H7.63628V0Z" fill="white"/>
+<path id="Vector_3" d="M11.4548 0H7.63665V3.81818H11.4548V0Z" fill="white"/>
+<path id="Vector_4" d="M3.81818 3.8181H0V7.63628H3.81818V3.8181Z" fill="white"/>
+<path id="Vector_5" d="M7.63628 3.8181H3.8181V7.63628H7.63628V3.8181Z" fill="white"/>
+<path id="Vector_6" d="M11.4548 3.8181H7.63665V7.63628H11.4548V3.8181Z" fill="white"/>
+<path id="Vector_7" d="M3.81818 7.6362H0V11.4544H3.81818V7.6362Z" fill="white"/>
+<path id="Vector_8" d="M7.63628 7.6362H3.8181V11.4544H7.63628V7.6362Z" fill="white"/>
+<path id="Vector_9" d="M11.4548 7.6362H7.63665V11.4544H11.4548V7.6362Z" fill="white"/>
+</g>
+</mask>
+<g mask="url(#mask0_0_4)">
+<path id="Vector_10" d="M11.4541 0.000130208H-0.000455729V11.4547H11.4541V0.000130208Z" fill="#C239C7"/>
+</g>
+</g>
+</svg>

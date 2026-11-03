@@ -1,0 +1,35 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="26.7272" height="26.7272" viewBox="0 0 26.7272 26.7272" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Clip path group">
+<mask id="mask0_0_94" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="27" height="27">
+<g id="clip-path-corners-square-color-0-0-0">
+<path id="Vector" d="M3.81818 0H0V3.81818H3.81818V0Z" fill="white"/>
+<path id="Vector_2" d="M7.63628 0H3.8181V3.81818H7.63628V0Z" fill="white"/>
+<path id="Vector_3" d="M11.4544 0H7.6362V3.81818H11.4544V0Z" fill="white"/>
+<path id="Vector_4" d="M15.2725 0H11.4543V3.81818H15.2725V0Z" fill="white"/>
+<path id="Vector_5" d="M19.091 0H15.2729V3.81818H19.091V0Z" fill="white"/>
+<path id="Vector_6" d="M22.9091 0H19.091V3.81818H22.9091V0Z" fill="white"/>
+<path id="Vector_7" d="M26.7272 0H22.909V3.81818H26.7272V0Z" fill="white"/>
+<path id="Vector_8" d="M3.81818 3.8181H0V7.63628H3.81818V3.8181Z" fill="white"/>
+<path id="Vector_9" d="M26.7272 3.8181H22.909V7.63628H26.7272V3.8181Z" fill="white"/>
+<path id="Vector_10" d="M3.81818 7.6362H0V11.4544H3.81818V7.6362Z" fill="white"/>
+<path id="Vector_11" d="M26.7272 7.6362H22.909V11.4544H26.7272V7.6362Z" fill="white"/>
+<path id="Vector_12" d="M3.81818 11.4543H0V15.2725H3.81818V11.4543Z" fill="white"/>
+<path id="Vector_13" d="M26.7272 11.4543H22.909V15.2725H26.7272V11.4543Z" fill="white"/>
+<path id="Vector_14" d="M3.81818 15.2729H0V19.091H3.81818V15.2729Z" fill="white"/>
+<path id="Vector_15" d="M26.7272 15.2729H22.909V19.091H26.7272V15.2729Z" fill="white"/>
+<path id="Vector_16" d="M3.81818 19.091H0V22.9091H3.81818V19.091Z" fill="white"/>
+<path id="Vector_17" d="M26.7272 19.091H22.909V22.9091H26.7272V19.091Z" fill="white"/>
+<path id="Vector_18" d="M3.81818 22.909H0V26.7272H3.81818V22.909Z" fill="white"/>
+<path id="Vector_19" d="M7.63628 22.909H3.8181V26.7272H7.63628V22.909Z" fill="white"/>
+<path id="Vector_20" d="M11.4544 22.909H7.6362V26.7272H11.4544V22.909Z" fill="white"/>
+<path id="Vector_21" d="M15.2725 22.909H11.4543V26.7272H15.2725V22.909Z" fill="white"/>
+<path id="Vector_22" d="M19.091 22.909H15.2729V26.7272H19.091V22.909Z" fill="white"/>
+<path id="Vector_23" d="M22.9091 22.909H19.091V26.7272H22.9091V22.909Z" fill="white"/>
+<path id="Vector_24" d="M26.7272 22.909H22.909V26.7272H26.7272V22.909Z" fill="white"/>
+</g>
+</mask>
+<g mask="url(#mask0_0_94)">
+<path id="Vector_25" d="M26.7272 0H0V26.7272H26.7272V0Z" fill="#C239C7"/>
+</g>
+</g>
+</svg>
