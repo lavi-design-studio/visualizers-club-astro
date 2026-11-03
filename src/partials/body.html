@@ -35,12 +35,19 @@
     // the ones before it, and lands a beat after the last at the soonest
     // on a phone screen the 800-across copies (assets/fan/sm), which fan.js and ring.js take there too
     const small = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
-    const ready = files.map(f => {
-      const img = new Image();
-      img.src = `assets/fan/${small}${f}.webp`; img.alt = '';
-      return img.decode().catch(() => {}).then(() => img);
-    });
-    ready.reduce((prev, p, k) => prev.then(() => p).then(img => { land(img, k); return new Promise(r => setTimeout(r, still ? 0 : 160)); }), Promise.resolve());
+    // fetched once the scripts are in (fan.js asks, as it starts on the same pictures), so on a slow
+    // line the scripts are not kept waiting behind them; after five seconds whatever happens
+    let pileUp = () => {
+      pileUp = () => {};
+      const ready = files.map(f => {
+        const img = new Image();
+        img.src = `assets/fan/${small}${f}.webp`; img.alt = '';
+        return img.decode().catch(() => {}).then(() => img);
+      });
+      ready.reduce((prev, p, k) => prev.then(() => p).then(img => { land(img, k); return new Promise(r => setTimeout(r, still ? 0 : 160)); }), Promise.resolve());
+    };
+    window.pileUp = () => pileUp();
+    setTimeout(window.pileUp, 5000);
   })();
 </script>
 <main>

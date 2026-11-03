@@ -25,6 +25,7 @@ const PHONE = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
 // every page is decoded before the fan is built, off the main thread, into a bitmap held rows top
 // down (the shader reads it that way up), so handing it to the GPU is a copy and no frame waits on a
 // decode; where createImageBitmap can't, an image decoded ahead
+window.pileUp?.();                                  // the loader's pile, fetched from here on (index.html)
 const pages = await Promise.all(WORKS.map(async ([file]) => {
   const url = `${import.meta.env.BASE_URL}assets/fan/${PHONE}${file}.webp`;   // public/assets
   try { return await createImageBitmap(await (await fetch(url)).blob()); } catch {}
