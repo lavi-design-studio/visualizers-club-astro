@@ -194,6 +194,34 @@ function inkOf(els, origin, skip = () => false, only = '') {
   return { lines: lines.sort((a, b) => a.mid - b.mid), ink };
 }
 inkOf.LINES = 'lines';
+// the letters the rules break round, measured ahead under the loader, a few elements a task (glyph
+// keeps them), so the rules' own measures are quick: every run of type byRules, pageRules and rules read
+const INKED = [RULED, '.by-label, .by-syllabus li > *, .by-note div p:last-child',
+  '.price-first p, .price-fund p, .price-fund li > :last-child, .price-year, .price-gets p, .price-gets li > :last-child',
+  '.foot h2 .line, .foot-media figcaption, .foot-note, .foot-note span, .foot-label, .foot-links a, .foot-mark, .foot-made > span'].join(', ');
+async function warmGlyphs(pause) {
+  let t = performance.now();
+  for (const el of $$(INKED)) {
+    const cs = getComputedStyle(el), font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`, up = cs.textTransform === 'uppercase';
+    for (const ch of 'HẨỌ' + el.textContent) {
+      if (ch.trim()) glyph(font, up ? ch.toUpperCase() : ch);
+      if (performance.now() - t > 8) { await pause(); t = performance.now(); }
+    }
+  }
+}
+// inkOf a few elements a task (pause as byRules takes it; without it, one call), the same as one call
+async function inkOfSliced(els, origin, skip, only, pause) {
+  if (!pause) return inkOf(els, origin, skip, only);
+  const lines = [], ink = [];
+  let t = performance.now();
+  for (const el of els) {
+    const r = inkOf([el], origin, skip, only);
+    for (const l of r.lines) if (!lines.some(m => Math.abs(m.base - l.base) < 1)) lines.push(l);
+    ink.push(...r.ink);
+    if (performance.now() - t > 8) { await pause(); t = performance.now(); }
+  }
+  return { lines: lines.sort((a, b) => a.mid - b.mid), ink };
+}
 // hairlines at ys across left to right, in box, each broken round the ink of every letter it would run
 // through, a little either side of it, as text-decoration-skip-ink does: no mark is ever crossed
 // (each on a whole device pixel of the page, not of its box, which may sit between two, and as thick
@@ -288,7 +316,7 @@ async function byRules(pause) {
   }
   if (pause) await pause();
   fr = frame.getBoundingClientRect();
-  const { ink } = inkOf(texts(), fr, num);
+  const { ink } = await inkOfSliced(texts(), fr, num, '', pause);
   const ys = [];
   for (let y = first + P; y < last - P / 2; y += P) ys.push(y);
   lay(box, ys, 0, narrow ? fr.width : stripEl.getBoundingClientRect().left - fr.left, ink);
@@ -330,7 +358,7 @@ async function pageRules(pause) {
     const small = $$('.price-first p, .price-fund p, .price-fund li > :last-child, .price-year, .price-gets p, .price-gets li > :last-child', sec);
     // the type is on one line grid (index.html): a rule half a line either side of each line's middle,
     // empty lines too, so they are evenly a line apart
-    const { lines, ink } = inkOf(small, sr);
+    const { lines, ink } = await inkOfSliced(small, sr, undefined, '', pause);
     if (lines.length) {
       const top = Math.min(...lines.map(l => l.marks)), end = Math.max(...lines.map(l => l.marks));
       const P = lines[0].pitch, n = Math.round((end - top) / P);
@@ -360,7 +388,7 @@ async function pageRules(pause) {
       do ys.unshift(ys[0] - P); while (ys[0] - P >= above + 5 * P / 6);
     }
     if (pause) await pause();
-    const { ink } = inkOf($$('h2 .line, .foot-media figcaption, .foot-note span, .foot-label, .foot-links a, .foot-mark, .foot-made > span', sec), sr);
+    const { ink } = await inkOfSliced($$('h2 .line, .foot-media figcaption, .foot-note span, .foot-label, .foot-links a, .foot-mark, .foot-made > span', sec), sr, undefined, '', pause);
     { const q = $('.qr', sec).getBoundingClientRect(); if (q.width) ink.push({ x0: q.left - sr.left, x1: q.right - sr.left, top: q.top - sr.top, bottom: q.bottom - sr.top, fs: 12 }); }   // the QR code broken round too
     tidy(lay(layer(sec), ys, 0, sr.width, ink));
   }
@@ -885,6 +913,7 @@ function flipper() {
     if (img && measure().join() === [unit, cell, W, H].join()) return;
     img = null; if (p >= 0) { const q = p; p = -1; draw(q); }
   }).observe(band);
+  draw.fit = fit;                                      // (the cells and their field made ahead, by levelUp)
   return draw;
 }
 
@@ -902,19 +931,21 @@ function flipper() {
 const LEVELS = ['brief', 'grid', 'chữ', 'màu', 'claude', 'website', 'motion', 'critique'];
 // masks of the page's dither, from none of a cell's pixels kept to all of them, a Bayer 4x4 tile each,
 // in device pixels (a cell about 2 CSS pixels before the tag's own scale); made as Level up is set up
+// (each a PNG made off the page's thread, toBlob, and used by its blob URL)
 let MASKS;
+const tileURL = c => new Promise(r => c.toBlob(b => r(`url(${URL.createObjectURL(b)})`)));
 const masksOf = () => {
   const m = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5], dpr = devicePixelRatio || 1, cell = Math.max(1, Math.round(2 * dpr));
-  return Array.from({ length: 17 }, (_, k) => {
+  return Promise.all(Array.from({ length: 17 }, async (_, k) => {
     const c = document.createElement('canvas'); c.width = c.height = 4 * cell;
     const g = c.getContext('2d');
     for (let i = 0; i < 16; i++) if (m[i] < k) g.fillRect((i % 4) * cell, (i >> 2) * cell, cell, cell);
-    return { url: `url(${c.toDataURL()})`, size: `${4 * cell / dpr}px` };
-  });
+    return { url: await tileURL(c), size: `${4 * cell / dpr}px` };
+  }));
 };
 // (pause as byRules takes it)
 async function levelUp(pause) {
-  MASKS = masksOf();
+  MASKS = await masksOf();
   if (pause) await pause();
   const R = .75, H = 245.4733, Y = 670.2942;
   const tags = $$('.level-col').map(col => $$('.level-tag', col));
@@ -961,6 +992,8 @@ async function levelUp(pause) {
   if (reduce) { set(8); turn(1); return; }
   set(0);
   if (pause) await pause();
+  turn.fit();
+  if (pause) await pause();
   turn(0);
   if (pause) await pause();
   // turned back by the scroll, as its middle comes up from half way down the screen to fill it
@@ -969,12 +1002,14 @@ async function levelUp(pause) {
     trigger: '.level', start: () => `top+=${pad()} center`, end: () => `top+=${pad()} top`, invalidateOnRefresh: true,
     onUpdate: st => turn(st.progress), onRefresh: st => turn(st.progress),
   });
+  if (pause) await pause();
   // pinned as its middle fills the screen: the eight levels, STEP screens of scrolling each; then it
   // lets go, the spacer under it coming up after
   ScrollTrigger.create({
     trigger: '.level', start: () => `top+=${pad()} top`, end: () => `+=${innerHeight * 8 * STEP}`, pin: true, invalidateOnRefresh: true,
     onUpdate: st => set(st.progress * 8),
   });
+  if (pause) await pause();
   // "it's time" comes up between them as the band scrolls in
   gsap.fromTo('.level-mid', { autoAlpha: 0, yPercent: 40 }, { autoAlpha: 1, yPercent: 0, ease: 'power2.out', scrollTrigger: { trigger: '.level', start: 'top 70%', end: 'center 55%', scrub: .6 } });
 }
@@ -1041,23 +1076,23 @@ function reveal() {
 }
 // the slip's dither: a 4x4 Bayer tile per density (a quarter of the cells to three quarters), kept
 // wherever the cell's threshold is under the density, as a mask; drawn in device pixels, a cell a whole
-/// number of them (about 2 CSS pixels), so the mask is never smoothed between cells; made as the slip is
+// number of them (about 2 CSS pixels), so the mask is never smoothed between cells; made as the slip is
 // set up
 let DITHER;
 const ditherOf = () => {
   const m = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
   const dpr = devicePixelRatio || 1, cell = Math.max(1, Math.round(2 * dpr));
   root.style.setProperty('--dither-size', `${4 * cell / dpr}px`);
-  return Array.from({ length: 9 }, (_, k) => {
+  return Promise.all(Array.from({ length: 9 }, (_, k) => {
     const d = .25 + k / 16, c = document.createElement('canvas'); c.width = c.height = 4 * cell;
     const g = c.getContext('2d');
     for (let i = 0; i < 16; i++) if ((m[i] + .5) / 16 < d) g.fillRect((i % 4) * cell, (i >> 2) * cell, cell, cell);
-    return `url(${c.toDataURL()})`;
-  });
+    return tileURL(c);
+  }));
 };
 // (pause as byRules takes it: the copies are made a few blocks a task)
 async function warp(lenis, pause) {
-  DITHER = ditherOf();
+  DITHER = await ditherOf();
   const els = [...new Set(WARP.flatMap(sel => $$(sel)))].filter(e => !e.matches('.by-photo, .by-cam'));
   let v = 0, on = false, level = -1;
   const lit = els.map(() => false), made = els.map(() => false);
@@ -1156,6 +1191,7 @@ async function start() {
   const pause = () => new Promise(r => setTimeout(r, 0));
   await loader(async fan => {
     await pause();
+    await warmGlyphs(pause); await pause();
     await byRules(pause); await pause();
     await pageRules(pause); await pause();
     strip(fan?.lenis);

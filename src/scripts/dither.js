@@ -104,9 +104,9 @@ ready.then(() => {
 const CLIP_BRIGHTNESS = 160;
 const clip = document.querySelector('.foot-clip video'), clipOut = document.querySelector('.foot-clip canvas');
 if (clip && clipOut) {
-  let size = [1, 1], seen = false;
-  const gpu = drawOnGPU(clipOut);
-  const frame = () => { (gpu || draw)(clipOut, clip, 1, ...size, CLIP_BRIGHTNESS); clipOut.parentElement.classList.add('dithered'); };
+  // (its WebGL made as the footer comes near, with the clip: a context is a long task to make)
+  let size = [1, 1], seen = false, gpu;
+  const frame = () => { if (gpu === undefined) return; (gpu || draw)(clipOut, clip, 1, ...size, CLIP_BRIGHTNESS); clipOut.parentElement.classList.add('dithered'); };
   const each = () => { if (seen) frame(); next(); };
   const next = () => (clip.requestVideoFrameCallback ? clip.requestVideoFrameCallback(each) : setTimeout(each, 100));
   new ResizeObserver(([e]) => { size = [e.contentRect.width, e.contentRect.height]; if (clip.readyState >= 2) frame(); }).observe(clipOut.parentElement);
@@ -116,7 +116,7 @@ if (clip && clipOut) {
   // so a phone's first load is not shared with it; still, only its first frame is fetched and shown)
   new IntersectionObserver(([e], io) => {
     if (!e.isIntersecting) return;
-    io.disconnect(); clip.preload = 'auto';
+    io.disconnect(); clip.preload = 'auto'; gpu = drawOnGPU(clipOut);
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) clip.load(); else clip.play().catch(() => {});
   }, { rootMargin: '1000px' }).observe(clipOut);
   next();

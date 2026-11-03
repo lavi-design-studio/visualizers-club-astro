@@ -19,7 +19,7 @@ const WORKS = [
   ['dizai-2', 'Dizai'], ['freshspawn-2', 'FreshSpawn'], ['surfclub-2', 'SurfClub'], ['simons-2', "Simon's"],
   ['dizai-3', 'Dizai'], ['freshspawn-3', 'FreshSpawn'], ['surfclub-3', 'SurfClub'], ['simons-3', "Simon's"],
 ];
-/// on a phone screen the pages are 800 across (assets/fan/sm), as the loader in index.html takes them
+// on a phone screen the pages are 800 across (assets/fan/sm), as the loader in index.html takes them
 // there, so the same files serve both and a phone loads half the bytes
 const PHONE = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
 // every page is decoded before the fan is built, off the main thread, into a bitmap held rows top
@@ -179,7 +179,7 @@ function build() {
   cards = Array.from({ length: N }, (_, k) => {
     let t;
     if (k < WORKS.length) t = new THREE.Texture(pages[k]);
-    else { lastCanvas = document.createElement('canvas'); lastCanvas.width = FX; lastCanvas.height = FY; layLast(stage.clientWidth, stage.clientHeight, true); t = new THREE.Texture(lastCanvas); }
+    else t = new THREE.Texture(lastCanvas);
     t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.flipY = false; t.needsUpdate = true;
     const m = new THREE.Mesh(geo, new THREE.ShaderMaterial({
       uniforms: { uMap: { value: t }, uFlat: { value: 0 }, uBend: { value: 0 }, uW: { value: CW }, uR0: { value: params.core }, uMid: { value: 0 } },
@@ -190,6 +190,9 @@ function build() {
   });
   hero = cards[N - 1];
 }
+// the last print drawn first, in a task of its own
+lastCanvas = document.createElement('canvas'); lastCanvas.width = FX; lastCanvas.height = FY; layLast(stage.clientWidth, stage.clientHeight, true);
+await new Promise(r => setTimeout(r, 0));
 build();
 // each print handed to the GPU in a task of its own, then the shader made (off the main thread where
 // the browser can), all before the first frame is drawn, so no frame waits on them
