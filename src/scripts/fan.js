@@ -571,8 +571,10 @@ const tick = (time, deltaMs) => {
     if ((dom === 1) !== (lastFinale === 1)) finaleEl.dispatchEvent(new CustomEvent('finale', { detail: dom === 1 }));
     finaleEl.style.opacity = lastFinale = dom;
   }
-  if (dom < 1) renderer.render(scene, camera);
+  drawn = dom < 1;
+  if (drawn) renderer.render(scene, camera);
 };
+let drawn = false;
 new IntersectionObserver(([e]) => {
   if (e.isIntersecting && !active) { lastSpin = null; pace.n = 0; }   // no spin kick, and no late frames, from the time it sat out
   active = e.isIntersecting;
@@ -611,4 +613,38 @@ export function quads() {
     const corners = [corner(0, 1), corner(1, 1), corner(1, 0), corner(0, 0)];
     return { corners, shade, behind };
   });
+}
+// and for the page's x-ray: each print's edge as drawn last frame (bent as the shader bends it, cut
+// where it passes behind the camera, in the viewport's pixels), its name, its picture's size, how far
+// it is from the camera, and whether its face or its back is seen. Nothing while the scene is not drawn
+const PAGES = [...WORKS.map(([, name], k) => [name, pages[k].naturalWidth, pages[k].naturalHeight]), ['You have enough love for design?', DW, DH]];
+export function outlines() {
+  if (!active || !drawn) return [];
+  const r = renderer.domElement.getBoundingClientRect(), sx = r.width / stageW, sy = r.height / stageH, NEAR = -camera.near * 1.01;
+  return cards.map((m, k) => {
+    const U = m.material.uniforms, mid = U.uMid.value * .5 * CW;
+    // the edge in the camera's space
+    const vs = EDGE.map(([fu, fv]) => {
+      const x = fu * CW, s = x - mid, kk = U.uBend.value * (1 + .4 * (fv - .5)) / CW, y = (fv - .5) * CH;
+      const p = new THREE.Vector3();
+      if (Math.abs(kk) > 1e-4) p.set(Math.sin(kk * s) / kk + mid, y, (1 - Math.cos(kk * s)) / kk); else p.set(x, y, 0);
+      p.x += U.uR0.value;
+      return p.applyMatrix4(m.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+    });
+    const depth = -vs.reduce((t, p) => t + p.z, 0) / vs.length;
+    // cut at the camera's near plane (a point behind it would project mirrored), then onto the screen
+    const cut = [];
+    vs.forEach((p, i) => {
+      const q = vs[(i + 1) % vs.length], pin = p.z <= NEAR, qin = q.z <= NEAR;
+      if (pin) cut.push(p);
+      if (pin !== qin) cut.push(p.clone().lerp(q, (NEAR - p.z) / (q.z - p.z)));
+    });
+    if (cut.length < 3) return null;
+    const pts = cut.map(p => { p.applyMatrix4(camera.projectionMatrix); return [r.left + (p.x + 1) / 2 * stageW * sx, r.top + (1 - p.y) / 2 * stageH * sy]; });
+    // the face is seen when the edge runs clockwise on the screen (the sheet's corners go top left, top right, ...)
+    let area = 0;
+    pts.forEach(([x0, y0], i) => { const [x1, y1] = pts[(i + 1) % pts.length]; area += x0 * y1 - x1 * y0; });
+    const [name, w, h] = PAGES[k];
+    return { pts, name, w, h, depth, face: area > 0, clip: r };
+  }).filter(Boolean);
 }

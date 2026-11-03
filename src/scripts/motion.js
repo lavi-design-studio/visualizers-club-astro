@@ -425,7 +425,8 @@ function camera() {
 // measured from the live layout of what is on the screen: the 12 columns, the letters as outlines, each
 // block of type's box, its lines' cap heights and baselines, its face, size and tracking, the spaces
 // between blocks, the order the eye reads them in (by size), the pictures' frames and sizes (left open,
-// so the pictures show through), and the page's ruled lines, faint. Drawn on a canvas the screen's size
+// so the pictures show through), each of the fan's prints framed where it is as it turns, and the
+// page's ruled lines, faint. Drawn on a canvas the screen's size
 // as the page slows under the lens and every third of a second while it is open, sliding with the page
 // between (it closes while the page scrolls fast); the lens only moves, a transform. On a mouse only:
 // on touch nothing hovers. A switch in the screen's bottom right corner turns it off and on again
@@ -576,6 +577,8 @@ function xray() {
     return new DOMMatrix().translate(r.left, r.top).multiply(m);
   };
   const clockText = () => $$('.level-clock text');
+  let fanMod = null;
+  import('./fan.js').then(m => { fanMod = m; }, () => {});
   const drawLive = () => {
     const dpr = devicePixelRatio || 1, S = 2 * R;
     if (live.width !== Math.round(S * dpr)) { live.width = live.height = Math.round(S * dpr); Object.assign(live.style, { position: 'absolute', left: 0, top: 0, width: `${S}px`, height: `${S}px` }); }
@@ -616,6 +619,41 @@ function xray() {
         lg.setTransform(view);
         g2label(`${name} · ${cs.fontFamily.split(',')[0].replace(/"/g, '')}${cs.fontStyle === 'italic' ? ' Italic' : ''} · ${Math.round(parseFloat(cs.fontSize) * k)}px · xoay 90°`, Math.max(ox + 8, r.left), Math.max(oy + 14, r.top - 10));
       }
+    }
+    // the fan's prints, each framed where it is this frame, bent as it is: a print seen face on in
+    // magenta, one seen from behind faint, each named with its picture's size
+    const prints = fanMod?.outlines() ?? [];
+    if (prints.length) {
+      const c = prints[0].clip;
+      lg.save(); lg.setTransform(view); lg.beginPath(); lg.rect(c.left, c.top, c.width, c.height); lg.clip();
+      lg.lineWidth = 1; lg.setLineDash([6, 4]);
+      for (const p of prints) {
+        const xs = p.pts.map(q => q[0]), ys = p.pts.map(q => q[1]);
+        if (Math.max(...xs) < ox || Math.min(...xs) > ox + S || Math.max(...ys) < oy || Math.min(...ys) > oy + S) continue;
+        lg.strokeStyle = p.face ? MAG : 'rgba(194,57,199,.35)';
+        lg.beginPath(); p.pts.forEach(([x, y], i) => (i ? lg.lineTo(x, y) : lg.moveTo(x, y))); lg.closePath(); lg.stroke();
+      }
+      lg.setLineDash([]); lg.restore();
+      lg.setTransform(view);
+      // named nearest first, at the edge's top left where it is in the lens (the whole name inside its
+      // circle) and not under a nearer print
+      const inPoly = (pts, x, y) => { let k = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) k = !k; } return k; };
+      const cx = ox + R, cy = oy + R, within = (x, y) => Math.hypot(x - cx, y - cy) < R - 2;
+      const order = [...prints].sort((a, b) => a.depth - b.depth);
+      lg.font = '400 11px "ABC Areal", sans-serif';
+      let n = 0;
+      order.forEach((p, i) => {
+        if (n >= 3) return;
+        const text = `${p.name} · ảnh ${p.w} × ${p.h}${p.face ? '' : ' · mặt sau'}`, tw = lg.measureText(text).width + 10;
+        // beside each point of its edge, the name running right from it, or left where the right has no
+        // room: the whole name over this print, none of it over a nearer one
+        const over = (x, y) => [0, .25, .5, .75, 1].every(f => { const at = x + 2 + f * (tw - 4); return inPoly(p.pts, at, y) && !order.slice(0, i).some(q => inPoly(q.pts, at, y)); });
+        const spots = p.pts.flatMap(([x, y]) => [[x + 6, y + 12], [x - 6 - tw, y + 12]]).filter(([x, y]) => x > c.left && y - 8 > c.top
+          && within(x, y - 8) && within(x + tw, y - 8) && within(x, y + 8) && within(x + tw, y + 8) && over(x, y));
+        if (!spots.length) return;
+        const [x, y] = spots.reduce((a, b) => (b[0] + b[1] < a[0] + a[1] ? b : a));
+        g2label(text, x, y); n++;
+      });
     }
     // the clock's names, upright, in its SVG's scale
     const svg = $('.level-clock');
