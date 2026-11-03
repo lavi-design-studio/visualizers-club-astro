@@ -27,9 +27,11 @@
     };
     // they land in the fan's order, each on the one before, the first at the bottom: a print waits for
     // the ones before it, and lands a beat after the last at the soonest
+    // on a phone screen the 800-across copies (assets/fan/sm), which fan.js and ring.js take there too
+    const small = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
     const ready = files.map(f => {
       const img = new Image();
-      img.src = `assets/fan/${f}.webp`; img.alt = '';
+      img.src = `assets/fan/${small}${f}.webp`; img.alt = '';
       return img.decode().catch(() => {}).then(() => img);
     });
     ready.reduce((prev, p, k) => prev.then(() => p).then(img => { land(img, k); return new Promise(r => setTimeout(r, still ? 0 : 160)); }), Promise.resolve());
@@ -197,7 +199,7 @@
   <footer class="foot grid" id="lien-he">
     <h2 class="display"><span class="line">the</span><span class="line serif">Visualizers</span><span class="line">CLUB</span></h2>
     <figure class="foot-media">
-      <div class="foot-clip"><video src="/assets/yeah-bwoi.mp4" poster="/assets/yeah-bwoi.webp" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video><canvas aria-hidden="true"></canvas></div>
+      <div class="foot-clip"><video src="/assets/yeah-bwoi.mp4" poster="/assets/yeah-bwoi.webp" muted loop playsinline preload="none" aria-hidden="true"></video><canvas aria-hidden="true"></canvas></div>
       <figcaption>các em thấy bài học<br>tôi thấy 5 triệu</figcaption>
     </figure>
     <p class="foot-label">liên hệ qua</p>
@@ -205,13 +207,13 @@
       <li><a href="https://www.facebook.com/Lavi.Designer" target="_blank" rel="noopener" aria-label="Facebook">(FB)</a></li>
       <li><a href="https://www.instagram.com/lavi.uidesigner/" target="_blank" rel="noopener" aria-label="Instagram">(IG)</a></li>
       <li class="qr"><div class="qr-code" role="img" aria-label="Mã QR liên hệ">
-        <img class="field" src="/assets/qr-1.svg" alt="">
-        <img class="eye" src="/assets/qr-2.svg" alt="" style="left: 0; top: 0">
-        <img class="pupil" src="/assets/qr-3.svg" alt="" style="left: 6.0605%; top: 6.0605%">
-        <img class="eye" src="/assets/qr-4.svg" alt="" style="left: 78.788%; top: 0">
-        <img class="pupil" src="/assets/qr-5.svg" alt="" style="left: 84.848%; top: 6.0605%">
-        <img class="eye" src="/assets/qr-6.svg" alt="" style="left: 0; top: 78.788%">
-        <img class="pupil" src="/assets/qr-7.svg" alt="" style="left: 6.0605%; top: 84.848%">
+        <img class="field" loading="lazy" src="/assets/qr-1.svg" alt="">
+        <img class="eye" loading="lazy" src="/assets/qr-2.svg" alt="" style="left: 0; top: 0">
+        <img class="pupil" loading="lazy" src="/assets/qr-3.svg" alt="" style="left: 6.0605%; top: 6.0605%">
+        <img class="eye" loading="lazy" src="/assets/qr-4.svg" alt="" style="left: 78.788%; top: 0">
+        <img class="pupil" loading="lazy" src="/assets/qr-5.svg" alt="" style="left: 84.848%; top: 6.0605%">
+        <img class="eye" loading="lazy" src="/assets/qr-6.svg" alt="" style="left: 0; top: 78.788%">
+        <img class="pupil" loading="lazy" src="/assets/qr-7.svg" alt="" style="left: 6.0605%; top: 84.848%">
       </div></li>
       <li><a href="https://discord.gg/PnndZMQuf" target="_blank" rel="noopener" aria-label="Discord">(DC)</a></li>
     </ul>

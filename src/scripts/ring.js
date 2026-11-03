@@ -50,7 +50,9 @@ async function build() {
   const camera = new THREE.PerspectiveCamera(26, 1, .1, 60);
   camera.position.set(0, 2.4, 12); camera.lookAt(0, -1.1, 0);
   const ring = new THREE.Group(); scene.add(ring);
-  const base = `${import.meta.env.BASE_URL}assets/fan/`, across = box.clientWidth * renderer.getPixelRatio() / 2 > 600 ? 1024 : 512;
+  // (the phone's pages, as fan.js takes them: 800 across is more than 512)
+  const small = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
+  const base = `${import.meta.env.BASE_URL}assets/fan/` + small, across = box.clientWidth * renderer.getPixelRatio() / 2 > 600 ? 1024 : 512;
   const texs = await Promise.all(FILES.map(f => picture(`${base}${f}.webp`, across).then(t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.needsUpdate = true; return t; })));
   // each handed to the GPU in a frame of its own, and the shaders made, before the first frame is drawn,
   // so no frame of the page's scroll waits on them

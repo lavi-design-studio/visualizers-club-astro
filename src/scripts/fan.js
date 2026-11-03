@@ -19,11 +19,14 @@ const WORKS = [
   ['dizai-2', 'Dizai'], ['freshspawn-2', 'FreshSpawn'], ['surfclub-2', 'SurfClub'], ['simons-2', "Simon's"],
   ['dizai-3', 'Dizai'], ['freshspawn-3', 'FreshSpawn'], ['surfclub-3', 'SurfClub'], ['simons-3', "Simon's"],
 ];
+/// on a phone screen the pages are 800 across (assets/fan/sm), as the loader in index.html takes them
+// there, so the same files serve both and a phone loads half the bytes
+const PHONE = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
 // every page is decoded before the fan is built, off the main thread, into a bitmap held rows top
 // down (the shader reads it that way up), so handing it to the GPU is a copy and no frame waits on a
 // decode; where createImageBitmap can't, an image decoded ahead
 const pages = await Promise.all(WORKS.map(async ([file]) => {
-  const url = `${import.meta.env.BASE_URL}assets/fan/${file}.webp`;   // public/assets
+  const url = `${import.meta.env.BASE_URL}assets/fan/${PHONE}${file}.webp`;   // public/assets
   try { return await createImageBitmap(await (await fetch(url)).blob()); } catch {}
   const img = new Image();
   img.src = url;

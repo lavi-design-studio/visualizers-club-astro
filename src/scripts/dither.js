@@ -112,6 +112,13 @@ if (clip && clipOut) {
   new ResizeObserver(([e]) => { size = [e.contentRect.width, e.contentRect.height]; if (clip.readyState >= 2) frame(); }).observe(clipOut.parentElement);
   new IntersectionObserver(([e]) => { seen = e.isIntersecting; if (seen && clip.readyState >= 2) frame(); }).observe(clipOut);
   clip.addEventListener('loadeddata', frame);         // the first frame, and the only one if it stands still
+  // (index.html loads none of it at first: it is fetched, and played, only as the footer comes near,
+  // so a phone's first load is not shared with it; still, only its first frame is fetched and shown)
+  new IntersectionObserver(([e], io) => {
+    if (!e.isIntersecting) return;
+    io.disconnect(); clip.preload = 'auto';
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) clip.load(); else clip.play().catch(() => {});
+  }, { rootMargin: '1000px' }).observe(clipOut);
   next();
 }
 
