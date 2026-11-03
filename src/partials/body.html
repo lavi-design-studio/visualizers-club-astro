@@ -12,11 +12,12 @@
     let n = 0, shown = 0, done, last = performance.now();
     window.loaderPile = new Promise(r => (done = r));
     // the GPU's first WebGL context holds up the thread that makes it (a tenth of a second on a phone):
-    // one is made first in a worker, off the page's thread, so the fan's own, later, is quick
-    try {
+    // one is made first in a worker, off the page's thread, so the fan's own, later, is quick; once the
+    // first frame is painted, as it can hold the GPU up too
+    requestAnimationFrame(() => setTimeout(() => { try {
       const warm = new Worker(URL.createObjectURL(new Blob(["try { new OffscreenCanvas(1, 1).getContext('webgl2') } catch {} postMessage(0)"], { type: 'text/javascript' })));
       window.warmGL = warm;                      // (kept: its context, let go, would take the warmth with it)
-    } catch {}
+    } catch {} }));
     const tick = now => {
       shown = Math.min(n / files.length * 100, shown + (now - last) * (still ? 1 : .06)); last = now;
       count.textContent = `${Math.floor(shown)}%`;
@@ -35,19 +36,20 @@
     // the ones before it, and lands a beat after the last at the soonest
     // on a phone screen the 800-across copies (assets/fan/sm), which fan.js and ring.js take there too
     const small = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
-    // fetched once the scripts are in (fan.js asks, as it starts on the same pictures), so on a slow
-    // line the scripts are not kept waiting behind them; after five seconds whatever happens
-    let pileUp = () => {
-      pileUp = () => {};
-      const ready = files.map(f => {
-        const img = new Image();
-        img.src = `assets/fan/${small}${f}.webp`; img.alt = '';
-        return img.decode().catch(() => {}).then(() => img);
-      });
-      ready.reduce((prev, p, k) => prev.then(() => p).then(img => { land(img, k); return new Promise(r => setTimeout(r, still ? 0 : 160)); }), Promise.resolve());
+    // the pictures come from fan.js, which fetches each for itself and hands the file on (pileGot), so
+    // each is fetched once, and only once the scripts are in (on a slow line they are not kept waiting
+    // behind them); any it has not handed on after five seconds the loader fetches itself
+    const got = [], put = [], ready = files.map((f, k) => new Promise(r => (put[k] = r)));
+    const show = (k, src) => {
+      if (got[k]) return;
+      got[k] = true;
+      const img = new Image();
+      img.src = src; img.alt = '';
+      img.decode().catch(() => {}).then(() => put[k](img));
     };
-    window.pileUp = () => pileUp();
-    setTimeout(window.pileUp, 5000);
+    window.pileGot = (k, blob) => show(k, URL.createObjectURL(blob));
+    setTimeout(() => files.forEach((f, k) => show(k, `assets/fan/${small}${f}.webp`)), 5000);
+    ready.reduce((prev, p, k) => prev.then(() => p).then(img => { land(img, k); return new Promise(r => setTimeout(r, still ? 0 : 160)); }), Promise.resolve());
   })();
 </script>
 <main>
