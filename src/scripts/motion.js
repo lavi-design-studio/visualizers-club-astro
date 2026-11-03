@@ -892,7 +892,8 @@ function levelUp() {
     const steps = Math.floor(tiers);
     place(tiers - steps);
     show(Math.min(7, steps));
-    gsap.set(hand, { rotation: Math.min(tiers, 7) * 45, svgOrigin: '558.5 558.5' });
+    // (the SVG's own attribute: a tween set up every frame reads the hand's matrix back each time)
+    hand.setAttribute('transform', `rotate(${(Math.min(tiers, 7) * 45).toFixed(3)} 558.5 558.5)`);
     arc.setAttribute('stroke-dasharray', `${(tiers / 8).toFixed(4)} 1`);
   };
   const turn = flipper();

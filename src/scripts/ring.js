@@ -3,7 +3,8 @@
 // far ones small and high behind them, fading into the black. Each page is a strip of the ring's own
 // cylinder, bent with it, and a page seen from behind is the right way round (its back is drawn
 // mirrored back). The ring turns slowly, faster as the page scrolls; under reduced motion it stands.
-// Built (three) only as the footer comes near, drawn only while it is on the screen
+// Built (three) only as the footer comes near, its pictures handed over a frame each, drawn only
+// while it is on the screen
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 
@@ -14,15 +15,30 @@ const FILES = ['dizai-1', 'freshspawn-1', 'surfclub-1', 'simons-1', 'dizai-2', '
 const N = 18, R = 5.5, H = 1.5, ASPECT = 1728 / 1117;   // pages round the ring, its radius, a page's height, its shape
 
 // a strip of the ring's cylinder, a page wide (as an angle) and tall, with its picture: the outside
-// as it is, the inside (seen when the page is behind) mirrored, so it reads the same way round
-function page(tex, h, a0, r) {
+// as it is, the inside (seen when the page is behind) mirrored, so it reads the same way round. One
+// mesh for both sides (MIRROR: the inside's picture read across the other way; and every picture
+// read with its rows top down, as a bitmap or image is held, unflipped)
+function page(mat, h, a0, r) {
   const w = h * ASPECT, da = w / r;
-  const geo = new THREE.CylinderGeometry(r, r, h, 32, 1, true, a0 - da / 2, da);
-  const back = tex.clone(); back.wrapS = THREE.RepeatWrapping; back.repeat.x = -1; back.offset.x = 1; back.needsUpdate = true;
-  const g = new THREE.Group();
-  g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, side: THREE.FrontSide })));
-  g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: back, side: THREE.BackSide })));
-  return g;
+  return new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 32, 1, true, a0 - da / 2, da), mat);
+}
+const MIRROR = sh => {
+  sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#ifdef USE_MAP
+    diffuseColor *= texture2D( map, vec2( gl_FrontFacing ? vMapUv.x : 1.0 - vMapUv.x, 1.0 - vMapUv.y ) );
+  #endif`);
+};
+
+// a picture decoded off the page's thread and no bigger than the ring shows it (the nearest page is
+// about half the ring's width: 512 across on a phone, 1024 on a wide screen), so handing it to the GPU
+// is quick; where the browser can't (no createImageBitmap), an image decoded ahead
+async function picture(url, across) {
+  try {
+    const bmp = await createImageBitmap(await (await fetch(url)).blob(), { resizeWidth: across, resizeQuality: 'high' });
+    const t = new THREE.Texture(bmp); t.flipY = false; return t;
+  } catch {
+    const img = new Image(); img.src = url; await img.decode();
+    const t = new THREE.Texture(img); t.flipY = false; return t;
+  }
 }
 
 async function build() {
@@ -34,9 +50,12 @@ async function build() {
   const camera = new THREE.PerspectiveCamera(26, 1, .1, 60);
   camera.position.set(0, 2.4, 12); camera.lookAt(0, -1.1, 0);
   const ring = new THREE.Group(); scene.add(ring);
-  const loader = new THREE.TextureLoader();
-  const base = `${import.meta.env.BASE_URL}assets/fan/`;
-  const texs = await Promise.all(FILES.map(f => loader.loadAsync(`${base}${f}.webp`).then(t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; })));
+  const base = `${import.meta.env.BASE_URL}assets/fan/`, across = box.clientWidth * renderer.getPixelRatio() / 2 > 600 ? 1024 : 512;
+  const texs = await Promise.all(FILES.map(f => picture(`${base}${f}.webp`, across).then(t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.needsUpdate = true; return t; })));
+  // each handed to the GPU in a frame of its own, and the shaders made, before the first frame is drawn,
+  // so no frame of the page's scroll waits on them
+  for (const t of texs) { renderer.initTexture(t); await new Promise(r => requestAnimationFrame(r)); }
+  const mats = texs.map(map => { const m = new THREE.MeshBasicMaterial({ map, side: THREE.DoubleSide }); m.onBeforeCompile = MIRROR; m.customProgramCacheKey = () => 'ring-mirror'; return m; });
   // the pages in two rows round the ring, taken in turn: a big one on the outer row, low, then a smaller
   // one on the inner row, set higher and a clear step further in, so where two meet the outer one always
   // lies over the inner one by about the same amount, all the way round. Each keeps a little size of its own
@@ -51,7 +70,7 @@ async function build() {
   const fill = Math.PI * 2 / step.reduce((s, d) => s + d, 0);
   let a = 0;
   pages.forEach((p, i) => {
-    const g = page(texs[i % texs.length], p.h, a, p.r + (p.out ? (i / 2) * .004 : 0));   // outer pages a hair apart, so none flicker
+    const g = page(mats[i % mats.length], p.h, a, p.r + (p.out ? (i / 2) * .004 : 0));   // outer pages a hair apart, so none flicker
     g.position.y = p.y;
     ring.add(g);
     a += step[i] * fill;
@@ -66,6 +85,7 @@ async function build() {
     draw();
   };
   const draw = () => renderer.render(scene, camera);
+  await renderer.compileAsync(scene, camera);
   new ResizeObserver(fit).observe(box);
   fit();
   if (reduce) return;
@@ -81,6 +101,6 @@ async function build() {
 }
 
 if (box) {
-  const near = new IntersectionObserver(([e]) => { if (e.isIntersecting) { near.disconnect(); build(); } }, { rootMargin: '600px' });
+  const near = new IntersectionObserver(([e]) => { if (e.isIntersecting) { near.disconnect(); build(); } }, { rootMargin: '1000px' });
   near.observe(box);
 }

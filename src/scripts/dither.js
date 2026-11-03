@@ -33,12 +33,12 @@ export const roundEven = x => { const r = Math.round(x); return (r - x === 0.5 &
 
 // the dithered cells, one pixel each; shown scaled up with no smoothing, as the shader's present pass does
 const cells = document.createElement('canvas');
-// src is an image or a video, BW × BH the box in CSS pixels; brightness as Figma's (100 leaves it).
+// src is an image, a bitmap or a video, BW × BH the box in CSS pixels; brightness as Figma's (100 leaves it).
 // The canvas is drawn in the screen's own pixels and a cell is a whole number of them (a CSS pixel's
 // worth, rounded), so no row or column of cells is ever stretched to fill a fractional box: a doubled
 // one shifts the Bayer pattern from there on, and the picture looks cut in two
 export function draw(canvas, src, cell, cssW, cssH, brightness = params.brightness) {
-  const sw = src.videoWidth || src.naturalWidth, sh = src.videoHeight || src.naturalHeight;
+  const sw = src.videoWidth || src.naturalWidth || src.width, sh = src.videoHeight || src.naturalHeight || src.height;
   if (!sw || !sh) return;
   const dpr = devicePixelRatio || 1, BW = Math.max(1, Math.round(cssW * dpr)), BH = Math.max(1, Math.round(cssH * dpr));
   cell = Math.max(1, Math.round(cell * dpr));
@@ -70,7 +70,11 @@ export function draw(canvas, src, cell, cssW, cssH, brightness = params.brightne
 }
 
 const canvas = document.getElementById('laviDither'), img = document.getElementById('laviPhoto');
-const ready = img.complete && img.naturalWidth ? Promise.resolve() : new Promise(r => img.addEventListener('load', r, { once: true }));
+// (drawn from a bitmap decoded off the page's thread: drawn from the image, the first frame that
+// reads it back decodes it then)
+let src = img;
+const ready = (img.complete && img.naturalWidth ? Promise.resolve() : new Promise(r => img.addEventListener('load', r, { once: true })))
+  .then(() => createImageBitmap(img)).then(b => { src = b; }, () => {});
 let loaded = false, box = [1, 1];
 export const photo = {
   cell: 1,
@@ -78,7 +82,7 @@ export const photo = {
     n = Math.max(1, Math.round(n));
     if (n === this.cell) return;
     this.cell = n;
-    if (loaded) draw(canvas, img, n, ...box);
+    if (loaded) draw(canvas, src, n, ...box);
   },
 };
 ready.then(() => {
@@ -89,7 +93,7 @@ ready.then(() => {
     const dpr = devicePixelRatio || 1, key = `${Math.round(e.contentRect.width * dpr)}x${Math.round(e.contentRect.height * dpr)}`;
     if (key === last) return;
     last = key; box = [e.contentRect.width, e.contentRect.height];
-    draw(canvas, img, photo.cell, ...box);
+    draw(canvas, src, photo.cell, ...box);
     canvas.parentElement.classList.add('dithered');
   }).observe(canvas.parentElement);
 });
@@ -101,11 +105,73 @@ const CLIP_BRIGHTNESS = 160;
 const clip = document.querySelector('.foot-clip video'), clipOut = document.querySelector('.foot-clip canvas');
 if (clip && clipOut) {
   let size = [1, 1], seen = false;
-  const frame = () => { draw(clipOut, clip, 1, ...size, CLIP_BRIGHTNESS); clipOut.parentElement.classList.add('dithered'); };
+  const gpu = drawOnGPU(clipOut);
+  const frame = () => { (gpu || draw)(clipOut, clip, 1, ...size, CLIP_BRIGHTNESS); clipOut.parentElement.classList.add('dithered'); };
   const each = () => { if (seen) frame(); next(); };
   const next = () => (clip.requestVideoFrameCallback ? clip.requestVideoFrameCallback(each) : setTimeout(each, 100));
   new ResizeObserver(([e]) => { size = [e.contentRect.width, e.contentRect.height]; if (clip.readyState >= 2) frame(); }).observe(clipOut.parentElement);
   new IntersectionObserver(([e]) => { seen = e.isIntersecting; if (seen && clip.readyState >= 2) frame(); }).observe(clipOut);
   clip.addEventListener('loadeddata', frame);         // the first frame, and the only one if it stands still
   next();
+}
+
+// the same dither on the GPU, for a picture that changes every frame (the clip): no frame is read
+// back off the GPU and no cell is worked out on the page's thread. Cell for cell what draw does: the
+// picture covers the box and is read at each cell's middle, each cell's luma pushed by its Bayer
+// threshold (from the cell's top left, as draw counts) and rounded half to even into a mono shade.
+// null where there is no WebGL, and draw does it
+function drawOnGPU(canvas) {
+  const gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: false, premultipliedAlpha: false, powerPreference: 'low-power' });
+  if (!gl) return null;
+  const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, 'attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }'));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `precision highp float;
+    uniform sampler2D uPic, uTile; uniform vec2 uBox, uCells, uOff, uSize; uniform float uCell, uL, uK, uBright; uniform vec3 uMono;
+    float even(float x) { float r = floor(x + 0.5); return (r - x == 0.5 && mod(r, 2.0) == 1.0) ? r - 1.0 : r; }
+    void main() {
+      vec2 px = vec2(gl_FragCoord.x, uBox.y - gl_FragCoord.y), cell = floor(px / uCell);
+      vec3 c = clamp((texture2D(uPic, (cell + 0.5 - uOff) / uSize).rgb - 0.5) * uK + 0.5 + uBright, 0.0, 1.0);
+      float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      float th = (floor(texture2D(uTile, (mod(cell, 8.0) + 0.5) / 8.0).r * 255.0 + 0.5) + 0.5) / 64.0;
+      float q = clamp(even((luma + (th - 0.5) / uL) * uL) / uL, 0.0, 1.0);
+      gl_FragColor = vec4(floor(uMono * q * 255.0 + 0.5) / 255.0, 1.0);
+    }`));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const U = n => gl.getUniformLocation(prog, n);
+  const texture = (unit, filter) => {
+    const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, filter], [gl.TEXTURE_MAG_FILTER, filter], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+    return t;
+  };
+  // the Bayer tile, each threshold's rank (0 to 63) a byte
+  texture(1, gl.NEAREST);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, tile.size, tile.size, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, Uint8Array.from(tile.data, v => Math.round(v * 64 - .5)));
+  texture(0, gl.LINEAR);
+  gl.uniform1i(U('uPic'), 0); gl.uniform1i(U('uTile'), 1);
+  return (canvas, src, cell, cssW, cssH, brightness = params.brightness) => {
+    const sw = src.videoWidth || src.naturalWidth || src.width, sh = src.videoHeight || src.naturalHeight || src.height;
+    if (!sw || !sh) return;
+    const dpr = devicePixelRatio || 1, BW = Math.max(1, Math.round(cssW * dpr)), BH = Math.max(1, Math.round(cssH * dpr));
+    cell = Math.max(1, Math.round(cell * dpr));
+    const W = Math.ceil(BW / cell), H = Math.ceil(BH / cell);
+    const s = Math.max(W * cell / sw, H * cell / sh) / cell, w = sw * s, h = sh * s;
+    if (canvas.width !== BW || canvas.height !== BH) {
+      canvas.width = BW; canvas.height = BH;
+      Object.assign(canvas.style, { width: `${BW / dpr}px`, height: `${BH / dpr}px` });
+    }
+    gl.viewport(0, 0, BW, BH);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, src);
+    gl.uniform2f(U('uBox'), BW, BH); gl.uniform2f(U('uCells'), W, H);
+    gl.uniform2f(U('uOff'), (BW / cell - w) / 2, (BH / cell - h) / 2); gl.uniform2f(U('uSize'), w, h);
+    gl.uniform1f(U('uCell'), cell); gl.uniform1f(U('uL'), params.levels - 1); gl.uniform1f(U('uK'), params.contrast);
+    gl.uniform1f(U('uBright'), (brightness - 100) / 200); gl.uniform3fv(U('uMono'), params.mono);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
 }

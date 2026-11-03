@@ -131,6 +131,8 @@ export async function mount(svg) {
     pivot.rotation.z = -lean.x * .05;
     renderer.render(scene, camera);
   };
+  // its shaders made now, off the page's thread where the browser can, not on the first frame it shows
+  await renderer.compileAsync(scene, camera);
   gsap.ticker.add(tick);
   addEventListener('resize', () => on && requestAnimationFrame(place));   // after fan.js has redrawn the print
   return {
