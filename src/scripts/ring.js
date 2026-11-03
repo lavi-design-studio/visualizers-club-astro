@@ -37,14 +37,25 @@ async function build() {
   const loader = new THREE.TextureLoader();
   const base = `${import.meta.env.BASE_URL}assets/fan/`;
   const texs = await Promise.all(FILES.map(f => loader.loadAsync(`${base}${f}.webp`).then(t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; })));
-  // the pages, evenly round but each its own size and a little up or down, as the fan's prints are
+  // the pages in two rows round the ring, taken in turn: a big one on the outer row, low, then a smaller
+  // one on the inner row, set higher and a clear step further in, so where two meet the outer one always
+  // lies over the inner one by about the same amount, all the way round. Each keeps a little size of its own
   const rnd = (i, k) => { const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
-  for (let i = 0; i < N; i++) {
-    const h = H * (.55 + .6 * rnd(i, 1)), a = i / N * Math.PI * 2 + (rnd(i, 2) - .5) * .12;
-    const p = page(texs[i % texs.length], h, a, R + i * .012);   // each a hair further out, so two that overlap never flicker
-    p.position.y = (rnd(i, 3) - .5) * .9;
-    ring.add(p);
-  }
+  const IN = .5, OVER = .2;                              // how far in the inner row sits; how much of a page lies under the next
+  const pages = Array.from({ length: N }, (_, i) => {
+    const out = i % 2 === 0, h = H * (out ? .92 + .16 * rnd(i, 1) : .62 + .12 * rnd(i, 1)), r = out ? R : R - IN;
+    return { out, h, r, da: h * ASPECT / r, y: out ? -.22 + (rnd(i, 3) - .5) * .12 : .38 + (rnd(i, 3) - .5) * .16 };
+  });
+  // the gap from one page's middle to the next, each pair alike, scaled so the row closes round the ring
+  const step = pages.map((p, i) => (p.da + pages[(i + 1) % N].da) / 2 * (1 - OVER));
+  const fill = Math.PI * 2 / step.reduce((s, d) => s + d, 0);
+  let a = 0;
+  pages.forEach((p, i) => {
+    const g = page(texs[i % texs.length], p.h, a, p.r + (p.out ? (i / 2) * .004 : 0));   // outer pages a hair apart, so none flicker
+    g.position.y = p.y;
+    ring.add(g);
+    a += step[i] * fill;
+  });
   const fit = () => {
     const w = box.clientWidth, h = box.clientHeight;
     if (!w || !h) return;
