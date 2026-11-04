@@ -492,6 +492,24 @@ function camera() {
 // between (it closes while the page scrolls fast); the lens only moves, a transform. On a mouse only:
 // on touch nothing hovers. A switch in the screen's bottom right corner turns it off and on again
 // ("Reveal On" / "Reveal Off"), remembered on this browser
+// What the lens shows, each part on (true) or off (false), to be picked as the site's owners like.
+// Type under outlineFrom px stays solid, as it reads on the page; type that size and over is drawn
+// as outlines (0: all of it outlined, Infinity: all of it solid)
+const LENS = {
+  outlineFrom: 48,   // the size (px) from which type is drawn as outlines
+  columns: true,     // the 12 columns, numbered, with the margin, gutter and column widths
+  pictures: true,    // the pictures' frames and sizes
+  rules: true,       // the page's ruled lines, faint
+  boxes: true,       // each block of type's box, dashed
+  lines: true,       // each line's cap height and baseline
+  labels: true,      // each block's name, face, size and tracking
+  ranks: true,       // the order the eye reads the blocks in (by size)
+  spaces: true,      // the spaces between blocks
+  marquee: true,     // By Lavi's running strip
+  level: true,       // Level up's stairs
+  prints: true,      // the fan's prints, framed and named
+  clock: true,       // the clock's names
+};
 function xray() {
   if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
   let enabled = true;
@@ -545,21 +563,23 @@ function xray() {
     for (const e of pics) { const r = e.getBoundingClientRect(); g.clearRect(r.left, r.top, r.width, r.height); }
     // the columns
     const m = 16 * W / 1728, cw = (W - 2 * m - 11 * m) / 12;
-    for (let i = 0; i < 12; i++) {
-      const x = m + i * (cw + m);
-      g.fillStyle = 'rgba(194,57,199,.11)'; g.fillRect(x, 0, cw, H);
-      label(String(i + 1), x, H - 14);
+    if (LENS.columns) {
+      for (let i = 0; i < 12; i++) {
+        const x = m + i * (cw + m);
+        g.fillStyle = 'rgba(194,57,199,.11)'; g.fillRect(x, 0, cw, H);
+        label(String(i + 1), x, H - 14);
+      }
+      label(`Lề ${Math.round(m)} · rãnh ${Math.round(m)} · cột ${cw.toFixed(1)}`, W - m, H - 34, 'right');
     }
-    label(`Lề ${Math.round(m)} · rãnh ${Math.round(m)} · cột ${cw.toFixed(1)}`, W - m, H - 34, 'right');
     g.lineWidth = 1;
-    for (const e of pics) {
+    if (LENS.pictures) for (const e of pics) {
       const r = e.getBoundingClientRect(), kind = e === slot || e === fanCanvas ? 'Show work · fan 3D (WebGL)' : e.tagName === 'IMG' ? 'Ảnh' : e.tagName === 'VIDEO' ? 'Video' : 'Canvas';
       g.strokeStyle = MAG; g.setLineDash([6, 4]); g.strokeRect(Math.max(0, r.left) + .5, Math.max(0, r.top) + .5, Math.min(W, r.right) - Math.max(0, r.left) - 1, Math.min(H, r.bottom) - Math.max(0, r.top) - 1); g.setLineDash([]);
       label(`${kind} · ${Math.round(r.width)} × ${Math.round(r.height)}`, Math.max(0, r.left) + 8, Math.max(0, r.top) + 14);
     }
     // the page's ruled lines, faint
     g.strokeStyle = 'rgba(194,57,199,.35)';
-    for (const i of $$('.hero-rule i, .by-rules i, .page-rules i')) { const r = i.getBoundingClientRect(); if (on({ ...r.toJSON(), height: 1 })) { g.beginPath(); g.moveTo(r.left, r.top + .5); g.lineTo(r.right, r.top + .5); g.stroke(); } }
+    if (LENS.rules) for (const i of $$('.hero-rule i, .by-rules i, .page-rules i')) { const r = i.getBoundingClientRect(); if (on({ ...r.toJSON(), height: 1 })) { g.beginPath(); g.moveTo(r.left, r.top + .5); g.lineTo(r.right, r.top + .5); g.stroke(); } }
     // the blocks of type on the screen: boxes holding only inline content
     const blocks = [];
     for (const e of $$('main *')) {
@@ -576,7 +596,8 @@ function xray() {
       const mH = meas.measureText('H'), asc = mH.fontBoundingBoxAscent, cap = mH.actualBoundingBoxAscent;
       const walk = document.createTreeWalker(e, NodeFilter.SHOW_TEXT, { acceptNode: t => drawn(t) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT }), rg = document.createRange();
       const lines = [];
-      g.font = font; g.textBaseline = 'alphabetic'; g.strokeStyle = MAG;
+      g.font = font; g.textBaseline = 'alphabetic'; g.strokeStyle = g.fillStyle = MAG;
+      const solid = fs < LENS.outlineFrom;
       for (let t; (t = walk.nextNode());) for (let k = 0; k < t.length; k++) {
         const ch = t.data[k];
         if (!ch.trim()) continue;
@@ -584,7 +605,7 @@ function xray() {
         const b = rg.getBoundingClientRect();
         if (!b.width || b.bottom < 0 || b.top > H) continue;
         const base = b.top + asc;
-        g.strokeText(up ? ch.toUpperCase() : ch, b.left, base);
+        if (solid) g.fillText(up ? ch.toUpperCase() : ch, b.left, base); else g.strokeText(up ? ch.toUpperCase() : ch, b.left, base);
         const l = lines.find(l => Math.abs(l.base - base) < 1);
         if (l) { l.x0 = Math.min(l.x0, b.left); l.x1 = Math.max(l.x1, b.right); } else lines.push({ base, x0: b.left, x1: b.right });
       }
@@ -596,18 +617,20 @@ function xray() {
     const sizes = [...new Set(info.map(i => Math.round(i.fs)))].sort((a, b) => b - a);
     for (const i of info) {
       const { x, y, w, h } = i.box;
-      g.strokeStyle = MAG; g.setLineDash([3, 3]); g.strokeRect(x + .5, y + .5, w - 1, h - 1); g.setLineDash([]);
-      for (const l of i.lines) {
+      if (LENS.boxes) { g.strokeStyle = MAG; g.setLineDash([3, 3]); g.strokeRect(x + .5, y + .5, w - 1, h - 1); g.setLineDash([]); }
+      if (LENS.lines) for (const l of i.lines) {
         g.strokeStyle = 'rgba(194,57,199,.45)'; g.beginPath(); g.moveTo(l.x0 - 6, l.base - i.cap + .5); g.lineTo(l.x1 + 6, l.base - i.cap + .5); g.stroke();
         g.strokeStyle = MAG; g.beginPath(); g.moveTo(l.x0 - 6, l.base + .5); g.lineTo(l.x1 + 6, l.base + .5); g.stroke();
       }
-      const rank = sizes.indexOf(Math.round(i.fs)) + 1;
-      g.fillStyle = MAG; g.beginPath(); g.arc(x - 12, y + 6, 8, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#000'; g.font = '500 10px "ABC Areal", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(rank), x - 12, y + 6.5); g.textAlign = 'left';
-      label(`${i.name} · ${i.face}${i.italic ? ' Italic' : ''} · ${Math.round(i.fs)}px · tracking ${i.ls.toFixed(0)}%`, x, y - 10);
+      if (LENS.ranks) {
+        const rank = sizes.indexOf(Math.round(i.fs)) + 1;
+        g.fillStyle = MAG; g.beginPath(); g.arc(x - 12, y + 6, 8, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#000'; g.font = '500 10px "ABC Areal", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(rank), x - 12, y + 6.5); g.textAlign = 'left';
+      }
+      if (LENS.labels) label(`${i.name} · ${i.face}${i.italic ? ' Italic' : ''} · ${Math.round(i.fs)}px · tracking ${i.ls.toFixed(0)}%`, x, y - 10);
     }
     // the spaces: from each block to the nearest one under it that shares some width with it
-    for (const a of info) {
+    if (LENS.spaces) for (const a of info) {
       let best = null;
       for (const b of info) {
         if (b === a || b.box.y < a.box.y + a.box.h - 1) continue;
@@ -648,8 +671,8 @@ function xray() {
     const near = el => { const r = el.getBoundingClientRect(); return r.right > ox && r.left < ox + S && r.bottom > oy && r.top < oy + S; };
     // the stairs' tags and the strip's words: outlined where they are, turned and scaled as they are,
     // inside the box that clips them, with their box, cap line and baseline, and named
-    const groups = [...$$('.level-col').map(col => [$$('.level-tag > span', col), col, col.offsetParent, 'Level up']),
-      [$$('.by-strip-run > span'), $('.by-strip'), $('.by-strip'), 'Marquee']];
+    const groups = [...(LENS.level ? $$('.level-col').map(col => [$$('.level-tag > span', col), col, col.offsetParent, 'Level up']) : []),
+      ...(LENS.marquee ? [[$$('.by-strip-run > span'), $('.by-strip'), $('.by-strip'), 'Marquee']] : [])];
     let named = 0;
     for (const [spans, clip, stop, name] of groups) {
       if (!clip || !near(clip)) continue;
@@ -666,15 +689,19 @@ function xray() {
         const k = Math.hypot(m.a, m.b) || 1;
         lg.lineWidth = 1 / k;
         lg.font = meas.font; lg.textBaseline = 'alphabetic'; lg.textAlign = 'left';
-        lg.strokeStyle = MAG; lg.strokeText(cs.textTransform === 'uppercase' ? sp.textContent.toUpperCase() : sp.textContent, 0, base);
-        lg.strokeStyle = 'rgba(194,57,199,.45)'; lg.beginPath(); lg.moveTo(-6, base - cap); lg.lineTo(w + 6, base - cap); lg.stroke();
-        lg.strokeStyle = MAG; lg.beginPath(); lg.moveTo(-6, base); lg.lineTo(w + 6, base); lg.stroke();
-        lg.setLineDash([3 / k, 3 / k]); lg.strokeRect(0, 0, w, h); lg.setLineDash([]);
+        const word = cs.textTransform === 'uppercase' ? sp.textContent.toUpperCase() : sp.textContent;
+        lg.strokeStyle = lg.fillStyle = MAG;
+        if (fs * k < LENS.outlineFrom) lg.fillText(word, 0, base); else lg.strokeText(word, 0, base);
+        if (LENS.lines) {
+          lg.strokeStyle = 'rgba(194,57,199,.45)'; lg.beginPath(); lg.moveTo(-6, base - cap); lg.lineTo(w + 6, base - cap); lg.stroke();
+          lg.strokeStyle = MAG; lg.beginPath(); lg.moveTo(-6, base); lg.lineTo(w + 6, base); lg.stroke();
+        }
+        if (LENS.boxes) { lg.setLineDash([3 / k, 3 / k]); lg.strokeRect(0, 0, w, h); lg.setLineDash([]); }
       }
       lg.restore();
       // its name, once, upright, at the first of its runs in the lens
       const first = spans.find(near);
-      if (first && named < 3) {
+      if (first && named < 3 && LENS.labels) {
         named++;
         const r = first.getBoundingClientRect(), cs = getComputedStyle(first), m = toScreen(first, stop), k = Math.hypot(m.a, m.b);
         lg.setTransform(view);
@@ -683,7 +710,7 @@ function xray() {
     }
     // the fan's prints, each framed where it is this frame, bent as it is: a print seen face on in
     // magenta, one seen from behind faint, each named with its picture's size
-    const prints = fanMod?.outlines() ?? [];
+    const prints = LENS.prints ? fanMod?.outlines() ?? [] : [];
     if (prints.length) {
       const c = prints[0].clip;
       lg.save(); lg.setTransform(view); lg.beginPath(); lg.rect(c.left, c.top, c.width, c.height); lg.clip();
@@ -718,7 +745,7 @@ function xray() {
     }
     // the clock's names, upright, in its SVG's scale
     const svg = $('.level-clock');
-    if (svg && near(svg)) {
+    if (LENS.clock && svg && near(svg)) {
       const sr = svg.getBoundingClientRect(), sc = sr.width / 1117;
       lg.setTransform(view);
       for (const t of clockText()) {
@@ -727,9 +754,10 @@ function xray() {
         const word = t.textContent.toUpperCase(), w = lg.measureText(word).width, anchor = t.getAttribute('text-anchor');
         const x0 = anchor === 'middle' ? x - w / 2 : anchor === 'end' ? x - w : x;
         if (x0 + w < ox || x0 > ox + S || y < oy || y - fs > oy + S) continue;
-        lg.lineWidth = 1; lg.strokeStyle = MAG; lg.textAlign = 'left'; lg.textBaseline = 'alphabetic'; lg.strokeText(word, x0, y);
-        lg.beginPath(); lg.moveTo(x0 - 6, y + .5); lg.lineTo(x0 + w + 6, y + .5); lg.stroke();
-        g2label(`Chữ · ${cs.fontFamily.split(',')[0].replace(/"/g, '')} · ${Math.round(fs)}px`, x0, y - fs - 10);
+        lg.lineWidth = 1; lg.strokeStyle = lg.fillStyle = MAG; lg.textAlign = 'left'; lg.textBaseline = 'alphabetic';
+        if (fs < LENS.outlineFrom) lg.fillText(word, x0, y); else lg.strokeText(word, x0, y);
+        if (LENS.lines) { lg.beginPath(); lg.moveTo(x0 - 6, y + .5); lg.lineTo(x0 + w + 6, y + .5); lg.stroke(); }
+        if (LENS.labels) g2label(`Chữ · ${cs.fontFamily.split(',')[0].replace(/"/g, '')} · ${Math.round(fs)}px`, x0, y - fs - 10);
       }
     }
   };
