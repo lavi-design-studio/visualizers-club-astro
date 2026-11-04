@@ -22,18 +22,25 @@ const WORKS = [
 // on a phone screen the pages are 800 across (assets/fan/sm), as the loader in index.html takes them
 // there, so the same files serve both and a phone loads half the bytes
 const PHONE = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
-// every page is decoded before the fan is built, off the main thread, into a bitmap held rows top
-// down (the shader reads it that way up), so handing it to the GPU is a copy and no frame waits on a
-// decode; where createImageBitmap can't, an image decoded ahead. Each file is handed on to the loader's
-// pile as it comes (index.html pileGot), so it is fetched once for both
-const pages = await Promise.all(WORKS.map(async ([file], k) => {
+// each page is decoded off the main thread, into a bitmap held rows top down (the shader reads it
+// that way up), so handing it to the GPU is a copy and no frame waits on a decode; where
+// createImageBitmap can't, an image decoded ahead. Each file is handed on to the loader's pile as it
+// comes (index.html pileGot), so it is fetched once for both. The fan is built once the first FIRST
+// are in (the prints the hero shows, and the loader deals); the rest are fetched after them, so they
+// don't share the line with them, and each takes its print's place as it comes (later, below)
+const FIRST = 4;
+const fetchPage = async ([file], k) => {
   const url = `${import.meta.env.BASE_URL}assets/fan/${PHONE}${file}.webp`;   // public/assets
-  try { const blob = await (await fetch(url)).blob(); window.pileGot?.(k, blob); return await createImageBitmap(blob); } catch {}
+  try { const blob = await (await fetch(url, { priority: k < FIRST ? 'high' : 'low' })).blob(); window.pileGot?.(k, blob); return await createImageBitmap(blob); } catch {}
   const img = new Image();
   img.src = url;
   await img.decode();
   return img;
-}));
+};
+// a print not in yet is black, the page's ground, at the pages' shape
+const blank = Object.assign(document.createElement('canvas'), { width: 4, height: Math.round(4 * 1117 / 1728) });
+const pages = [...await Promise.all(WORKS.slice(0, FIRST).map(fetchPage)), ...WORKS.slice(FIRST).map(() => blank)];
+const rest = WORKS.slice(FIRST).map((w, i) => fetchPage(w, FIRST + i));
 // the last print is Figma's "You have enough love for design?" frame (2172:19), in its own 1728 × 1117
 // pixels: drawn on a canvas for the fan, where it flies at us until it fills the screen, and the same
 // drawing in the DOM (#finale), sharp, which takes over once it does. It covers the screen, so a
@@ -198,6 +205,12 @@ build();
 // the browser can), all before the first frame is drawn, so no frame waits on them
 for (const m of cards) { renderer.initTexture(m.material.uniforms.uMap.value); await new Promise(r => setTimeout(r, 0)); }
 await renderer.compileAsync(scene, camera);
+// the rest of the prints, each into its place as it comes, handed to the GPU in a task of its own
+rest.forEach((p, i) => p.then(img => {
+  const k = FIRST + i, t = cards[k].material.uniforms.uMap.value;
+  pages[k] = img; t.image = img; t.needsUpdate = true;
+  setTimeout(() => renderer.initTexture(t));
+}).catch(() => {}));
 
 // ----- the timeline, all on scroll -----
 //   0   → .38  the row runs in towards the hub like a conveyor; each print, as it reaches the hub,
@@ -631,7 +644,8 @@ export function quads() {
 // and for the page's x-ray: each print's edge as drawn last frame (bent as the shader bends it, cut
 // where it passes behind the camera, in the viewport's pixels), its name, its picture's size, how far
 // it is from the camera, and whether its face or its back is seen. Nothing while the scene is not drawn
-const PAGES = [...WORKS.map(([, name], k) => [name, pages[k].naturalWidth || pages[k].width, pages[k].naturalHeight || pages[k].height]), ['You have enough love for design?', DW, DH]];
+// (read when asked: a print still to come is at the pages' size)
+const pageOf = k => k < WORKS.length ? (pages[k] === blank ? [WORKS[k][1], DW, DH] : [WORKS[k][1], pages[k].naturalWidth || pages[k].width, pages[k].naturalHeight || pages[k].height]) : ['You have enough love for design?', DW, DH];
 export function outlines() {
   if (!active || !drawn) return [];
   const r = renderer.domElement.getBoundingClientRect(), sx = r.width / stageW, sy = r.height / stageH, NEAR = -camera.near * 1.01;
@@ -658,7 +672,7 @@ export function outlines() {
     // the face is seen when the edge runs clockwise on the screen (the sheet's corners go top left, top right, ...)
     let area = 0;
     pts.forEach(([x0, y0], i) => { const [x1, y1] = pts[(i + 1) % pts.length]; area += x0 * y1 - x1 * y0; });
-    const [name, w, h] = PAGES[k];
+    const [name, w, h] = pageOf(k);
     return { pts, name, w, h, depth, face: area > 0, clip: r };
   }).filter(Boolean);
 }

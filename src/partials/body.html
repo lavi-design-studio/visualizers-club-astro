@@ -5,13 +5,16 @@
 </div>
 <script>
   // the same pages, in the same order, as the fan's (fan.js WORKS); the browser keeps them for it.
-  // The counter runs on to 100% at a steady pace, never past the share of the sites that are in
+  // The loader waits only for the first FIRST, the prints the hero shows (fan.js FIRST): the counter
+  // runs on to 100% at a steady pace, never past the share of those that are in, and once it is done
+  // no more land on the pile (the fan takes the rest as they come)
   (() => {
     const files = ['dizai-1', 'freshspawn-1', 'surfclub-1', 'simons-1', 'dizai-2', 'freshspawn-2', 'surfclub-2', 'simons-2', 'dizai-3', 'freshspawn-3', 'surfclub-3', 'simons-3'];
     const pile = document.querySelector('.loader-pile'), count = document.querySelector('.loader-count');
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let n = 0, shown = 0, done, last = performance.now();
-    window.loaderPile = new Promise(r => (done = r));
+    const FIRST = 4;
+    let n = 0, shown = 0, done, last = performance.now(), dealt = false;
+    window.loaderPile = new Promise(r => (done = () => { dealt = true; r(); }));
     // the GPU's first WebGL context holds up the thread that makes it (a tenth of a second on a phone):
     // one is made first in a worker, off the page's thread, so the fan's own, later, is quick; once the
     // first frame is painted, as it can hold the GPU up too
@@ -20,12 +23,13 @@
       window.warmGL = warm;                      // (kept: its context, let go, would take the warmth with it)
     } catch {} }));
     const tick = now => {
-      shown = Math.min(n / files.length * 100, shown + (now - last) * (still ? 1 : .25)); last = now;
+      shown = Math.min(Math.min(n, FIRST) / FIRST * 100, shown + (now - last) * (still ? 1 : .25)); last = now;
       count.textContent = `${Math.floor(shown)}%`;
       if (shown >= 100) setTimeout(done, still ? 0 : 60); else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
     const land = (img, k) => {
+      if (dealt || k >= FIRST) return;
       const card = document.createElement('div');
       card.className = 'loader-card'; card.append(img); pile.append(card);
       Object.assign(card.dataset, { k, r: 0, tx: 0, ty: 0 });    // which print it is, and how it lies on the stack
