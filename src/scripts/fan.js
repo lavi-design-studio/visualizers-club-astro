@@ -471,6 +471,7 @@ document.addEventListener('click', e => {
   if (!to) return;
   e.preventDefault();
   lenis.scrollTo(to, { immediate: reduce });
+  if (a.classList.contains('skip')) to.focus({ preventScroll: true });   // the keyboard goes on from there
 });
 
 // resolution: as sharp as the screen, up to 2x, but never more pixels than MAX_PX (a 4K screen at 2x

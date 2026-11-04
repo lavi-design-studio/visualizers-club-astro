@@ -7,8 +7,10 @@ src = 'C:/Users/Lavi/Documents/visualizers-club-prototypes/landing'
 dst = 'C:/Users/Lavi/Documents/visualizers-club-astro'
 for d in ('fonts', 'assets'):
     shutil.copytree(f'{src}/{d}', f'{dst}/public/{d}', dirs_exist_ok=True)
-for f in ('favicon.ico', 'favicon.svg'):
-    if os.path.exists(f'{dst}/public/{f}'): os.remove(f'{dst}/public/{f}')
+if os.path.exists(f'{dst}/public/favicon.ico'): os.remove(f'{dst}/public/favicon.ico')   # Astro's own, not the page's
+# the page's icons and its share card, at the site's root as its links and og:image have them
+for f in ('favicon.svg', 'apple-touch-icon.png', 'og.jpg'):
+    shutil.copy(f'{src}/{f}', f'{dst}/public/{f}')
 os.makedirs(f'{dst}/src/scripts', exist_ok=True); os.makedirs(f'{dst}/src/styles', exist_ok=True); os.makedirs(f'{dst}/src/partials', exist_ok=True)
 for f in ('motion.js', 'fan.js', 'dither.js', 'vane3d.js', 'ring.js'):
     s = open(f'{src}/{f}', encoding='utf-8').read()
@@ -30,6 +32,8 @@ open(f'{dst}/src/styles/landing.css', 'w', encoding='utf-8', newline='\n').write
 body = re.sub(r'(src|poster|href)="(assets|fonts)/', r'\1="/\2/', body)
 open(f'{dst}/src/partials/body.html', 'w', encoding='utf-8', newline='\n').write(body.strip() + '\n')
 head = head.replace('href="fonts/', 'href="/fonts/').replace('<script>', '<script is:inline>')
+head = head.replace('href="favicon.svg"', 'href="/favicon.svg"').replace('href="apple-touch-icon.png"', 'href="/apple-touch-icon.png"')
+head = head.replace('<script type="application/ld+json">', '<script is:inline type="application/ld+json">')   # its braces left as they are
 page = """---
 // The landing page, as the static one in visualizers-club-prototypes/landing has it: its markup
 // (src/partials/body.html, set as written: its type uses braces Astro would read as code), its styles

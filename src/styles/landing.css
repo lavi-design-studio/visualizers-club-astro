@@ -105,7 +105,14 @@ html.loading { overflow: hidden; }
   display: flex; justify-content: space-between;
   font-size: var(--f16); letter-spacing: -.05em;
 }
-.hero-bar a { text-underline-position: from-font; }
+.hero-bar a { position: relative; text-underline-position: from-font; }
+/* the small links' hit areas at least 24 tall (their type is 11 to 16): reached past the letters,
+   drawn nowhere */
+:is(.hero-bar a, .hero-scroll)::before { content: ""; position: absolute; inset: -8px -8px; }
+/* to the course past the hero, the first stop for the keyboard; shown only while it has focus */
+.skip { position: fixed; top: 8px; left: 8px; z-index: 100; padding: 8px 12px; background: #000; color: var(--magenta); border: 1px solid var(--magenta); font: 500 14px/1 "ABC Areal", sans-serif; text-transform: uppercase; transform: translateY(-200%); }
+.skip:focus-visible { transform: none; outline: none; }
+#khoa-hoc:focus { outline: none; }   /* where the skip link lands: the section itself is not drawn as focused */
 .hero-title {
   grid-column: 4 / span 6; grid-row: 1; margin-top: calc(21 * var(--px));   /* Figma's 840 x 364 box, columns 4 to 9 */
   display: flex; flex-direction: column; gap: var(--gap); text-align: center;
@@ -157,6 +164,10 @@ html.loading { overflow: hidden; }
   grid-column: 4 / -1; grid-row: 2; justify-self: start; margin-top: calc(51 * var(--px)); margin-bottom: calc(6.5 * var(--px));
   width: calc(1203 * var(--px)); align-self: stretch; min-height: 0;
 }
+/* the hero lies over the stage a whole screen tall: only its type takes the pointer, so "scroll",
+   on the stage under its empty part (and under the picture box, a measure for fan.js), is clickable */
+.hero { pointer-events: none; }
+.hero > :is(.hero-bar, .hero-title, .hero-intro, .hero-refund, .hero-promise) { pointer-events: auto; }
 /* "scroll" rides the sticky stage, at the foot of the screen through the whole fan (Figma has it 20 up
    from the hero's foot, centred). It sits over the prints, but the last one, flying at us, goes over
    it: fan.js cuts that print's shape out of it, and the DOM copy of the print covers it after */
@@ -231,6 +242,9 @@ html.loading { overflow: hidden; }
 .by-cam.over .by-cam-box { box-shadow: inset 0 0 0 2px var(--magenta); }   /* a picture dragged over it */
 .by-cam.live canvas { visibility: visible; }
 .by-cam-idle, .by-cam-live { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; font-size: var(--f16); line-height: 1.25; text-align: center; color: var(--magenta); }
+/* the hint on the frame's dark magenta in the magenta lifted halfway to white: 5.4:1 there, where
+   the magenta itself is 2.5:1 */
+.by-cam-idle > :not(.by-cam-btn) { color: #e19ce3; }
 .by-cam-idle { justify-content: center; padding-bottom: 20%; }
 .by-cam-live { flex-direction: row; justify-content: center; align-items: flex-start; padding-top: 14px; gap: 8px; visibility: hidden; }
 .by-cam.live .by-cam-idle { visibility: hidden; }
