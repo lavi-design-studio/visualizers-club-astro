@@ -205,11 +205,13 @@ build();
 // the browser can), all before the first frame is drawn, so no frame waits on them
 for (const m of cards) { renderer.initTexture(m.material.uniforms.uMap.value); await new Promise(r => setTimeout(r, 0)); }
 await renderer.compileAsync(scene, camera);
-// the rest of the prints, each into its place as it comes, handed to the GPU in a task of its own
+// the rest of the prints, each into its place as it comes, handed to the GPU in a task of its own: a
+// texture of its own, as the blank one's storage is the blank's size (WebGL2 texStorage) and can't take it
 rest.forEach((p, i) => p.then(img => {
-  const k = FIRST + i, t = cards[k].material.uniforms.uMap.value;
-  pages[k] = img; t.image = img; t.needsUpdate = true;
-  setTimeout(() => renderer.initTexture(t));
+  const k = FIRST + i, U = cards[k].material.uniforms, old = U.uMap.value, t = new THREE.Texture(img);
+  t.colorSpace = old.colorSpace; t.anisotropy = old.anisotropy; t.flipY = false; t.needsUpdate = true;
+  pages[k] = img;
+  setTimeout(() => { renderer.initTexture(t); U.uMap.value = t; old.dispose(); });
 }).catch(() => {}));
 
 // ----- the timeline, all on scroll -----
