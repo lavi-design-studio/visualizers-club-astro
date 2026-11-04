@@ -59,6 +59,13 @@ import body from '../partials/body.html?raw';
 </html>
 """
 open(f'{dst}/src/pages/index.astro', 'w', encoding='utf-8', newline='\n').write(page)
+# the 404, as it is: a page of its own the host serves for any address it has nothing at, so its links
+# start at the site's root, wherever the missing address was
+p = open(f'{src}/404.html', encoding='utf-8').read()
+p = re.sub(r'(src|href)="(assets|fonts)/', r'\1="/\2/', p).replace('url(fonts/', 'url(/fonts/')
+p = p.replace('href="favicon.svg"', 'href="/favicon.svg"').replace('href="./', 'href="/')
+assert 'href="./' not in p and '="fonts/' not in p and '="assets/' not in p
+open(f'{dst}/public/404.html', 'w', encoding='utf-8', newline='\n').write(p)
 open(f'{dst}/astro.config.mjs', 'w', encoding='utf-8', newline='\n').write("""// @ts-check
 import { defineConfig } from 'astro/config';
 

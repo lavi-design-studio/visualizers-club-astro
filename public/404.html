@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Không có trang này · The Visualizers Club</title>
+<meta name="description" content="Trang này không có trong giáo trình. Về trang chủ để xem khoá học The Visualizers Club.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/PPNeueWorld-SemiExtendedUltralight.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/PPMigra-ExtralightItalic.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face { font-family: "PP Neue World"; src: url(/fonts/PPNeueWorld-SemiExtendedUltralight.woff2) format("woff2"); font-weight: 200; font-display: swap; }
+@font-face { font-family: "PP Migra"; src: url(/fonts/PPMigra-ExtralightItalic.woff2) format("woff2"); font-weight: 200; font-style: italic; font-display: swap; }
+@font-face { font-family: "ABC Areal"; src: url(/fonts/ABCAreal-Regular.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+:root { --ground: #000; --magenta: #c239c7; color-scheme: dark; }
+* { box-sizing: border-box; }
+html { background: var(--ground); }
+body {
+  margin: 0; background: var(--ground); color: var(--magenta);
+  font: 400 16px/1 "ABC Areal", system-ui, sans-serif; text-transform: uppercase;
+  overflow: clip; -webkit-font-smoothing: antialiased;
+}
+h1, p { margin: 0; font: inherit; }
+a { color: inherit; text-underline-position: from-font; }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+/* Figma's 1728 x 1117 frame, scaled by --px and held at the screen's middle: the 404 runs off both
+   sides, so the scale follows the width, and the height only where the screen is too short to keep
+   the link home in view */
+main { container-type: inline-size; }
+.lost {
+  --px: min(100cqi / 1728, 100svh / 820);
+  position: relative; height: 100vh; height: 100svh; overflow: hidden;
+}
+.stage {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+  width: calc(1728 * var(--px)); height: calc(1117 * var(--px));
+}
+.bar {
+  position: absolute; z-index: 1; top: max(16px, calc(21 * var(--px))); left: 16px; right: 16px;
+  display: flex; justify-content: space-between; font-size: max(11px, calc(16 * var(--px))); letter-spacing: -.02em;
+}
+.bar a, .home { position: relative; }
+:is(.bar a, .home)::before { content: ""; position: absolute; inset: -8px; }
+/* the 404 as drawn in Figma, its glyphs outlined: the two 4s, and the bracket and star between them
+   that the title sits in */
+.four {
+  position: absolute; left: calc(-295 * var(--px)); top: calc(-8 * var(--px));
+  width: calc(2317 * var(--px)); height: calc(1134 * var(--px)); display: block;
+}
+.title {
+  position: absolute; left: 50%; top: calc(512 * var(--px)); translate: -50% 0; width: calc(840 * var(--px));
+  display: flex; flex-direction: column; gap: calc(16 * var(--px)); text-align: center;
+  font-family: "PP Neue World", serif; font-weight: 200; font-size: calc(160 * var(--px)); line-height: 1;
+}
+.title span { display: block; text-box: trim-both cap alphabetic; white-space: nowrap; }
+.title .serif { font-family: "PP Migra", serif; font-style: italic; letter-spacing: -.01em; }
+.home {
+  position: absolute; left: 50%; top: calc(907 * var(--px)); translate: -50% 0;
+  padding: 4px 8px; background: var(--ground); white-space: nowrap;
+  font-size: max(12px, calc(20 * var(--px))); letter-spacing: -.02em;
+}
+/* upright screens: the bracket, not the whole 404, spans the width; the 4s fall off the sides */
+@media (max-width: 899px) {
+  .lost { --px: min(100cqi / 900, 100svh / 820); }
+}
+</style>
+</head>
+<body>
+<main>
+  <section class="lost" aria-labelledby="lost-title">
+    <nav class="bar" aria-label="Trang">
+      <p>© 2026</p>
+      <a href="/#lien-he">đăng ký</a>
+    </nav>
+    <div class="stage">
+      <img class="four" src="/assets/404.svg" alt="404" width="2317" height="1134">
+      <h1 class="title" id="lost-title">
+        <span>page</span>
+        <span class="serif">not found</span>
+      </h1>
+      <a class="home" href="/">về trang chủ</a>
+    </div>
+  </section>
+</main>
+</body>
+</html>
