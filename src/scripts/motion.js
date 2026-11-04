@@ -174,7 +174,7 @@ function inkOf(els, origin, skip = () => false, only = '') {
       }
     }
     const pitch = parseFloat(cs.lineHeight) || fs * 1.2;
-    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: t => t.parentElement.closest('.sr-only') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: t => t.parentElement.closest('.sr-only, .unfold') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
     const line = base => { if (counts && !lines.some(l => Math.abs(l.base - base) < 1)) lines.push({ base, mid: base - cap / 2, marks: base - marks, pitch, fs }); };
     if (only === inkOf.LINES) {
       // a line of a run is a box of its own (its letters' boxes share its top)
@@ -1098,6 +1098,28 @@ function warp(lenis) {
   });
 }
 
+// ----- 4d. the links' names -----
+// each link in the footer unfolds its short name into the whole one on hover (index.html); where the
+// whole name would run into the next thing in its row (on the wide screen, Facebook into Instagram),
+// that one steps aside by as much (--push), a letter's width left between them
+function socials() {
+  const items = $$('.foot-links li'), range = document.createRange();
+  const measure = () => items.forEach((li, i) => {
+    const a = $('a', li), next = items[i + 1];
+    if (!a || !next) return;
+    // what it grows by: the hidden letters' own width, laid out in full under their clip (the link's
+    // box can't say, as it never grows past its column)
+    const r = a.getBoundingClientRect();
+    const grow = $$('.unfold > span', a).reduce((w, s) => { range.selectNodeContents(s); return w + range.getBoundingClientRect().width; }, 0);
+    const n = next.firstElementChild.getBoundingClientRect(), fs = parseFloat(getComputedStyle(a).fontSize);
+    const row = n.top < r.bottom && n.bottom > r.top && n.left >= r.right;
+    // at least a letter's width (1em) left between the open name and the next
+    next.style.setProperty('--push', `${row ? Math.max(0, Math.round(r.right + grow + fs - n.left)) : 0}px`);
+  });
+  document.fonts.ready.then(measure);
+  addEventListener('resize', () => requestAnimationFrame(measure));
+}
+
 // ----- 5. the price -----
 function price() {
   const was = $('.price-was'), now = $('.price-now');
@@ -1136,7 +1158,7 @@ function price() {
 async function start() {
   gridKey();
   // the footer's clip stands still under reduced motion
-  if (reduce) { root.classList.remove('intro'); $('.foot-media video')?.pause(); await loader(); rules(); byRules(); pageRules(); strip(); camera(); settled = true; return; }
+  if (reduce) { root.classList.remove('intro'); $('.foot-media video')?.pause(); await loader(); rules(); byRules(); pageRules(); strip(); camera(); socials(); settled = true; return; }
   // (each part set up in a task of its own, so the page is never held up long while the loader shows)
   const pause = () => new Promise(r => setTimeout(r, 0));
   let entered = false;
@@ -1154,6 +1176,7 @@ async function start() {
     await levelUp(pause); await pause();
     xray();
     vane();
+    socials();
     price(); await pause();
     // the fan's eased scroll drives the triggers, in the same frame as the scene
     fanLenis = fan?.lenis;

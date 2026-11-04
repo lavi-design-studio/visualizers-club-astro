@@ -482,8 +482,22 @@ html.loading { overflow: hidden; }
 .foot-label { grid-column: 4 / span 2; grid-row: 2; align-self: start; margin-top: calc(46 * var(--px)); }
 .foot-links { grid-column: 6 / -1; grid-row: 2; margin-top: calc(33 * var(--px)); display: grid; grid-template-columns: subgrid; align-items: start; }
 .foot-links li { font-size: var(--f40); letter-spacing: -.05em; }
-.foot-links a { text-decoration: none; }
-.foot-links a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
+/* on hover or focus a short name unfolds into the whole one, the missing letters growing out between
+   the ones it keeps (F·ace·B·ook, I·nsta·G·ram, D·is·C·ord); a black ground under the word, as wide as
+   the rules' gap round its letters, parts the rules round it as it grows, and a neighbour it would run
+   into steps aside (motion.js socials) */
+.foot-links a { position: relative; isolation: isolate; display: inline-block; width: max-content; white-space: nowrap; text-decoration: none; }
+.foot-links li > * { transition: translate .6s cubic-bezier(.65, 0, .35, 1); }
+.foot-links li > *::before { content: ""; position: absolute; inset: -.1em -.14em; z-index: -1; background: var(--ground); opacity: 0; transition: opacity 0s .6s; }
+.foot-links li:is(:has(a:is(:hover, :focus-visible)), :has(a:is(:hover, :focus-visible)) + li) > *::before { opacity: 1; transition-delay: 0s; }
+.foot-links li:has(a:is(:hover, :focus-visible)) { z-index: 1; }   /* the open name over the neighbour's ground */
+.foot-links li:has(a:is(:hover, :focus-visible)) + li > * { translate: var(--push, 0px) 0; }
+.foot-links li:has(a:is(:hover, :focus-visible)) + li > *::before { left: calc(-.14em - var(--push, 0px)); }   /* its ground kept back to where it stood, so no stub of rule shows there */
+.unfold { display: inline-grid; grid-template-columns: 0fr; transition: grid-template-columns .6s cubic-bezier(.65, 0, .35, 1); }
+.unfold > span { overflow: clip; min-width: 0; }
+.foot-links a:is(:hover, :focus-visible) .unfold { grid-template-columns: 1fr; }
+@media (prefers-reduced-motion: reduce) { .unfold, .foot-links li > * { transition: none; } }
+.foot-links li.rv { clip-path: inset(-.4em -100vw calc((1 - var(--rv, 1)) * (100% + .3em) - .3em) -.4em); }   /* room on the right for the whole name */
 .foot-links li:nth-child(2) { grid-column: 2; }
 .foot-links li:nth-child(3) { grid-column: 4; }
 .foot-links li:nth-child(4) { grid-column: 5; margin-top: calc(3 * var(--px)); }
