@@ -49,6 +49,8 @@ main { container-type: inline-size; }
   position: absolute; left: calc(-295 * var(--px)); top: calc(-8 * var(--px));
   width: calc(2317 * var(--px)); height: calc(1134 * var(--px)); display: block;
 }
+.star.solid { visibility: hidden; }
+.stage canvas { position: absolute; pointer-events: none; image-rendering: pixelated; }
 .title {
   position: absolute; left: 50%; top: calc(512 * var(--px)); translate: -50% 0; width: calc(840 * var(--px));
   display: flex; flex-direction: column; gap: calc(16 * var(--px)); text-align: center;
@@ -77,6 +79,7 @@ main { container-type: inline-size; }
     </nav>
     <div class="stage">
       <img class="four" src="/assets/404.svg" alt="404" width="2317" height="1134">
+      <img class="four star" src="/assets/404-star.svg" alt="" width="2317" height="1134">
       <h1 class="title" id="lost-title">
         <span>page</span>
         <span class="serif">not found</span>
@@ -85,5 +88,136 @@ main { container-type: inline-size; }
     </div>
   </section>
 </main>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.13.0/index.js"
+} }
+</script>
+<script type="module">
+// The star between the brackets, made as the rooster in the landing's last print is (vane3d.js): its
+// outline cut from a sheet of hammered, polished metal, lit by a dark studio of soft light and hard
+// panels, and dithered in big cells, one bit, a 4x4 Bayer threshold on the colour's summed channels.
+// Its light tone is the 404's own magenta. It comes in turning twice round its upright axis, as the
+// rooster does in a gust, then sways a little of its own and turns toward the pointer. Not under
+// reduced motion, nor where there is no WebGL: the flat star stays
+import * as THREE from 'three';
+import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
+import { gsap } from 'gsap';
+
+const flat = document.querySelector('.star'), four = document.querySelector('.four'), stage = flat.parentElement;
+// the star's box in the 404's drawing (2317 x 1134): its middle, size and the sheet's thickness, the
+// rooster's 4 in 136 high
+const CX = 1152.03, CY = 235.22, W = 320.04, H = 368.92, DEPTH = 11;
+const FOV = 24;
+
+async function mount() {
+  const d = (await (await fetch(flat.src)).text()).match(/ d="([^"]+)"/)[1];
+  const shapes = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`).paths.flatMap(p => SVGLoader.createShapes(p));
+  const geo = new THREE.ExtrudeGeometry(shapes, { depth: DEPTH, bevelEnabled: true, bevelThickness: 1.6, bevelSize: 1.1, bevelSegments: 2, curveSegments: 10 });
+  geo.translate(-CX, -CY, -DEPTH / 2);
+
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, premultipliedAlpha: false });
+  // a canvas pixel a dither cell, CELL CSS pixels square (2 on a phone), scaled up with no smoothing
+  const CELL = innerWidth < 600 ? 2 : 3;
+  renderer.setPixelRatio(1 / CELL);
+  renderer.setClearColor(0x000000, 0);
+  renderer.toneMapping = THREE.NoToneMapping;
+  const canvas = renderer.domElement;
+  canvas.setAttribute('aria-hidden', 'true');
+
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer), studio = new THREE.Scene();
+  studio.add(new THREE.Mesh(new THREE.SphereGeometry(30, 32, 16), new THREE.ShaderMaterial({ side: THREE.BackSide,
+    vertexShader: 'varying vec3 vP; void main() { vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+    fragmentShader: 'varying vec3 vP; void main() { float t = smoothstep(-.6, .9, vP.y + .25 * vP.x); gl_FragColor = vec4(vec3(mix(.03, .55, t)), 1.); }' })));
+  const panel = (w, h, x, y, z, k) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k, k), side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); studio.add(m); };
+  panel(1.5, 9, -6, 1, 6, 5); panel(9, 1.6, 0, 8, 4, 3); panel(2.5, 7, 7, 0, 3, 4);
+  panel(1.2, 8, 3, 2, -7, 5); panel(.7, 9, -1.6, 0, 9, 4);
+  scene.environment = pmrem.fromScene(studio, .03).texture;
+  // hammered metal: soft dents as a normal map, so the light breaks up over the flat faces
+  const N = 256, hc = document.createElement('canvas'); hc.width = hc.height = N;
+  const hg = hc.getContext('2d'); hg.fillStyle = '#808080'; hg.fillRect(0, 0, N, N);
+  for (let i = 0; i < 160; i++) {
+    const x = Math.random() * N, y = Math.random() * N, r = 6 + Math.random() * 22;
+    for (const [dx, dy] of [[0, 0], [N, 0], [-N, 0], [0, N], [0, -N]]) {
+      const gr = hg.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
+      gr.addColorStop(0, 'rgba(0,0,0,.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      hg.fillStyle = gr; hg.fillRect(x + dx - r, y + dy - r, 2 * r, 2 * r);
+    }
+  }
+  const hd = hg.getImageData(0, 0, N, N).data, nd = new Uint8Array(N * N * 4), at = (x, y) => hd[(((y + N) % N) * N + (x + N) % N) * 4] / 255;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const nx = (at(x - 1, y) - at(x + 1, y)) * 1.5, ny = (at(x, y - 1) - at(x, y + 1)) * 1.5, l = Math.hypot(nx, ny, 1), i = (y * N + x) * 4;
+    nd[i] = (nx / l * .5 + .5) * 255; nd[i + 1] = (ny / l * .5 + .5) * 255; nd[i + 2] = (1 / l * .5 + .5) * 255; nd[i + 3] = 255;
+  }
+  const normalMap = new THREE.DataTexture(nd, N, N); normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+  normalMap.repeat.set(1 / 120, 1 / 120); normalMap.needsUpdate = true;   // the rooster's dents, at the star's scale
+  const mat = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, metalness: 1, roughness: .35, envMapIntensity: 1, normalMap, normalScale: new THREE.Vector2(.4, .4) });
+  mat.onBeforeCompile = sh => {
+    sh.uniforms.uDark = { value: new THREE.Vector3(0, 0, 0) };
+    sh.uniforms.uLight = { value: new THREE.Vector3(194, 57, 199).divideScalar(255) };
+    sh.uniforms.uGain = { value: .3 };
+    sh.fragmentShader = sh.fragmentShader
+      .replace('void main() {', `uniform vec3 uDark, uLight; uniform float uGain;
+        float bayer4(ivec2 p) {
+          float m[16] = float[16](16., 5., 13., 1., 8., 12., 4., 9., 14., 2., 15., 3., 6., 10., 7., 11.);
+          return m[p.x * 4 + p.y] / 17.;
+        }
+        void main() {`)
+      .replace('#include <dithering_fragment>', `
+        float b = dot(gl_FragColor.rgb, vec3(1.)) * uGain;
+        bool dark = b < 1. / 17. || (b <= 16. / 17. && b < bayer4(ivec2(mod(gl_FragCoord.xy, 4.))));
+        gl_FragColor = vec4(dark ? uDark : uLight, 1.);`);
+  };
+  const star = new THREE.Mesh(geo, mat);
+  star.scale.y = -1;                                       // the SVG's y runs down
+  const pivot = new THREE.Group(); pivot.add(star); scene.add(pivot);
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 1, 8000);
+
+  // the canvas covers the star and the room it turns in, in whole cells; the camera stands where one
+  // unit of the drawing is the 404's own scale on screen
+  const place = () => {
+    const r = four.getBoundingClientRect(), s = stage.getBoundingClientRect(), unit = r.height / 1134;
+    const w = Math.ceil(W * 1.3 * unit / CELL) * CELL, h = Math.ceil(H * 1.18 * unit / CELL) * CELL;
+    const x = r.left - s.left + CX * unit, y = r.top - s.top + CY * unit;
+    Object.assign(canvas.style, { left: `${Math.round(x - w / 2)}px`, top: `${Math.round(y - h / 2)}px`, width: `${w}px`, height: `${h}px` });
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.position.set(0, 0, (h / unit) / 2 / Math.tan(FOV * Math.PI / 360));
+    camera.updateProjectionMatrix();
+  };
+  // the pointer as a breeze: the star turns toward it (up to 35° either way) and tips a little; on
+  // touch nothing follows and it keeps its own sway
+  const aim = { x: 0, y: 0 }, lean = { x: 0, y: 0 }, turn = { a: 0 };
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) addEventListener('pointermove', e => {
+    const r = canvas.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    aim.x = Math.max(-1, Math.min(1, (e.clientX - cx) / (innerWidth / 2)));
+    aim.y = Math.max(-1, Math.min(1, (e.clientY - cy) / (innerHeight / 2)));
+  }, { passive: true });
+  let still = 0, last = 0;
+  const tick = (time, dt) => {
+    still = time - last > .6 ? Math.min(1, still + .02) : 0;
+    const k = 1 - Math.exp(-dt / 1000 * 3.5);
+    lean.x += (aim.x - lean.x) * k; lean.y += (aim.y - lean.y) * k;
+    pivot.rotation.y = (turn.a + still * 7 * Math.sin(time * 1.1) + lean.x * 35) * Math.PI / 180;
+    pivot.rotation.x = (.06 * Math.sin(time * .7) * still) + lean.y * .18;
+    pivot.rotation.z = -lean.x * .05;
+    renderer.render(scene, camera);
+  };
+  await renderer.compileAsync(scene, camera);
+  stage.append(canvas); place();
+  addEventListener('resize', () => requestAnimationFrame(place));
+  tick(0, 16); flat.classList.add('solid');
+  gsap.ticker.add(tick);
+  // in on a gust: twice round, past where it stops and back, as the rooster turns
+  gsap.timeline({ delay: .2, onUpdate: () => (last = gsap.ticker.time) })
+    .to(turn, { a: 720, duration: 2.4, ease: 'power3.inOut' })
+    .to(turn, { a: 738, duration: .3, ease: 'sine.out' })
+    .to(turn, { a: 720, duration: 1.1, ease: 'elastic.out(1, .35)' });
+}
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) mount().catch(() => {});
+</script>
 </body>
 </html>
