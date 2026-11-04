@@ -552,10 +552,11 @@ html.loading { overflow: hidden; }
 /* a tablet held upright, as Figma's Tablet frames (768 wide) have it: the small type a size up; the
    hero, By Lavi, the footer and the last print set out again in columns. In px, Figma's at 768 */
 @media (min-width: 600px) and (max-width: 899px) {
-  main > * { --f16: 13px; --f20: 14.5px; --f40: 24px; }
+  /* one small size, 14, for all the small type (as the phone has one, 16): 13, 14 and 14.5 side by
+     side read as one size set unevenly */
+  main > * { --f16: 14px; --f20: 14px; --f40: 24px; }
 
   /* the hero: an 80px title, then its small type in three columns, the fan's picture under them */
-  .hero, .by { --f20: 14px; }
   .hero :is(.hero-intro, .hero-refund, .hero-promise), .by :is(.by-side, .by-note, .by-ruled) { letter-spacing: -.07em; line-height: 1.2; font-weight: 400; }
   /* Figma sets these lines whole, their leading kept (not trimmed to the caps) */
   .hero-intro p, .hero-refund, .hero-promise .stack > :not(.num) { text-box: normal; }
@@ -581,6 +582,11 @@ html.loading { overflow: hidden; }
   .foot { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
   .foot-links { display: grid; grid-template-columns: repeat(4, 109px); column-gap: 16px; align-items: start; gap: 0 16px; }
   .qr { order: 0; }
+
+  /* the spaces between blocks on the 8px step (By Lavi's own below): the price's rows 8 apart (its
+     title's lines 8 apart with them, as the hero's), its blocks 64 and 24 down */
+  .price { row-gap: 8px; }
+  .price-fund, .price-year, .price-gets { margin-top: calc(2lh - 8px); }
 }
 /* a phone, after the tablet: the same type (a 48px title, 16px small type to read it by, with its
    leading kept) and the same placing where a phone has room for it: the hero's intro, then its refund
@@ -591,7 +597,7 @@ html.loading { overflow: hidden; }
   .level-hand { r: 22px; }
   .level-time { font-size: 28px; }
   .level-now { font-size: 16px; }
-  main > *, .hero, .by { --f16: 16px; --f20: 16px; }
+  main > *, .hero, .by { --f16: 16px; --f20: 16px; --f40: 24px; }   /* 24 as the years and the session's length, not 22 beside them */
   .hero :is(.hero-intro, .hero-refund, .hero-promise), .by :is(.by-side, .by-note, .by-ruled) { letter-spacing: -.07em; line-height: 1.2; font-weight: 400; }
   .hero-intro p, .hero-refund, .hero-promise .stack > :not(.num) { text-box: normal; }
   br.tb { display: inline; }
@@ -717,6 +723,12 @@ v-ghost :is(img, svg, video, canvas) { visibility: hidden; }
   .by-right { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
   .by-side { grid-column: 1; width: min(100% - 27px, 300px); margin-left: 27px; }   /* room for the (*) hung in the margin */
   .by-cam { grid-column: 2; }
+  /* on the 8px step, as the price: the session's length 16 over the syllabus, the credits' lines 8
+     apart, the frame's lines 16 */
+  .by-time { padding-bottom: 16px; }
+  .by-years { margin-top: 8px; }
+  .by-exp { margin-top: 8px; row-gap: 8px; }
+  .by-cam-idle, .by-cam-live { gap: 16px; }
 }
 @media (max-width: 599px) {
   .by-strip { height: 40px; }
@@ -749,7 +761,7 @@ v-ghost :is(img, svg, video, canvas) { visibility: hidden; }
   :is(.price h2, .foot h2, .price-now) { font-size: 80px; letter-spacing: -.02em; }
   :is(.price h2, .foot h2) .serif { letter-spacing: -.04em; }
   .foot h2 { gap: 12px; }
-  .price-every, .price-dong { margin-top: -2px; }
+  .price-every, .price-dong { margin-top: 0; }
 }
 @media (max-width: 599px) {
   :is(.price h2, .foot h2, .price-now) { font-size: 48px; letter-spacing: -.02em; }
