@@ -9,7 +9,7 @@
 //   3b. Level up's black eats up through By Lavi along a ragged, dithered front
 //   4. the LEVEL UP stairs run on and on, every tag stepping in to the tier above it, and the clock behind them ticks
 //   4b. the last print's weathervane turns twice round on its mast
-//   4c. every block of text rises into view from its own foot, and bends and splits its red with the scroll's speed
+//   4c. every block of text rises into view from its own foot, and bends with the scroll's speed
 //   5. the old price is struck through, and the new one's first digit rolls down from 8 to 5
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger.js';
@@ -28,7 +28,7 @@ const root = document.documentElement;
 // the print as it is drawn), shaded as the scene shades it, the black going as they go. Once they
 // are down the fan is shown under them and they fade, so the 3D prints take over in place. Only
 // then does the page scroll and the hero's type come up (the intro)
-const DEAL = 1.5, STEP = .11;                           // seconds a card flies, and between cards: each well off before the next leaves
+const DEAL = .7, STEP = .035;                           // seconds a card flies, and between cards: each well off before the next leaves
 // the CSS matrix3d that lays a w × h box on four points (top left round to bottom left)
 function onQuad(w, h, [[x0, y0], [x1, y1], [x2, y2], [x3, y3]]) {
   const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
@@ -36,14 +36,17 @@ function onQuad(w, h, [[x0, y0], [x1, y1], [x2, y2], [x3, y3]]) {
   const a = x1 - x0 + g * x1, b = x3 - x0 + hh * x3, d = y1 - y0 + g * y1, e = y3 - y0 + hh * y3;
   return `matrix3d(${a / w},${d / w},0,${g / w},${b / h},${e / h},0,${hh / h},0,0,1,0,${x0},${y0},0,1)`;
 }
-// (setup, the page's own motion set up while the loader still covers it, runs between the two, so the
-// frame the deal hands over in has nothing left to build)
-async function loader(setup) {
+// (setup, the page's own motion set up while the loader still covers it, runs as soon as the fonts and
+// the fan are in, while the pile is still coming, so the frame the deal hands over in has nothing left
+// to build, and the deal never waits for it after the pile is done; enter, the hero's type coming up,
+// starts while the last cards are still in the air)
+async function loader(setup, enter) {
   const el = $('#loader');
   const fanP = import('./fan.js').catch(() => null);
-  await Promise.race([Promise.all([window.loaderPile, document.fonts.ready, fanP]), new Promise(r => setTimeout(r, 6000))]);
+  const setupP = Promise.all([document.fonts.ready, fanP]).then(([, f]) => setup?.(f));
+  await Promise.race([Promise.all([window.loaderPile, setupP]), new Promise(r => setTimeout(r, 6000))]);
   const fan = await Promise.race([fanP, null]);
-  await setup?.(fan);
+  await setupP;
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));   // its work off the deal's first frame
   const open = () => { el?.remove(); root.classList.remove('loading'); gsap.set('.fan-stage', { autoAlpha: 1 }); fan?.lenis.start(); };
   if (!el || !fan || reduce) { if (el) gsap.to(el, { autoAlpha: 0, duration: .4, onComplete: open }); else open(); return; }
@@ -53,6 +56,7 @@ async function loader(setup) {
   const cards = $$('.loader-card', el).map(c => {
     const r = c.dataset.r * Math.PI / 180, cx = p.left + w / 2 + c.dataset.tx / 100 * w, cy = p.top + h / 2 + c.dataset.ty / 100 * h;
     const at = ([x, y]) => [cx + x * Math.cos(r) - y * Math.sin(r), cy + x * Math.sin(r) + y * Math.cos(r)];
+    c.getAnimations().forEach(an => an.cancel());       // the last card's pop onto the pile (index.html) may still run: its scale would hold the card at the corner
     Object.assign(c.style, { position: 'fixed', inset: 'auto', left: 0, top: 0, width: `${w}px`, height: `${h}px`, transformOrigin: '0 0' });
     const veil = document.createElement('i'); veil.className = 'loader-veil'; c.append(veil);
     return { el: c, img: c.querySelector('img'), veil, k: +c.dataset.k, from: [at([-w / 2, -h / 2]), at([w / 2, -h / 2]), at([w / 2, h / 2]), at([-w / 2, h / 2])] };
@@ -97,17 +101,18 @@ async function loader(setup) {
   };
   place();
   // the 3D fan stays hidden until the cards are down on it: the intro, which starts while they are
-  // still in the air, would otherwise let it show under them (two sets of the same prints)
+  // still in the air (enter), would otherwise let it show under them (two sets of the same prints)
   gsap.set('.fan-stage', { autoAlpha: 0 });
   const dealt = new Promise(r => gsap.timeline({ onComplete: () => { open(); r(); } })
-    .to($('.loader-count', el), { autoAlpha: 0, duration: .5 }, 0)
+    .to($('.loader-count', el), { autoAlpha: 0, duration: .3 }, 0)
     .to(clock, { t: total, duration: total, ease: 'none', onUpdate: place }, 0)
-    .to(el, { backgroundColor: 'rgba(0, 0, 0, 0)', duration: .6, ease: 'power1.inOut' }, .45)
+    .to(el, { backgroundColor: 'rgba(0, 0, 0, 0)', duration: .4, ease: 'power1.inOut' }, .1)
+    .call(() => enter?.(), null, .45)
     // the dealt cards lie on the 3D prints now: show those under them, and let the cards go
     .set('.fan-stage', { autoAlpha: 1 }, total)
-    .to(cards.map(c => c.el), { autoAlpha: 0, duration: .35, ease: 'power1.inOut', onUpdate: place }, total));
-  // the loader is the fan's first moment: the page stays still and the hero's type waits until the
-  // prints are down and the 3D fan has them
+    .to(cards.map(c => c.el), { autoAlpha: 0, duration: .25, ease: 'power1.inOut', onUpdate: place }, total));
+  // the loader is the fan's first moment: the page stays still until the prints are down and the 3D
+  // fan has them
   await dealt;
 }
 
@@ -135,7 +140,7 @@ const RULED = '.hero-intro p, .hero-refund, .hero-promise .stack > *';
 // the ink of some runs of text, against origin (a DOMRect): every letter's box and its glyph's own ink
 // (measured), and the lines' cap middles, the middles of their marks too (a Vietnamese capital's mark
 // over it to the dot under), and pitch (but not of the runs skip names, as numbers in another face), the
-// copies the scroll's slip makes of the text (v-ghost) and what is only for a screen reader left out.
+// what is only for a screen reader left out.
 // The baseline is the browser's own, read off a probe set on it (the canvas's ascent is whole pixels).
 // With only lines asked for (inkOf.LINES), each run of text is read a line at a time, not a letter
 const inkG = document.createElement('canvas').getContext('2d'), inkCache = new Map();
@@ -169,7 +174,7 @@ function inkOf(els, origin, skip = () => false, only = '') {
       }
     }
     const pitch = parseFloat(cs.lineHeight) || fs * 1.2;
-    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: t => t.parentElement.closest('v-ghost, .sr-only') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: t => t.parentElement.closest('.sr-only') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
     const line = base => { if (counts && !lines.some(l => Math.abs(l.base - base) < 1)) lines.push({ base, mid: base - cap / 2, marks: base - marks, pitch, fs }); };
     if (only === inkOf.LINES) {
       // a line of a run is a box of its own (its letters' boxes share its top)
@@ -515,11 +520,11 @@ function xray() {
   // price's rolling digit once it has rolled)
   const inline = el => {
     const d = getComputedStyle(el).display;
-    return d.startsWith('inline') || d === 'none' || el.tagName === 'BR' || el.tagName === 'V-GHOST'
+    return d.startsWith('inline') || d === 'none' || el.tagName === 'BR'
       || !el.textContent.trim() || !!el.closest('.sr-only') || !el.getClientRects().length;
   };
   // a run of text that is drawn: not the slip's copies, nor for a screen reader only, nor hidden
-  const drawn = t => { const p = t.parentElement; return !p.closest('v-ghost, .sr-only') && p.getClientRects().length && getComputedStyle(p).visibility !== 'hidden'; };
+  const drawn = t => { const p = t.parentElement; return !p.closest('.sr-only') && p.getClientRects().length && getComputedStyle(p).visibility !== 'hidden'; };
   const shown = el => { const cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > .05; };
   const draw = () => {
     const W = innerWidth, H = innerHeight, dpr = devicePixelRatio || 1;
@@ -558,7 +563,7 @@ function xray() {
     // the blocks of type on the screen: boxes holding only inline content
     const blocks = [];
     for (const e of $$('main *')) {
-      if (e.closest('v-ghost, .sr-only, .xr-lens, svg, .by-strip, .level-stack') || inline(e) || !e.textContent.trim()) continue;
+      if (e.closest('.sr-only, .xr-lens, svg, .by-strip, .level-stack') || inline(e) || !e.textContent.trim()) continue;
       const r = e.getBoundingClientRect();
       if (!on(r) || !shown(e) || ![...e.querySelectorAll('*')].every(inline)) continue;
       blocks.push(e);
@@ -1053,13 +1058,8 @@ function vane() {
 //    let go again when it leaves, so it rises each time it comes back;
 //  - as the page scrolls, every block bends with the scroll's speed, as the demo's wave: across the
 //    screen it shifts sideways by sin(its height on screen * f + time) (f = 4 + speed), a transform,
-//    composited; and where the demo's red slips off its green and blue, here the type itself stays
-//    whole, in its colour, and what slips out from under it is in the page's palette and its dither: a
-//    copy of its type behind it (made the first time it bends), in the dark magenta, offset
-//    either way along the scroll and broken into a Bayer dither, denser the faster. (An SVG filter for
-//    the demo's split and its ripple along the lines cost 20-45 ms a frame on the hero's big type, so it
-//    is done this way.) The speed is Lenis's, eased by 0.15 a frame, as the demo's; at rest it all
-//    comes off
+//    composited; the type stays whole, in its colour, with nothing slipping out from under it. The
+//    speed is Lenis's, eased by 0.15 a frame, as the demo's; at rest it all comes off
 const REVEAL = ['.by-time', '.by-side > *', '.by-cam', '.by-syllabus li',
   '.price-first > *', '.price-fund > p', '.price-fund li', '.price-year', '.price-label', '.price-was', '.price-terms',
   '.foot-media figcaption', '.foot-note', '.foot-label', '.foot-links li', '.foot-mark', '.foot-made'];
@@ -1074,76 +1074,26 @@ function reveal() {
     ScrollTrigger.create({ trigger: e, start: 'top bottom', end: 'bottom top', onEnter: show, onEnterBack: show, onLeave: hide, onLeaveBack: hide });
   }
 }
-// the slip's dither: a 4x4 Bayer tile per density (a quarter of the cells to three quarters), kept
-// wherever the cell's threshold is under the density, as a mask; drawn in device pixels, a cell a whole
-// number of them (about 2 CSS pixels), so the mask is never smoothed between cells; made as the slip is
-// set up
-let DITHER;
-const ditherOf = () => {
-  const m = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-  const dpr = devicePixelRatio || 1, cell = Math.max(1, Math.round(2 * dpr));
-  root.style.setProperty('--dither-size', `${4 * cell / dpr}px`);
-  return Promise.all(Array.from({ length: 9 }, (_, k) => {
-    const d = .25 + k / 16, c = document.createElement('canvas'); c.width = c.height = 4 * cell;
-    const g = c.getContext('2d');
-    for (let i = 0; i < 16; i++) if ((m[i] + .5) / 16 < d) g.fillRect((i % 4) * cell, (i >> 2) * cell, cell, cell);
-    return tileURL(c);
-  }));
-};
-// (pause as byRules takes it: the copies are made a few blocks a task)
-async function warp(lenis, pause) {
-  DITHER = await ditherOf();
+function warp(lenis) {
   const els = [...new Set(WARP.flatMap(sel => $$(sel)))].filter(e => !e.matches('.by-photo, .by-cam'));
-  let v = 0, on = false, level = -1;
-  const lit = els.map(() => false), made = els.map(() => false);
-  // the slip: a copy of the type behind it. A copy of the whole block
-  // would have to be laid out as the block is (subgrids, rules by position among siblings, lines still
-  // rising), so the copy is made per run of text instead: in every box of the block that holds only
-  // inline content, its content again, in a box of its own over the box's content (the same width, so it
-  // breaks into the same lines; index.html v-ghost), moving with it whatever moves it, out of reach of
-  // readers, the pointer and the keyboard. Laid out again from scratch when the screen changes size
-  const flat = n => { const d = getComputedStyle(n).display; return d.startsWith('inline') || n.tagName === 'BR'; };
-  const ghosts = e => {
-    for (const n of [e, ...e.querySelectorAll('*')]) {
-      if (flat(n) || n.matches('v-ghost, v-ghost *') || n.querySelector(':scope > v-ghost') || !n.textContent.trim()) continue;
-      const d = getComputedStyle(n);
-      if (d.display === 'none' || d.display === 'contents' || ![...n.querySelectorAll('*')].every(flat)) continue;
-      if (d.position === 'static') n.style.position = 'relative';
-      const g = document.createElement('v-ghost');
-      g.setAttribute('aria-hidden', 'true'); g.inert = true;
-      g.innerHTML = n.innerHTML;
-      g.querySelectorAll('[id]').forEach(c => c.removeAttribute('id'));
-      n.append(g);
-    }
-  };
-  // made with the rest of the page's setup, under the loader, so none is made mid-scroll; after a resize,
-  // as each block next bends
-  for (let i = 0, t = performance.now(); i < els.length; i++) {
-    ghosts(els[i]); made[i] = true;
-    if (pause && performance.now() - t > 8) { await pause(); t = performance.now(); }
-  }
-  addEventListener('resize', () => { $$('v-ghost').forEach(g => g.remove()); made.fill(false); });
+  let v = 0, on = false;
+  const lit = els.map(() => false);
   gsap.ticker.add((time, dt) => {
     // Lenis eases the scroll over a second, so a wheel flick runs at only ~12px a frame at its peak:
     // full strength there, with a curve that lifts the slower part of the glide; eased as the demo's
     const raw = Math.min(1, Math.abs(lenis.velocity) / 12) ** .6 * Math.sign(lenis.velocity);
     v += (raw - v) * (1 - Math.pow(1 - .15, dt / 16.67));
     const live = Math.abs(v) > .02;
-    if (live !== on && !live) { els.forEach((e, i) => { e.classList.remove('warp'); e.style.translate = ''; lit[i] = false; }); level = -1; }
+    if (live !== on && !live) { els.forEach((e, i) => { e.style.translate = ''; lit[i] = false; }); }
     on = live;
     if (!live) return;
     const H = innerHeight, amp = v * .012 * innerWidth, f = 4 + Math.abs(v);
-    root.style.setProperty('--split', (v * 7).toFixed(2));
-    // the faster, the denser the slip's cells: a quarter of them at a crawl, three quarters at full speed
-    const k = Math.round(Math.abs(v) * 8);
-    if (k !== level) { level = k; root.style.setProperty('--dither', DITHER[k]); }
     // the wave across the screen: read every block's place first, then move the ones on screen
     const ys = els.map(e => { const r = e.getBoundingClientRect(); return r.bottom < -40 || r.top > H + 40 ? null : (r.top + r.height / 2) / H; });
     els.forEach((e, i) => {
       const seen = ys[i] !== null;
-      if (seen && !made[i]) { made[i] = true; ghosts(e); }
       if (seen) e.style.translate = `${(amp * Math.sin(ys[i] * f + time)).toFixed(1)}px 0`;
-      if (seen !== lit[i]) { lit[i] = seen; e.classList.toggle('warp', seen); if (!seen) e.style.translate = ''; }
+      if (seen !== lit[i]) { lit[i] = seen; if (!seen) e.style.translate = ''; }
     });
   });
 }
@@ -1189,6 +1139,8 @@ async function start() {
   if (reduce) { root.classList.remove('intro'); $('.foot-media video')?.pause(); await loader(); rules(); byRules(); pageRules(); strip(); camera(); settled = true; return; }
   // (each part set up in a task of its own, so the page is never held up long while the loader shows)
   const pause = () => new Promise(r => setTimeout(r, 0));
+  let entered = false;
+  const enter = () => { if (!entered) { entered = true; intro(); } };
   await loader(async fan => {
     await pause();
     await warmGlyphs(pause); await pause();
@@ -1206,7 +1158,7 @@ async function start() {
     // the fan's eased scroll drives the triggers, in the same frame as the scene
     fanLenis = fan?.lenis;
     fan?.lenis.on('scroll', ScrollTrigger.update);
-    if (fan) await warp(fan.lenis, pause);
+    if (fan) warp(fan.lenis);
     // the hero's rules, laid where its type will rest and hidden for the intro to draw (as intro would)
     heroRuled = rules(); gsap.set(heroRuled, { clipPath: 'inset(0 100% 0 0)' });
     await pause();
@@ -1214,7 +1166,7 @@ async function start() {
     ScrollTrigger.addEventListener('refresh', snapSoon);
     ScrollTrigger.addEventListener('scrollEnd', snapSoon);   // Level up's pin moves what follows it by a fraction while it holds
     ScrollTrigger.refresh();
-  });
-  intro();
+  }, enter);
+  enter();
 }
 start();

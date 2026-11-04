@@ -20,9 +20,9 @@
       window.warmGL = warm;                      // (kept: its context, let go, would take the warmth with it)
     } catch {} }));
     const tick = now => {
-      shown = Math.min(n / files.length * 100, shown + (now - last) * (still ? 1 : .06)); last = now;
+      shown = Math.min(n / files.length * 100, shown + (now - last) * (still ? 1 : .25)); last = now;
       count.textContent = `${Math.floor(shown)}%`;
-      if (shown >= 100) setTimeout(done, still ? 0 : 350); else requestAnimationFrame(tick);
+      if (shown >= 100) setTimeout(done, still ? 0 : 60); else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
     const land = (img, k) => {
@@ -50,7 +50,7 @@
     };
     window.pileGot = (k, blob) => show(k, URL.createObjectURL(blob));
     setTimeout(() => files.forEach((f, k) => show(k, `assets/fan/${small}${f}.webp`)), 5000);
-    ready.reduce((prev, p, k) => prev.then(() => p).then(img => { land(img, k); return new Promise(r => setTimeout(r, still ? 0 : 160)); }), Promise.resolve());
+    ready.reduce((prev, p, k) => prev.then(() => p).then(img => { land(img, k); return new Promise(r => setTimeout(r, still ? 0 : 40)); }), Promise.resolve());
   })();
 </script>
 <main>

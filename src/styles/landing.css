@@ -103,7 +103,7 @@ html.loading { overflow: hidden; }
 .hero-bar {
   position: absolute; top: calc(21 * var(--px)); left: var(--gap); right: var(--gap);
   display: flex; justify-content: space-between;
-  font-size: var(--f16); letter-spacing: -.05em;
+  font-size: var(--f16); letter-spacing: -.02em;
 }
 .hero-bar a { position: relative; text-underline-position: from-font; }
 /* the small links' hit areas at least 24 tall (their type is 11 to 16): reached past the letters,
@@ -205,7 +205,7 @@ html.loading { overflow: hidden; }
 .by-label { grid-column: 4; }
 .by-syllabus { grid-column: 5 / span 4; display: flex; flex-direction: column; font-weight: 500; }
 .by-syllabus li { display: grid; grid-template-columns: calc(126 * var(--px)) 1fr; column-gap: var(--gap); align-items: baseline; }
-.by-syllabus .serif { text-align: right; letter-spacing: -.05em; }
+.by-syllabus .serif { text-align: right; letter-spacing: -.02em; }
 .by-rules { position: absolute; inset: 0; pointer-events: none; }
 .by-rules div { position: absolute; left: 0; right: 0; height: var(--hair, 1px); }
 .by-rules i { position: absolute; top: 0; height: var(--hair, 1px); background: #000; }
@@ -216,7 +216,7 @@ html.loading { overflow: hidden; }
 .by-side {
   grid-column: 1 / -1; margin-top: calc(34 * var(--px)); padding-bottom: calc(6 * var(--px));
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--gap); align-content: start;
-  font-weight: 500; font-size: var(--f20); letter-spacing: -.05em;
+  font-weight: 500; font-size: var(--f20); letter-spacing: -.02em;
 }
 .by-made { grid-column: 1 / -1; grid-row: 1; }
 .by-studio { grid-column: 2 / -1; grid-row: 1; align-self: end; }
@@ -417,7 +417,7 @@ html.loading { overflow: hidden; }
 .price-worth { grid-column: 4 / -1; grid-row: 1; }
 .price-every { grid-column: 5 / span 4; grid-row: 2; }
 .price-dong { grid-column: 9 / span 4; grid-row: 2; }
-.price-first, .price-fund, .price-year { grid-row: 3; margin-top: calc(8 * var(--px)); font-size: var(--f20); letter-spacing: -.05em; }
+.price-first, .price-fund, .price-year { grid-row: 3; margin-top: calc(8 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; }
 .price-first { grid-column: 1 / span 4; display: flex; flex-direction: column; align-items: flex-end; }
 .price-first p:not(:last-child) { width: 100%; }
 .price-first p:last-child { width: calc(412 * var(--tu)); }
@@ -431,7 +431,7 @@ html.loading { overflow: hidden; }
 .price-year { grid-column: 11 / span 2; text-align: right; }
 /* what the course gives, set against what the money is for: on the right, a line under the year, its
    lines level with the fund's, each led by a (→) as the fund's are by a (*) */
-.price-gets { grid-column: 10 / -1; grid-row: 3; margin-top: calc(8 * var(--px) + 1lh); font-size: var(--f20); letter-spacing: -.05em; }
+.price-gets { grid-column: 10 / -1; grid-row: 3; margin-top: calc(8 * var(--px) + 1lh); font-size: var(--f20); letter-spacing: -.02em; }
 .price-gets li { display: grid; grid-template-columns: 2.4em 1fr; align-items: baseline; }
 .price-gets li .serif { letter-spacing: -.01em; line-height: 0; }
 /* the small type on one line grid, as By Lavi's syllabus and the footer's note: each line 1.2 of its
@@ -439,10 +439,10 @@ html.loading { overflow: hidden; }
    (whole lines apart there), are a line apart and its rules even (motion.js pageRules) */
 .price :is(.price-first, .price-fund, .price-year, .price-gets) { line-height: 1.2; }
 .price :is(.price-first, .price-fund, .price-gets) :is(p, li, span), .price .price-year { text-box: normal; }
-.price-label { grid-column: 4 / span 2; grid-row: 4; margin-top: calc(69 * var(--px)); font-size: var(--f20); letter-spacing: -.05em; }   /* on the old price's baseline, as Figma's box of 27 sets it */
+.price-label { grid-column: 4 / span 2; grid-row: 4; margin-top: calc(69 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; }   /* on the old price's baseline, as Figma's box of 27 sets it */
 .price-tag { grid-column: 6 / span 6; grid-row: 4; margin-top: calc(56 * var(--px)); display: flex; flex-direction: column; gap: var(--gap); }
 .price-was { font-size: var(--f40); text-decoration: line-through; text-decoration-skip-ink: none; text-underline-position: from-font; }
-.price-terms { display: grid; grid-template-columns: calc(412 * var(--tu)) auto; column-gap: var(--gap); font-size: var(--f20); letter-spacing: -.05em; }
+.price-terms { display: grid; grid-template-columns: calc(412 * var(--tu)) auto; column-gap: var(--gap); font-size: var(--f20); letter-spacing: -.02em; }
 .price-terms span:last-child { white-space: nowrap; }
 
 /* ----- the end ----- */
@@ -461,17 +461,17 @@ html.loading { overflow: hidden; }
 .foot-clip video, .foot-clip canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
 .foot-clip canvas { image-rendering: pixelated; }
 .foot-clip:not(.dithered) canvas { visibility: hidden; }
-.foot-media figcaption { font-size: var(--f20); line-height: 1.2; letter-spacing: -.05em; }
-.foot-note, .foot-label { font-size: var(--f20); letter-spacing: -.05em; }
+.foot-media figcaption { font-size: var(--f20); line-height: 1.2; letter-spacing: -.02em; }
+.foot-note, .foot-label { font-size: var(--f20); letter-spacing: -.02em; }
 /* Figma's Frame 22: the contacts 33 under the title (its row of links, the QR code 4 lower, "liên hệ
    qua" on their baseline), then 32 under the QR code the note between a (*) and "made by lavi design
    studio", all on the note's first line. --nudge (motion.js pageRules) lowers that last row by what
    puts "liên hệ qua" a whole number of the note's lines over it, so the rules centre both */
 .foot-note { grid-column: 6 / span 3; grid-row: 3; line-height: 1.2; }
 .foot :is(.foot-mark, .foot-note, .foot-made) { margin-top: calc(32 * var(--px) + var(--nudge, 0px)); }
-.foot-mark { grid-column: 2; grid-row: 3; font-size: var(--f20); line-height: 1.2; letter-spacing: -.05em; }
-.foot-made { grid-column: 10 / -1; grid-row: 3; display: grid; grid-template-columns: subgrid; font-size: var(--f20); line-height: 1.2; letter-spacing: -.05em; }
-.foot-made .serif { grid-column: 2 / -1; letter-spacing: -.05em; }
+.foot-mark { grid-column: 2; grid-row: 3; font-size: var(--f20); line-height: 1.2; letter-spacing: -.02em; }
+.foot-made { grid-column: 10 / -1; grid-row: 3; display: grid; grid-template-columns: subgrid; font-size: var(--f20); line-height: 1.2; letter-spacing: -.02em; }
+.foot-made .serif { grid-column: 2 / -1; letter-spacing: -.02em; }
 /* the fan's pages once more, round a ring (ring.js), across the whole screen under the note */
 .foot-ring { grid-column: 1 / -1; grid-row: 4; margin: calc(24 * var(--px)) calc(-1 * var(--gap)) 0; height: max(360px, calc(680 * var(--px))); pointer-events: none; }
 .foot-ring canvas { display: block; width: 100%; height: 100%; }
@@ -571,7 +571,7 @@ html.loading { overflow: hidden; }
   main > * { --f16: 14px; --f20: 14px; --f40: 24px; }
 
   /* the hero: an 80px title, then its small type in three columns, the fan's picture under them */
-  .hero :is(.hero-intro, .hero-refund, .hero-promise), .by :is(.by-side, .by-note, .by-ruled) { letter-spacing: -.07em; line-height: 1.2; font-weight: 400; }
+  .hero :is(.hero-intro, .hero-refund, .hero-promise), .by :is(.by-side, .by-note, .by-ruled) { letter-spacing: -.03em; line-height: 1.2; font-weight: 400; }
   /* Figma sets these lines whole, their leading kept (not trimmed to the caps) */
   .hero-intro p, .hero-refund, .hero-promise .stack > :not(.num) { text-box: normal; }
   br.tb { display: inline; }
@@ -612,7 +612,7 @@ html.loading { overflow: hidden; }
   .level-time { font-size: 28px; }
   .level-now { font-size: 16px; }
   main > *, .hero, .by { --f16: 16px; --f20: 16px; --f40: 24px; }   /* 24 as the years and the session's length, not 22 beside them */
-  .hero :is(.hero-intro, .hero-refund, .hero-promise), .by :is(.by-side, .by-note, .by-ruled) { letter-spacing: -.07em; line-height: 1.2; font-weight: 400; }
+  .hero :is(.hero-intro, .hero-refund, .hero-promise), .by :is(.by-side, .by-note, .by-ruled) { letter-spacing: -.03em; line-height: 1.2; font-weight: 400; }
   .hero-intro p, .hero-refund, .hero-promise .stack > :not(.num) { text-box: normal; }
   br.tb { display: inline; }
   .hero-title, .by-head h2 { font-size: 48px; gap: 6px; letter-spacing: -.02em; }
@@ -668,24 +668,6 @@ html.loading { overflow: hidden; }
 .rv { transform: translateY(calc((1 - var(--rv, 1)) * 100%)); clip-path: inset(-.4em -.4em calc((1 - var(--rv, 1)) * (100% + .3em) - .3em) -.4em); }
 /* (cut off .3em under the box at rest, not at its foot: the boxes are trimmed to the baseline, and the
    dots under ạ, ộ, ụ reach below it; at the start it still cuts the whole box away) */
-/* the type as the page scrolls fast (motion.js warp): it stays whole, and what slips out from under it is
-   a copy of it (v-ghost, one over each box of plain text, its own padding and trim so its lines fall where
-   the box's do), in the dark magenta, offset either way along the scroll and broken into the page's dither
-   (a Bayer mask, its cells 2px), behind the type. The boxes are trimmed to the caps, so the slip reaches
-   past them: the mask is not clipped to the box (no-clip); where a browser can't do that the slip is left
-   solid rather than cut */
-v-ghost { display: none; }
-.warp v-ghost {
-  display: block; position: absolute; inset: 0; z-index: -1; padding: inherit; text-box: inherit;
-  pointer-events: none; user-select: none;
-  color: #611c63; -webkit-text-fill-color: #611c63;
-  translate: 0 calc(var(--split, 0) * 1px); text-shadow: 0 calc(var(--split, 0) * -2px) #611c63;
-}
-v-ghost * { color: inherit !important; -webkit-text-fill-color: currentColor; }
-v-ghost :is(img, svg, video, canvas) { visibility: hidden; }
-@supports (mask-clip: no-clip) {
-  .warp v-ghost { mask: var(--dither) 0 0 / var(--dither-size) repeat no-clip; }
-}
 .grid-overlay.on { opacity: 1; visibility: visible; transition-delay: 0s; }
 .grid-overlay span { background: rgba(194, 57, 199, .12); box-shadow: inset 1px 0 0 var(--magenta), inset -1px 0 0 var(--magenta); }
 .price-was.drawn { text-decoration: none; }
