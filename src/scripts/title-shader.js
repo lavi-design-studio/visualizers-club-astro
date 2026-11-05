@@ -140,13 +140,14 @@ float vnoise(vec2 x) { vec2 i = floor(x), f = fract(x); f = f * f * (3. - 2. * f
 // what the ice has behind it, as ice.js's backdrop: fine lines across, pink and pale blue in turn, drifting
 // down; a soft wash of the title's own colours; the pointer's pink light
 vec3 behind(vec2 q) {
-  float line = smoothstep(.96, 1., abs(sin((q.y + uT * 6.) * .045))) * .9;
+  float line = smoothstep(.97, 1., abs(sin((q.y + uT * 6.) * .045))) * 1.3;
   vec3 c = mix(vec3(.76, .22, .78), vec3(.6, .85, 1.), step(.5, fract(q.y * .0072))) * line;
   // (and broad soft bands of the title's pink and blue, as the hero's type is behind the rooster)
   float band = pow(.5 + .5 * sin(q.y * .028 - uT * .35 + sin(q.x * .006) * 1.5), 3.);
   c += mix(ICE_BLUE * 1.4, ICE_PINK, .5 + .5 * sin(q.x * .005 + q.y * .013 + uT * .2)) * (.18 + .5 * band);
   return c;
 }
+float reduce01(float x) { return clamp(x, 0., 1.05); }
 float hash(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 45758.5453); }
 // the studio's lights as the ice sees them: thin bright bands across, a few broad soft ones
 float stripes(float y) { float s = fract(y); return smoothstep(.0, .02, s) * smoothstep(.12, .03, s) + .55 * smoothstep(.35, .38, s) * smoothstep(.5, .4, s) + .25 * smoothstep(.62, .64, s) * smoothstep(.68, .64, s); }
@@ -174,32 +175,46 @@ void main() {
     // the rooster bends, pink and pale blue, a soft wash of the title's colours) seen through them, bent
     // by their slopes and their slow ripples, each of six colours by its own index so the edges break
     // into rainbows; its cool tint, a glint toward the pointer, and its rim in pink and blue down its height
-    vec2 q = uv * uVP / uFrame.x + vec2(0., uFrame.y);              // css px, y down
+    // (in the hero title's own measure, whatever the type's size: a small title meets as many lines and
+    // bends them as far, letter for letter, as the hero's does; D is the type's size in css px)
+    float D = uFrame.z, S = 160. / D;
+    vec2 q = (uv * uVP / uFrame.x) * S + vec2(0., uFrame.y);        // y down
     vec2 rq = q * .035 + vec2(0., uT * .05);
     vec3 N = normalize(n + .12 * (vec3(vnoise(rq + 3.1), vnoise(rq + 7.7), vnoise(rq + 1.3)) - .5));
     vec3 E = vec3(0., 0., -1.);
     vec3 rR = refract(E, N, 1. / 1.15), rY = refract(E, N, 1. / 1.16), rG = refract(E, N, 1. / 1.18);
     vec3 rC = refract(E, N, 1. / 1.22), rB = refract(E, N, 1. / 1.22), rV = refract(E, N, 1. / 1.22);
-    float D = uFrame.z, r = 0., y = 0., g = 0., c = 0., b = 0., v = 0.;
+    float r = 0., y = 0., g = 0., c = 0., b = 0., v = 0.;
     for (int i = 0; i < 4; i++) {
       float slide = float(i) / 4. * .1;
-      r += behind(q + rR.xy * (.32 + slide) * D).r * .5;
-      vec3 sy = behind(q + rY.xy * (.32 + slide * 2.5) * D); y += (sy.r * 2. + sy.g * 2. - sy.b) / 6.;
-      g += behind(q + rG.xy * (.32 + slide * 2.) * D).g * .5;
-      vec3 sc = behind(q + rC.xy * (.32 + slide * 3.) * D); c += (sc.g * 2. + sc.b * 2. - sc.r) / 6.;
-      b += behind(q + rB.xy * (.32 + slide * 4.) * D).b * .5;
-      vec3 sv = behind(q + rV.xy * (.32 + slide) * D); v += (sv.b * 2. + sv.r * 2. - sv.g) / 6.;
+      r += behind(q + rR.xy * (.32 + slide) * 160.).r * .5;
+      vec3 sy = behind(q + rY.xy * (.32 + slide * 2.5) * 160.); y += (sy.r * 2. + sy.g * 2. - sy.b) / 6.;
+      g += behind(q + rG.xy * (.32 + slide * 2.) * 160.).g * .5;
+      vec3 sc = behind(q + rC.xy * (.32 + slide * 3.) * 160.); c += (sc.g * 2. + sc.b * 2. - sc.r) / 6.;
+      b += behind(q + rB.xy * (.32 + slide * 4.) * 160.).b * .5;
+      vec3 sv = behind(q + rV.xy * (.32 + slide) * 160.); v += (sv.b * 2. + sv.r * 2. - sv.g) / 6.;
     }
     r /= 4.; y /= 4.; g /= 4.; c /= 4.; b /= 4.; v /= 4.;
     col = vec3(r + (2. * v + 2. * y - c) / 3., g + (2. * y + 2. * c - v) / 3., b + (2. * c + 2. * v - y) / 3.);
     col = mix(vec3(dot(col, vec3(.2125, .7154, .0721))), col, 1.12);
     col = col * vec3(.9, 1., 1.1) + vec3(.01, .03, .06);
+    // (a faint light of its own in the rim's colours, deepest down a stroke's middle, so no letter goes
+    // dark between the lines)
+    vec3 tint = mix(ICE_BLUE, ICE_PINK, smoothstep(.1, .9, uv.y + .25 * sin(uT * .4)));
+    col += tint * (.05 + .07 * h);
     vec3 L = normalize(vec3(uPtr.x * 2. - .4, uPtr.y * 2. + 1., 1.2)), H = normalize(-E + L);
     float nh = max(dot(N, H), 0.), spec = pow(nh * nh, 60.), diff = max(dot(N, L), 0.) * .03;
     float fres = pow(1. - abs(dot(E, N)), uFrame.w);
-    vec3 rim = mix(ICE_BLUE, ICE_PINK, smoothstep(.1, .9, uv.y + .25 * sin(uT * .4)));
+    vec3 rim = tint;
     col += spec * .5 * vec3(.95, .98, 1.) + diff + fres * (rim * 1.5 + vec3(.04, .06, .1));
     halo = rim; haloA = pow(glow, 2.) * uBevel.y * .35;
+    // grown out of frost from the foot up as the rooster grows in (ice.js), its front glowing pink (from a
+    // third of the way: the plain title it takes over from never leaves a gap)
+    float grow = reduce01(.35 + uAge / 1.5 * .7), front = (1. - uv.y) * .6 + vnoise(q * .05) * .4;
+    float fr = smoothstep(.06, 0., grow - front) * step(grow, 1.);
+    col += mix(ICE_PINK, vec3(1.), .5) * fr * 2.5;
+    float shown = step(front, grow);
+    ink *= shown; haloA *= smoothstep(.2, 1., grow);
   } else if (uMode == 2) {
     // neon: the tube's colour, its core white-hot, flickering on as it comes, then a faint hum
     float a = uAge, on = a < .08 ? 0. : a > 1.3 ? 1. : mix(step(.45, hash(vec2(floor(a * 16.), 3.))), 1., smoothstep(.9, 1.3, a));
@@ -324,6 +339,8 @@ function shade(el) {
     remake();
     canvas.ctx = canvas.getContext('2d');
     canvas.born = now(); canvas.lineOffset = Math.random() * 140;   // (each title meets the lines somewhere else)
+    // (the hero's is drawn while it loads but shown only once it has settled: it grows in from then)
+    if (el.closest('.hero-title') && !root.classList.contains('hero-settled')) document.addEventListener('hero-settled', () => { canvas.born = now(); }, { once: true });
     if (el.querySelector('.star') && !reduce && root.classList.contains('loading')) remask.push(remake);
     el.__title = { canvas };
     gpu.draw(canvas, now(), ptr);
