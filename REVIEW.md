@@ -37,13 +37,15 @@ Từ khoá tracking: `KEYWORDS` ngay dưới.
 
 ### 2. Shader cho chữ lớn — `src/scripts/title-shader.js`
 
-- Tiêu đề hero, heading phần giá, hai số tiền và tiêu đề footer được tô bằng shader Voronoi + Beam
-  (thiết kế ở shaders.com). Heading "by lavi" trên nền hồng giữ chữ thường.
-- Shader được viết lại bằng WebGL 2 (đúng mã và thông số thư viện shaders.com tạo ra), không còn dùng thư viện
-  1,3 MB: một context dùng chung, chỉ vẽ chữ đang trên màn hình, chạy cả máy không có WebGPU.
+- Tiêu đề hero, heading phần giá, hai số tiền và tiêu đề footer làm bằng băng như con gà: cùng shader của `ice.js`
+  (khúc xạ các vạch kẻ hồng/xanh nhạt phía sau, tách 6 màu ở mép, thân xanh đen, viền hồng→xanh, loé theo chuột),
+  trên các nét chữ được vát thành khối từ chính hình chữ. Mỗi tiêu đề mọc ra từ băng giá khi hiện. Heading "by lavi"
+  trên nền hồng giữ chữ thường.
+- WebGL 2, một context dùng chung, chỉ vẽ chữ đang trên màn hình; không dùng thư viện ngoài.
 
-Thông số: bảng `LOOK` đầu file (màu, scale, speed, seed, vị trí và độ dày beam). Danh sách chữ được tô: `TITLES`.
-Muốn đổi sang component khác của shaders.com thì cần viết thêm shader đó trong `FRAG`.
+Thông số: bảng `LOOK` đầu file (`bevel` độ vát, `reach` và `glow` quầng sáng, `bend` độ khúc xạ, `rim` viền).
+Độ mềm của vạch sáng: `line` trong hàm `behind()`. Danh sách chữ được tô: `TITLES`.
+Còn ba kiểu khác để so: thêm `?title=cells` (Voronoi shaders.com cũ), `?title=neon`, `?title=club` vào địa chỉ.
 
 **Bỏ hẳn:** xoá `import('../scripts/title-shader.js')` trong `src/pages/index.astro`.
 
