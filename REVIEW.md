@@ -19,7 +19,7 @@ Mở http://localhost:4321.
 
 ## Các thay đổi
 
-### 1. Con gà băng thay cụm ảnh fan ở hero — `src/scripts/ice.js`, `public/assets/logo.glb`
+### 1. Con gà băng thay cụm ảnh fan ở hero — `src/scripts/ice.js`, `public/assets/logo-ice.glb`
 
 - Con gà chong chóng bằng băng, khúc xạ chính chữ và đường kẻ của trang, đứng giữa màn hình.
 - Cuộn qua hero: con gà lên giữa màn hình, to hơn, xoay theo cuộn suốt 4 màn hình trống.
@@ -38,11 +38,12 @@ Từ khoá tracking: `KEYWORDS` ngay dưới.
 ### 2. Shader cho chữ lớn — `src/scripts/title-shader.js`
 
 - Tiêu đề hero, heading phần giá, hai số tiền và tiêu đề footer được tô bằng shader Voronoi + Beam
-  (thư viện shaders.com, WebGPU). Heading "by lavi" trên nền hồng giữ chữ thường.
+  (thiết kế ở shaders.com). Heading "by lavi" trên nền hồng giữ chữ thường.
+- Shader được viết lại bằng WebGL 2 (đúng mã và thông số thư viện shaders.com tạo ra), không còn dùng thư viện
+  1,3 MB: một context dùng chung, chỉ vẽ chữ đang trên màn hình, chạy cả máy không có WebGPU.
 
-Thông số: `PRESET` (thiết kế lại ở shaders.com → Export JavaScript rồi dán vào). Danh sách chữ được tô: `TITLES`.
-Nếu thêm component mới vào `PRESET`, thêm tên nó vào `SHADERS` trong `astro.config.mjs` (để bundle chỉ giữ
-những component dùng tới).
+Thông số: bảng `LOOK` đầu file (màu, scale, speed, seed, vị trí và độ dày beam). Danh sách chữ được tô: `TITLES`.
+Muốn đổi sang component khác của shaders.com thì cần viết thêm shader đó trong `FRAG`.
 
 **Bỏ hẳn:** xoá `import('../scripts/title-shader.js')` trong `src/pages/index.astro`.
 
@@ -54,6 +55,7 @@ những component dùng tới).
 - Màn loading cũ (chồng ảnh bay vào fan) đã bỏ.
 
 Nhịp: `REST`, `LINES` trong `intro()`; tốc độ dấu sao `PERIOD`, `STOP` trong script cuối `body.html`.
+Loader chạy đều `PACE` (2,5 giây cả vòng) khi đang tải; tải xong thì chạy nốt với `DONE` (tối đa nửa giây).
 
 ### 4. Cấu trúc trang đơn giản hơn — `src/styles/landing.css`, `src/scripts/motion.js`
 

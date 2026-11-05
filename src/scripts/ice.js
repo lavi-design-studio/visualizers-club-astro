@@ -1,4 +1,4 @@
-// The hero's picture: the club's weathervane (assets/logo.glb) cut from clear ice, in place of the
+// The hero's picture: the club's weathervane (assets/logo-ice.glb) cut from clear ice, in place of the
 // fan's prints while the hero is up. Glass as Maxime Heckel draws it ("Refraction, dispersion, and
 // other shader light effects"): what is behind is caught in a texture, the ice's back faces are drawn
 // over it bending it, and its front faces bend that again, each colour by its own index (red, yellow,
@@ -15,6 +15,7 @@
 //   Drawn on a canvas over the page's type, black where it is not, laid on with "screen"
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { gsap } from 'gsap';
 
 // the look, to be tuned
@@ -277,10 +278,23 @@ async function build() {
   }));
   const behind = new THREE.Scene(); behind.add(backdrop);
 
-  const gltf = await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}assets/logo.glb`);
-  let geo;
-  gltf.scene.traverse(o => { if (o.isMesh && !geo) geo = o.geometry; });
-  geo.deleteAttribute('uv');
+  // (meshopt-compressed, its positions and normals quantized: 70 KB on the wire where it was 440; the
+  // buffer the loader fetched (body.html), or fetched here when that is missing)
+  const url = `${import.meta.env.BASE_URL}assets/logo-ice.glb`;
+  const buf = (await window.logoGlb) ?? (await fetch(url).then(r => r.arrayBuffer()));
+  const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parseAsync(buf, url.slice(0, url.lastIndexOf('/') + 1));
+  let mesh;
+  gltf.scene.traverse(o => { if (o.isMesh && !mesh) mesh = o; });
+  // (its quantized positions and normals made floats again and set back in the model's own units, by
+  // the node's scale and offset the compression put there, so all below is as it was)
+  const geo = new THREE.BufferGeometry();
+  for (const name of ['position', 'normal']) {
+    const a = mesh.geometry.getAttribute(name), f = new Float32Array(a.count * 3);
+    for (let i = 0; i < a.count; i++) { f[i * 3] = a.getX(i); f[i * 3 + 1] = a.getY(i); f[i * 3 + 2] = a.getZ(i); }
+    geo.setAttribute(name, new THREE.BufferAttribute(f, 3));
+  }
+  geo.setIndex(mesh.geometry.index);
+  mesh.updateMatrixWorld(true); geo.applyMatrix4(mesh.matrixWorld);
   geo.rotateX(Math.PI);   // the model stands upside down: turned over, as it is seen
   geo.translate(-MAST_X, 0, 0);   // and turned about its mast, as a vane turns, not about its box
   geo.computeBoundingBox();

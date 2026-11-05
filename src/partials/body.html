@@ -187,8 +187,8 @@
 </main>
 <script>
   // the loader is the hero's title: set in the middle of the screen, plain (its shader comes once it is
-  // in place), while the page's parts come in: the fonts and the weathervane's model (ice.js takes it from
-  // the browser's cache); --load runs 0 to 1 as they do. At 1 motion.js sends the title up to its place
+  // in place), while the page's parts come in: the fonts and the weathervane's model (ice.js takes the
+  // buffer fetched here); --load runs 0 to 1 as they do. At 1 motion.js sends the title up to its place
   (() => {
     const root = document.documentElement, title = document.querySelector('.hero-title'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     // (each line moved by the same amount: they go up to their places one after another)
@@ -237,11 +237,15 @@
     setTimeout(place, 3000);
     let ready = 0, shown = 0, last = performance.now(), done;
     window.loaderPile = new Promise(r => (done = r));
-    const parts = [document.fonts.ready, fetch('/assets/logo.glb').then(r => r.blob()).catch(() => {})];
+    // (the model fetched once, here: ice.js takes this same buffer, so it is never asked for twice)
+    window.logoGlb = fetch('/assets/logo-ice.glb').then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+    const parts = [document.fonts.ready, window.logoGlb];
     parts.forEach(p => p.then(() => ready++));
-    // at a steady pace, never past the share of what is in
+    // at a steady pace, never past the share of what is in (2.5 s for the whole); once all of it is in,
+    // the rest is run in half a second at most, so a fast connection is never kept waiting on the pace
+    const PACE = .0004, DONE = .002;
     const tick = now => {
-      shown = Math.min(ready / parts.length, shown + (now - last) * (still ? 1 : .0004)); last = now;
+      shown = Math.min(ready / parts.length, shown + (now - last) * (still ? 1 : ready === parts.length ? DONE : PACE)); last = now;
       root.style.setProperty('--load', shown.toFixed(4));
       if (shown >= 1) setTimeout(done, 250); else requestAnimationFrame(tick);
     };
