@@ -1,5 +1,5 @@
-// The page's display titles, filled with a moving shader: Voronoi cells with a beam of light across
-// them, seen only through each title's own letters. The type stays real text, set and risen as before;
+// The page's display titles, made of the rooster's ice (STYLE 'ice', below; the Voronoi cells with a
+// beam across them, as first designed at shaders.com, are STYLE 'cells') The type stays real text, set and risen as before;
 // once a title is at rest (motion.js marks it 'risen': the hero's after its intro, the others after they
 // rise in on the scroll) a canvas over it takes its place, masked by a picture of its letters drawn from
 // the live layout, and the text goes clear under it. Where WebGL 2 is missing the titles stay as they
