@@ -140,7 +140,9 @@ float vnoise(vec2 x) { vec2 i = floor(x), f = fract(x); f = f * f * (3. - 2. * f
 // what the ice has behind it, as ice.js's backdrop: fine lines across, pink and pale blue in turn, drifting
 // down; a soft wash of the title's own colours; the pointer's pink light
 vec3 behind(vec2 q) {
-  float line = smoothstep(.97, 1., abs(sin((q.y + uT * 6.) * .045))) * 1.3;
+  // (soft: a bright middle fading out over a few pixels each way, as the rooster's are, drawn small)
+  float l = abs(sin((q.y + uT * 6.) * .045));
+  float line = pow(l, 10.) * .85 + pow(l, 3.) * .08;
   vec3 c = mix(vec3(.76, .22, .78), vec3(.6, .85, 1.), step(.5, fract(q.y * .0072))) * line;
   // (and broad soft bands of the title's pink and blue, as the hero's type is behind the rooster)
   float band = pow(.5 + .5 * sin(q.y * .028 - uT * .35 + sin(q.x * .006) * 1.5), 3.);
