@@ -22,10 +22,12 @@ const LOOK = {
   inside: '#FF00AA', outside: '#0000FF', from: [.02, .68], to: [.96, .94], thickness: [.3, .1], softness: [2, 0],
   // the letters in depth (not the cells look): the strokes' bevel and the glow's reach (em), the glow's strength by look
   bevel: .035, reach: .1, glow: { cells: 0, ice: .8, neon: 1.4, club: 1.1 },
+  // the ice: how far it bends what is behind (em, as ICE.refract bends the screen for the rooster), its rim's falloff
+  bend: 1, rim: 1.6,
 };
-// which look: cells, ice, neon or club (?title= in the address picks one, to compare them)
+// which look: ice (the rooster's), or cells, neon, club (?title= in the address picks one, to compare them)
 const STYLES = ['cells', 'ice', 'neon', 'club'];
-const STYLE = STYLES.find(k => k === new URLSearchParams(location.search).get('title')) ?? 'cells';
+const STYLE = STYLES.find(k => k === new URLSearchParams(location.search).get('title')) ?? 'ice';
 
 const PAD = .3;   // the canvas reaches this many em past the title's box, for the glyphs that overhang it
 // the titles on black: the hero's, the price's (its lines, as the title has no box of its own), the prices
@@ -94,6 +96,7 @@ uniform float uAge;        // seconds since this title came (the neon's flicker)
 uniform int uMode;         // 0 cells, 1 ice, 2 neon, 3 club
 uniform vec2 uPtr;         // the pointer, -1 to 1 across the screen (eased)
 uniform vec2 uBevel;       // the strokes' slope (the height's blur, in pixels), the glow's strength
+uniform vec4 uFrame;       // device px per css px, the frame's offset down the page's lines (css px), how far the ice bends (css px), the rim's falloff
 uniform sampler2D uInk, uH, uGlow;
 uniform vec3 uA, uB, uBorder, uIn, uOut;
 uniform vec4 uCell;        // scale, seed, edgeIntensity, edgeSoftness
@@ -131,6 +134,19 @@ vec3 cells(vec2 uv) {
   return mix(base, mix(uIn, uOut, smoothstep(1. - soft, 1. + soft, nd)), alpha);
 }
 vec3 toSrgb(vec3 c) { c = max(c, 0.); return mix(pow(c, vec3(.41666)) * 1.055 - .055, c * 12.92, vec3(lessThanEqual(c, vec3(.0031308)))); }
+const vec3 ICE_PINK = vec3(1., 0., .402), ICE_BLUE = vec3(.031, .238, .624);   // ICE.pink, ICE.blue, linear, written as they are (as ice.js does)
+float vhash(vec2 p) { p = fract(p * .3183099 + .1); p *= 17.; return fract(p.x * p.y * (p.x + p.y)); }
+float vnoise(vec2 x) { vec2 i = floor(x), f = fract(x); f = f * f * (3. - 2. * f); return mix(mix(vhash(i), vhash(i + vec2(1, 0)), f.x), mix(vhash(i + vec2(0, 1)), vhash(i + vec2(1, 1)), f.x), f.y); }
+// what the ice has behind it, as ice.js's backdrop: fine lines across, pink and pale blue in turn, drifting
+// down; a soft wash of the title's own colours; the pointer's pink light
+vec3 behind(vec2 q) {
+  float line = smoothstep(.96, 1., abs(sin((q.y + uT * 6.) * .045))) * .9;
+  vec3 c = mix(vec3(.76, .22, .78), vec3(.6, .85, 1.), step(.5, fract(q.y * .0072))) * line;
+  // (and broad soft bands of the title's pink and blue, as the hero's type is behind the rooster)
+  float band = pow(.5 + .5 * sin(q.y * .028 - uT * .35 + sin(q.x * .006) * 1.5), 3.);
+  c += mix(ICE_BLUE * 1.4, ICE_PINK, .5 + .5 * sin(q.x * .005 + q.y * .013 + uT * .2)) * (.18 + .5 * band);
+  return c;
+}
 float hash(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 45758.5453); }
 // the studio's lights as the ice sees them: thin bright bands across, a few broad soft ones
 float stripes(float y) { float s = fract(y); return smoothstep(.0, .02, s) * smoothstep(.12, .03, s) + .55 * smoothstep(.35, .38, s) * smoothstep(.5, .4, s) + .25 * smoothstep(.62, .64, s) * smoothstep(.68, .64, s); }
@@ -154,16 +170,36 @@ void main() {
   float edge = 1. - n.z, glow = texture(uGlow, uv).r;
   vec3 col, halo; float haloA;
   if (uMode == 1) {
-    // ice: the light's bands reflected off the slopes (each colour a little apart where it bends most),
-    // the cells deep in the body seen through it, a rim in the title's pink and blue
-    // (the bands a little over an em apart, wherever the title is, bent where the strokes turn)
-    float y = uv.y * uVP.y / (uBevel.x * 32.) - n.y * .3 + uPtr.y * .15 - uT * .05, k = edge * .04;
-    vec3 lit = vec3(stripes(y + k), stripes(y), stripes(y - k)) * bandColour(y * 1.3 + uv.x * 1.1) * 2.4;
-    vec3 inner = cells(uv + n.xy * .06) * .16;
-    float f = smoothstep(.05, .7, edge);
-    vec3 rim = mix(CYAN * .8, PINK, clamp(uv.x + .25 * sin(uT * .4) + uPtr.x * .2 + n.x * .3, 0., 1.)) * f * 1.6;
-    col = vec3(.006, .01, .04) + inner + lit * (.55 + f) + rim;
-    halo = mix(CYAN, PINK, uv.x); haloA = pow(glow, 2.) * uBevel.y * .45;
+    // the rooster's own ice (ice.js), on the strokes: what is behind them (the fine lines across the page
+    // the rooster bends, pink and pale blue, a soft wash of the title's colours) seen through them, bent
+    // by their slopes and their slow ripples, each of six colours by its own index so the edges break
+    // into rainbows; its cool tint, a glint toward the pointer, and its rim in pink and blue down its height
+    vec2 q = uv * uVP / uFrame.x + vec2(0., uFrame.y);              // css px, y down
+    vec2 rq = q * .035 + vec2(0., uT * .05);
+    vec3 N = normalize(n + .12 * (vec3(vnoise(rq + 3.1), vnoise(rq + 7.7), vnoise(rq + 1.3)) - .5));
+    vec3 E = vec3(0., 0., -1.);
+    vec3 rR = refract(E, N, 1. / 1.15), rY = refract(E, N, 1. / 1.16), rG = refract(E, N, 1. / 1.18);
+    vec3 rC = refract(E, N, 1. / 1.22), rB = refract(E, N, 1. / 1.22), rV = refract(E, N, 1. / 1.22);
+    float D = uFrame.z, r = 0., y = 0., g = 0., c = 0., b = 0., v = 0.;
+    for (int i = 0; i < 4; i++) {
+      float slide = float(i) / 4. * .1;
+      r += behind(q + rR.xy * (.32 + slide) * D).r * .5;
+      vec3 sy = behind(q + rY.xy * (.32 + slide * 2.5) * D); y += (sy.r * 2. + sy.g * 2. - sy.b) / 6.;
+      g += behind(q + rG.xy * (.32 + slide * 2.) * D).g * .5;
+      vec3 sc = behind(q + rC.xy * (.32 + slide * 3.) * D); c += (sc.g * 2. + sc.b * 2. - sc.r) / 6.;
+      b += behind(q + rB.xy * (.32 + slide * 4.) * D).b * .5;
+      vec3 sv = behind(q + rV.xy * (.32 + slide) * D); v += (sv.b * 2. + sv.r * 2. - sv.g) / 6.;
+    }
+    r /= 4.; y /= 4.; g /= 4.; c /= 4.; b /= 4.; v /= 4.;
+    col = vec3(r + (2. * v + 2. * y - c) / 3., g + (2. * y + 2. * c - v) / 3., b + (2. * c + 2. * v - y) / 3.);
+    col = mix(vec3(dot(col, vec3(.2125, .7154, .0721))), col, 1.12);
+    col = col * vec3(.9, 1., 1.1) + vec3(.01, .03, .06);
+    vec3 L = normalize(vec3(uPtr.x * 2. - .4, uPtr.y * 2. + 1., 1.2)), H = normalize(-E + L);
+    float nh = max(dot(N, H), 0.), spec = pow(nh * nh, 60.), diff = max(dot(N, L), 0.) * .03;
+    float fres = pow(1. - abs(dot(E, N)), uFrame.w);
+    vec3 rim = mix(ICE_BLUE, ICE_PINK, smoothstep(.1, .9, uv.y + .25 * sin(uT * .4)));
+    col += spec * .5 * vec3(.95, .98, 1.) + diff + fres * (rim * 1.5 + vec3(.04, .06, .1));
+    halo = rim; haloA = pow(glow, 2.) * uBevel.y * .35;
   } else if (uMode == 2) {
     // neon: the tube's colour, its core white-hot, flickering on as it comes, then a faint hum
     float a = uAge, on = a < .08 ? 0. : a > 1.3 ? 1. : mix(step(.45, hash(vec2(floor(a * 16.), 3.))), 1., smoothstep(.9, 1.3, a));
@@ -186,7 +222,9 @@ void main() {
     halo = mix(CYAN, PINK, s1 / max(s1 + s2, 1e-3)); haloA = pow(glow, 1.6) * uBevel.y * (s1 + s2) * .9;
   }
   haloA = clamp(haloA, 0., 1.) * (1. - ink);
-  o = vec4(toSrgb(col) * ink + toSrgb(halo) * haloA, ink + haloA);
+  // (the ice's colours are written as they are, as ice.js writes them; the others are encoded)
+  if (uMode != 1) { col = toSrgb(col); halo = toSrgb(halo); }
+  o = vec4(min(col, vec3(1.)) * ink + halo * haloA, ink + haloA);
 }`;
 
 // a colour as the library mixes it: its sRGB made linear, then into linear Display-P3
@@ -218,7 +256,7 @@ function renderer() {
   gl.uniform1f(u('uSpeed'), LOOK.speed);
   gl.uniform1i(u('uMode'), STYLES.indexOf(STYLE));
   gl.uniform1i(u('uInk'), 0); gl.uniform1i(u('uH'), 1); gl.uniform1i(u('uGlow'), 2);
-  const uVP = u('uVP'), uT = u('uT'), uAge = u('uAge'), uPtr = u('uPtr'), uBevel = u('uBevel');
+  const uVP = u('uVP'), uT = u('uT'), uAge = u('uAge'), uPtr = u('uPtr'), uBevel = u('uBevel'), uFrame = u('uFrame');
   const texture = () => {
     const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -241,6 +279,7 @@ function renderer() {
       target.tex.forEach((t, i) => { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t); });
       gl.uniform2f(uVP, w, h); gl.uniform1f(uT, time); gl.uniform1f(uAge, reduce ? 9 : time - target.born);
       gl.uniform2f(uPtr, ptr.x, ptr.y); gl.uniform2f(uBevel, target.bevel, LOOK.glow[STYLE]);
+      gl.uniform4f(uFrame, target.k, target.lineOffset, target.fs * LOOK.bend, LOOK.rim);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       const g = target.ctx;
       g.clearRect(0, 0, w, h);
@@ -281,10 +320,10 @@ function shade(el) {
     el.classList.add('shading'); el.append(canvas);
     const fs = parseFloat(getComputedStyle(el).fontSize);
     // (the letters drawn again, and their pictures with them)
-    const remake = () => { mask(el, canvas, ink); size(canvas); canvas.bevel = LOOK.bevel * fs * canvas.width / parseFloat(canvas.style.width); gpu.upload(canvas, pictures(canvas, ink, fs)); };
+    const remake = () => { mask(el, canvas, ink); size(canvas); canvas.k = canvas.width / parseFloat(canvas.style.width); canvas.bevel = LOOK.bevel * fs * canvas.k; canvas.fs = fs; gpu.upload(canvas, pictures(canvas, ink, fs)); };
     remake();
     canvas.ctx = canvas.getContext('2d');
-    canvas.born = now();
+    canvas.born = now(); canvas.lineOffset = Math.random() * 140;   // (each title meets the lines somewhere else)
     if (el.querySelector('.star') && !reduce && root.classList.contains('loading')) remask.push(remake);
     el.__title = { canvas };
     gpu.draw(canvas, now(), ptr);
