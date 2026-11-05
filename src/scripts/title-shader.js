@@ -330,8 +330,16 @@ const seen = new IntersectionObserver(es => es.forEach(e => (e.isIntersecting ? 
 const ptr = { x: 0, y: 0, tx: 0, ty: 0 };
 addEventListener('pointermove', e => { ptr.tx = e.clientX / innerWidth * 2 - 1; ptr.ty = 1 - e.clientY / innerHeight * 2; }, { passive: true });
 
+// the hero's title is hidden while the loader sets it (body.html: till 'title-set'), and its letters
+// are read from the page as they are set: a hero line is read only once it shows, or its picture would
+// be empty (a race with the fonts: it left the lines without stars blank, as only those are read again)
+const titleSet = new Promise(done => {
+  if (root.classList.contains('title-set')) return done();
+  new MutationObserver((_, o) => { if (root.classList.contains('title-set')) { o.disconnect(); done(); } }).observe(root, { attributes: true, attributeFilter: ['class'] });
+});
+
 function shade(el) {
-  document.fonts.ready.then(() => {
+  document.fonts.ready.then(() => (el.closest('.hero-title') ? titleSet : null)).then(() => {
     const canvas = document.createElement('canvas'), ink = document.createElement('canvas');
     canvas.className = 'title-shader'; canvas.setAttribute('aria-hidden', 'true');
     el.classList.add('shading'); el.append(canvas);
