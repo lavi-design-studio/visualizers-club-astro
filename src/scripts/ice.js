@@ -28,7 +28,7 @@ const ICE = {
   beam: 0,           // the light fanning out of it: its brightness (0: none)
   spread: .2,        // and its width, as an angle
   palette: 0,         // how far the ice's colours are drawn into the page's (blue, magenta, pink); 0: its own spectrum
-  size: .508,
+  size: .508,        // the logo's height in the hero, a share of the screen's (over the type, as it may be)
   trackLight: 60, trackShare: .6,   // how bright a place on the ice must be for the tracking to take it: a share of the frame's brightest, at least this (0-255)
   trackMax: 7,       // and how many it follows at once (the big, named ones)
   marks: 40,         // the most features it follows with small squares
@@ -36,7 +36,7 @@ const ICE = {
   scaffold: false,   // the box ruled round it (off: the tracking alone)
   after: 0,          // how long after the hero's rules start it begins to grow (s)
   landRun: 1.25,     // how many screens of scroll it takes to fly into the last frame's brackets, from the frame coming into view
-  halo: 0,           // its own glow's strength (0: none)         // the logo's height in the hero, a share of the screen's (over the type, as it may be)
+  halo: 0,           // its own glow's strength (0: none)
   scrollGrow: .3,    // how much larger it grows as the hero scrolls away
   y: .703,           // and its middle, down the screen
 };
