@@ -49,7 +49,8 @@ async function loader(setup, enter) {
   await setupP;
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));   // its work off the deal's first frame
   const open = () => { el?.remove(); root.classList.remove('loading'); gsap.set('.fan-stage', { autoAlpha: 1 }); fan?.lenis.start(); };
-  if (!el || !fan || reduce) { if (el) gsap.to(el, { autoAlpha: 0, duration: .4, onComplete: open }); else open(); return; }
+  // (the loader is a plain count now, with no pile to deal: it fades)
+  if (!el || !fan || reduce || !$('.loader-card', el)) { if (el) gsap.to(el, { autoAlpha: 0, duration: .6, onComplete: open }); else open(); return; }
   scrollTo(0, 0);
   // each card, out of the pile's flow, at its corners as it lies (the pile's box, moved and turned)
   const p = $('.loader-pile', el).getBoundingClientRect(), w = p.width, h = p.height;
@@ -282,6 +283,10 @@ function rules() {
   return lay(box, ys, parseFloat(hs.paddingLeft), hr.width - parseFloat(hs.paddingRight), ink, 'hero-rule');
 }
 let ruling = 0, settled = false, fanLenis = null;   // settled: the hero's intro is over and its type at rest
+// told to the page too (the root's class and an event, 'hero-settled'; the title marked 'risen'), for the
+// titles' shader (title-shader.js) and the ice (ice.js)
+const risen = h => { h?.classList.add('risen'); h?.dispatchEvent(new Event('risen')); };
+const settle = () => { settled = true; root.classList.add('hero-settled'); document.dispatchEvent(new Event('hero-settled')); risen($('.hero-title')); };
 addEventListener('resize', () => { cancelAnimationFrame(ruling); ruling = requestAnimationFrame(() => rules()); });
 
 // ----- 2b. By Lavi -----
@@ -554,10 +559,10 @@ function xray() {
     // the pictures: left open, framed and sized
     // (a canvas over most of the screen is a backdrop, the fan's or Level up's turn, not a picture: the fan's
     // own frame stands for it while the hero is up)
-    const pics = $$('main :is(img, canvas, video)').filter(e => { const r = e.getBoundingClientRect(); return on(r) && r.width * r.height > 2500 && r.width * r.height < .5 * W * H && shown(e) && !e.closest('.xr-lens, .fan-stage'); });
+    const pics = $$('.by :is(img, canvas, video)').filter(e => { const r = e.getBoundingClientRect(); return on(r) && r.width * r.height > 2500 && r.width * r.height < .5 * W * H && shown(e) && !e.closest('.xr-lens, .fan-stage, .title-shader'); });
     const slot = $('#fanSlot'), fanCanvas = $('.fan-stage canvas');
     if (scrollY < innerHeight * .4) { if (on(slot.getBoundingClientRect())) pics.push(slot); }
-    else if (fanCanvas && on(fanCanvas.getBoundingClientRect())) pics.push(fanCanvas);
+    else if (fanCanvas && shown(fanCanvas) && on(fanCanvas.getBoundingClientRect())) pics.push(fanCanvas);
     // (the type turned on its side and running, the strip's quote and Level up's stairs, and the
     // clock's names in the SVG, are drawn in the lens's live layer, every frame: drawLive)
     for (const e of pics) { const r = e.getBoundingClientRect(); g.clearRect(r.left, r.top, r.width, r.height); }
@@ -573,7 +578,7 @@ function xray() {
     }
     g.lineWidth = 1;
     if (LENS.pictures) for (const e of pics) {
-      const r = e.getBoundingClientRect(), kind = e === slot || e === fanCanvas ? 'Show work · fan 3D (WebGL)' : e.tagName === 'IMG' ? 'Ảnh' : e.tagName === 'VIDEO' ? 'Video' : 'Canvas';
+      const r = e.getBoundingClientRect(), kind = e === slot ? 'Logo băng · 3D (WebGL)' : e === fanCanvas ? 'Show work · fan 3D (WebGL)' : e.tagName === 'IMG' ? 'Ảnh' : e.tagName === 'VIDEO' ? 'Video' : 'Canvas';
       g.strokeStyle = MAG; g.setLineDash([6, 4]); g.strokeRect(Math.max(0, r.left) + .5, Math.max(0, r.top) + .5, Math.min(W, r.right) - Math.max(0, r.left) - 1, Math.min(H, r.bottom) - Math.max(0, r.top) - 1); g.setLineDash([]);
       label(`${kind} · ${Math.round(r.width)} × ${Math.round(r.height)}`, Math.max(0, r.left) + 8, Math.max(0, r.top) + 14);
     }
@@ -582,7 +587,7 @@ function xray() {
     if (LENS.rules) for (const i of $$('.hero-rule i, .by-rules i, .page-rules i')) { const r = i.getBoundingClientRect(); if (on({ ...r.toJSON(), height: 1 })) { g.beginPath(); g.moveTo(r.left, r.top + .5); g.lineTo(r.right, r.top + .5); g.stroke(); } }
     // the blocks of type on the screen: boxes holding only inline content
     const blocks = [];
-    for (const e of $$('main *')) {
+    for (const e of $$('.by *')) {   // (it opens over By Lavi only: its type only)
       if (e.closest('.sr-only, .xr-lens, svg, .by-strip, .level-stack') || inline(e) || !e.textContent.trim()) continue;
       const r = e.getBoundingClientRect();
       if (!on(r) || !shown(e) || ![...e.querySelectorAll('*')].every(inline)) continue;
@@ -770,6 +775,7 @@ function xray() {
   };
   // the lens: eased toward the pointer; open once the hero's intro is done, while the page is at rest
   // (drawn afresh each time it comes to rest), closed while it scrolls or the pointer is off the page
+  const byEl = $('.by');
   const at = { x: 0, y: 0, r: 0 }, go = { x: gsap.quickTo(at, 'x', { duration: .35, ease: 'power3' }), y: gsap.quickTo(at, 'y', { duration: .35, ease: 'power3' }) };
   let px = -1, py = -1, over = false, open = false, still = 0, drawnAt = NaN, last = 0, prevY = scrollY;
   addEventListener('pointermove', e => { if (!over) { at.x = e.clientX; at.y = e.clientY; } over = true; px = e.clientX; py = e.clientY; }, { passive: true });
@@ -780,13 +786,14 @@ function xray() {
     // open while the page is still or gliding slowly (the eased scroll glides on for seconds after the
     // wheel stops); the screen's drawing slides with the page as it glides, and is drawn afresh every
     // third of a second, so the outlines stay on the type, the rising reveals and the sticky fan too
-    const speed = Math.abs(scrollY - prevY);
+    // (only over By Lavi: it opens as the pointer comes into that section and closes as it leaves, not
+    // as the page scrolls; the drawing slides with the page between its redrawings)
     prevY = scrollY;
-    still = speed > 4 ? 0 : still + dt;
-    const want = enabled && over && settled && still > 120;
+    const by = byEl.getBoundingClientRect();
+    const want = enabled && over && settled && py >= by.top && py <= by.bottom;
     // (and always every 0.4 s while it is open: a block may start rising in after the page has stopped)
     if (want && (isNaN(drawnAt) || Math.abs(scrollY - drawnAt) > innerHeight * .3 || time - last > .4)) { draw(); drawnAt = scrollY; last = time; }
-    if (want !== open) { open = want; gsap.to(at, { r: open ? R : 0, duration: open ? .5 : .25, ease: open ? 'power3.out' : 'power2.in', overwrite: 'auto' }); }
+    if (want !== open) { open = want; gsap.to(at, { r: open ? R : 0, duration: open ? .6 : .45, ease: open ? 'power3.out' : 'power3.in', overwrite: 'auto' }); }   // grown in, shrunk out
     if (!open && at.r < .5) { if (lens.style.visibility !== 'hidden') lens.style.visibility = 'hidden'; return; }
     lens.style.visibility = 'visible';
     go.x(px); go.y(py);
@@ -798,36 +805,49 @@ function xray() {
 }
 
 let heroRuled = null;
+// the rules drawn in from both ends to the middle: a clip of two pieces, one from each side, growing to
+// meet (a polygon whose middle part, between them, has no area)
+const SIDES = a => `polygon(0% 0%, ${a}% 0%, ${a}% 100%, ${100 - a}% 100%, ${100 - a}% 0%, 100% 0%, 100% 100%, 0% 100%)`;
 function intro() {
-  // ruled where the type will rest, before it is set down to rise (under the loader, when it ran)
-  const ruled = heroRuled ?? rules();
-  const lines = riseIn($$('.hero-title .line'));
-  const small = [$('.hero-bar'), ...$$('.hero-intro > *'), $('.hero-refund'), ...$$('.hero-promise > li'), $('.hero-scroll')];
-  gsap.set(lines, { yPercent: RISE });
-  gsap.set($('.hero-title .serif .rise'), { skewX: -14 });
-  gsap.set(small, { autoAlpha: 0, y: 14 });
-  root.classList.remove('intro');
-  gsap.timeline({ defaults: { ease: 'expo.out' }, onComplete: () => { $$('.hero-title .line').forEach(l => l.classList.remove('masked')); settled = true; } })
-    .to(lines, { yPercent: 0, skewX: 0, duration: 1.3, stagger: .09 }, .1)
-    .to(small, { autoAlpha: 1, y: 0, duration: .9, stagger: .045 }, .55)
-    .fromTo(ruled, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 1.4, stagger: .05, ease: 'expo.inOut' }, .45);
+  const ruled = heroRuled ?? rules(), lines = $$('.hero-title > .line');
+  // the title, in the screen's middle while the page loaded, goes up to its place line by line
+  gsap.to(lines, { y: 0, duration: 1.8, ease: 'expo.inOut', stagger: .12, onComplete: () => { lines.forEach(l => { l.style.transform = ''; }); settle(); } });
+  // as it goes, the hero's small type is uncovered where it stands, each block from its own side
+  // (from the left on the screen's left, the right on its right, from its middle out in the middle);
+  // then its rules are drawn in from both sides to the middle, the lowest first and up from there; and
+  // as they start, the rooster grows in (ice.js, on 'hero-lines'): last, as it shows the page through
+  // its ice, once there is the whole page to show
+  const REST = .2, LINES = REST + .5;   // (the rest starts .2 s into the title's going up)
+  const small = [...$$('.hero-bar > *'), ...$$('.hero-intro > *'), $('.hero-refund'), ...$$('.hero-promise > li'), $('.hero-scroll')].filter(Boolean);
+  const from = small.map(e => {
+    const r = e.getBoundingClientRect(), c = (r.left + r.width / 2) / innerWidth;
+    // (reaching past the trimmed box above and below, so no accent is cut off as it goes)
+    return c < .4 ? 'inset(-.6em 100% -.4em 0%)' : c > .6 ? 'inset(-.6em 0% -.4em 100%)' : 'inset(-.6em 50% -.4em 50%)';
+  });
+  gsap.set(small, { clipPath: i => from[i] });
+  gsap.delayedCall(REST, () => root.classList.remove('intro'));
+  gsap.to(small, { clipPath: 'inset(-.6em 0% -.4em 0%)', duration: .8, ease: 'power2.out', stagger: .03, delay: REST, clearProps: 'clipPath' });
+  gsap.delayedCall(LINES - .3, () => { root.classList.add('hero-lines'); document.dispatchEvent(new Event('hero-lines')); });   // (the rooster, .3 s ahead of its rules)
+  gsap.fromTo([...ruled].reverse(), { clipPath: SIDES(0) }, { clipPath: SIDES(50), duration: .9, stagger: .06, ease: 'expo.inOut', delay: LINES,
+    onComplete() { this.targets().forEach(r => { r.style.clipPath = ''; }); } });
+}
+
+// By Lavi's rules, as the section comes into view: drawn in one after another, from the left and from the
+// right in turn (the only motion the section has as it comes)
+function byRulesIn() {
+  const rs = $$('.by-rules > *');
+  if (!rs.length || reduce) return;
+  const from = rs.map((_, i) => (i % 2 ? 'inset(0 0% 0 100%)' : 'inset(0 100% 0 0%)'));
+  gsap.set(rs, { clipPath: i => from[i] });
+  gsap.to(rs, { clipPath: 'inset(0 0% 0 0%)', duration: .9, ease: 'expo.inOut', stagger: .035, clearProps: 'clipPath',
+    scrollTrigger: { trigger: '.by', start: 'top 75%', once: true } });
 }
 
 // ----- 1b. the headings -----
-// every section's title comes in as the hero's does, line by line up through its own mask, the italic
-// lines straightening as they rise, when it scrolls into view; then it rests on the design's grid (no
-// drift: each line stays where the Figma sets it, in its columns)
+// every section's title is at rest on the design's grid from the start, filled with its shader
 function headings() {
-  for (const sel of ['.by-head h2', '.price h2', '.foot h2']) {
-    const h2 = $(sel), lines = $$('.line', h2), rises = riseIn(lines);
-    // the price's title has no box of its own (its lines sit on the section's grid): its first line marks it
-    const at = getComputedStyle(h2).display === 'contents' ? lines[0] : h2;
-    gsap.set(rises, { yPercent: RISE });
-    gsap.set(rises.filter(r => r.parentElement.classList.contains('serif')), { skewX: -14 });
-    gsap.timeline({ scrollTrigger: { trigger: at, start: 'top 82%', once: true }, defaults: { ease: 'expo.out' },
-      onComplete: () => lines.forEach(l => l.classList.remove('masked')) })
-      .to(rises, { yPercent: 0, skewX: 0, duration: 1.3, stagger: .1 });
-  }
+  // (they no longer rise in: they are at rest from the start, so their shader is there at once, title-shader.js)
+  for (const sel of ['.by-head h2', '.price h2', '.foot h2']) risen($(sel));
 }
 
 // ----- 2. the grid -----
@@ -1154,17 +1174,14 @@ function price() {
     roll.style.setProperty('--cap-top', `${n.top - f.top}px`); roll.style.setProperty('--cap-h', `${n.height}px`);
   };
   fit(); addEventListener('resize', fit);
-  gsap.set(col, { yPercent: -75 });                   // showing the 8
-  gsap.set(strike, { scaleX: 0, transformOrigin: '0 50%' });
-  gsap.timeline({ scrollTrigger: { trigger: '.price-tag', start: 'top 75%', once: true }, onComplete: () => roll.classList.add('done') })
-    .to(strike, { scaleX: 1, duration: .8, ease: 'expo.inOut' })
-    .to(col, { yPercent: 0, duration: 1.4, ease: 'power3.inOut' }, '-=.15');
+  // (no longer drawn and rolled on the scroll: struck and at 5 from the start, so its shader is there at once)
+  roll.classList.add('done'); risen(was); risen(now);
 }
 
 async function start() {
   gridKey();
   // the footer's clip stands still under reduced motion
-  if (reduce) { root.classList.remove('intro'); $('.foot-media video')?.pause(); await loader(); rules(); byRules(); pageRules(); strip(); camera(); settled = true; return; }
+  if (reduce) { root.classList.remove('intro'); root.classList.add('hero-lines'); $$('.hero-title > .line').forEach(l => { l.style.transform = ''; }); $('.foot-media video')?.pause(); await loader(); rules(); byRules(); pageRules(); strip(); camera(); settle(); return; }
   // (each part set up in a task of its own, so the page is never held up long while the loader shows)
   const pause = () => new Promise(r => setTimeout(r, 0));
   let entered = false;
@@ -1172,23 +1189,21 @@ async function start() {
   await loader(async fan => {
     await pause();
     await warmGlyphs(pause); await pause();
-    await byRules(pause); await pause();
+    await byRules(pause); byRulesIn(); await pause();
     await pageRules(pause); await pause();
     strip(fan?.lenis);
     camera(); await pause();
     headings(); await pause();
-    reveal(); await pause();
     portrait(); await pause();
     await levelUp(pause); await pause();
     xray();
-    vane();
+    // (the last frame's dithered weathervane is gone: the ice one, ice.js, is the page's rooster now)
     price(); await pause();
     // the fan's eased scroll drives the triggers, in the same frame as the scene
     fanLenis = fan?.lenis;
     fan?.lenis.on('scroll', ScrollTrigger.update);
-    if (fan) warp(fan.lenis);
     // the hero's rules, laid where its type will rest and hidden for the intro to draw (as intro would)
-    heroRuled = rules(); gsap.set(heroRuled, { clipPath: 'inset(0 100% 0 0)' });
+    heroRuled = rules(); gsap.set(heroRuled, { clipPath: SIDES(0) });
     await pause();
     ScrollTrigger.sort();                                // by where they sit: Level up's pin makes room for what comes after it
     ScrollTrigger.addEventListener('refresh', snapSoon);

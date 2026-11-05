@@ -52,11 +52,18 @@ br.tb { display: none; }                 /* a line break only the tablet's layou
 :focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 
 /* ----- the fan, with the hero over its start ----- */
-.fan { position: relative; height: calc(var(--hero-h, 100svh) + 700svh); }
+/* (a plain page now: the hero's screen, then the last frame as a screen of its own, scrolled to as any
+   section is; the fan's long pinned run is gone with its prints) */
+.fan { position: relative; }
 /* the stage is as tall as the screen at its tallest (a phone's toolbar gone), so the prints and the
    last one always cover it; what sits at its foot ("scroll") keeps to the screen at its shortest */
-.fan-stage { position: sticky; top: 0; height: 100vh; height: 100lvh; overflow: hidden; }
+.fan-stage { position: relative; height: 100vh; height: 100svh; overflow: hidden; }
 .fan-stage canvas { display: block; width: 100%; height: 100%; }
+/* the ice weathervane and its scaffold (ice.js): over everything on the page (under the skip link only),
+   clear where it is not; the fan's prints are not drawn (fan.js PRINTS) */
+canvas.ice { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 99; pointer-events: none; }
+canvas.ice-track { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 99; pointer-events: none; }   /* the tracking over it */
+.fan-stage > canvas { visibility: hidden; }
 /* ----- the loader, after Codrops' GridFlow: black, a small stack of the students' sites beside a
    counter going to 100%, each site popping up onto the stack as it arrives; motion.js then flies the
    stack out onto the hero's fan, each card growing big on its way and settling into its place ----- */
@@ -79,7 +86,10 @@ html.loading { overflow: hidden; }
 /* the last print once it fills the screen: the same drawing as its texture, in the same place
    (viewBox = the texture, slice = the cover fit the scene gives it), but sharp text in the DOM */
 /* kept on a layer of its own (will-change), drawn before it shows, so fading it in costs no frame */
-.finale { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; transform: scale(1.002); text-transform: none; will-change: opacity; }
+/* (its weathervane is not drawn: the ice one, ice.js, lands in its place; kept, unseen, as the place) */
+.finale #vane { visibility: hidden; }
+/* four screens of scroll between the hero and it, as the ice weathervane turns (ice.js) */
+.finale { position: relative; z-index: 3; margin-top: 400vh; display: block; width: 100%; height: 100vh; height: 100lvh; pointer-events: none; text-transform: none; opacity: 1 !important; }
 
 .hero {
   position: absolute; inset: 0 0 auto; z-index: 1;
@@ -118,6 +128,23 @@ html.loading { overflow: hidden; }
   display: flex; flex-direction: column; gap: var(--gap); text-align: center;
 }
 .hero-title .serif { letter-spacing: -.01em; }
+/* the titles' shader (title-shader.js): a canvas over the type, seen through its letters; the text goes
+   clear under it once it draws, still there to be read, selected and found */
+.shading { position: relative; }
+.title-shader { position: absolute; pointer-events: none; mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; opacity: 0; transition: opacity 1.2s; }
+.shaded > .title-shader { opacity: 1; }
+html:not(.loading) :is(.shaded .line, .line.shaded, .price-was.shaded, .price-now.shaded) { color: transparent; transition: color .6s; }
+/* the hero's title is plain while it loads and goes up; its shader comes in slowly once it is in place
+   (motion.js 'hero-settled'), the plain type going as it comes */
+html:not(.hero-settled) .hero-title .shaded > .title-shader { opacity: 0; }
+html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
+.hero-title .line { transition: color 1.2s; }
+/* the title's two stars turn while it loads (their turning point set in body.html), plain, out of the shader */
+/* (the title is the loader: hidden till body.html has set it in its fonts where it is to be) */
+.loading:not(.title-set) .hero-title { visibility: hidden; }
+.hero-title .star { display: inline-block; }
+/* (turned by body.html; plain while they turn, the shader taking them in once they are still) */
+.hero-title .star.turning { color: var(--magenta); }
 .hero-intro, .hero-refund, .hero-promise { grid-row: 2; margin-top: calc(32 * var(--px)); font-size: var(--f20); line-height: 1.2; position: relative; }
 .hero-intro { grid-column: 1 / span 3; display: flex; flex-direction: column; gap: calc(4.6 * var(--tu)); letter-spacing: -.02em; }
 .hero-intro .c { text-align: center; }
@@ -649,7 +676,7 @@ html.loading { overflow: hidden; }
   .qr { order: 0; width: 100%; }
 }
 /* ----- motion (motion.js) ----- */
-.intro :is(.hero-bar, .hero-title, .hero-intro, .hero-refund, .hero-promise, .hero-scroll, .fan-stage, .hero-rules) { visibility: hidden; }
+.intro :is(.hero-bar, .hero-intro, .hero-refund, .hero-promise, .hero-scroll, .fan-stage, .hero-rules) { visibility: hidden; }   /* (the title is the loader: it shows) */
 /* a display line rises through its own box, cut off below; not at its baseline (the box is trimmed to
    it) but .3em under it, where the deepest ink ends: the brackets and braces reach .26em below */
 .line.masked { clip-path: inset(-.5em -.5em -.3em -.5em); }

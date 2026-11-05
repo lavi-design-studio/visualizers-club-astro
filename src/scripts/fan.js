@@ -10,6 +10,9 @@ const fan = document.getElementById('fan'), stage = document.getElementById('fan
 const heroEl = document.getElementById('hero'), slotEl = document.getElementById('fanSlot'), scrollEl = stage.querySelector('.hero-scroll');
 const CW = 1.6, CH = CW * 1117 / 1728, GAP = .34;   // the pages' own shape, a 1728 × 1117 screen
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// the prints are not drawn: the section's picture is the ice weathervane (ice.js), turned by the scroll.
+// The fan still runs (the loader deals onto it, the scroll is its, the last frame takes over at its end)
+const PRINTS = false;
 
 // ----- the work: students' sites, four projects of three pages each -----
 // Taken in turn, so no two pages of one project sit side by side. The last print is the next
@@ -30,6 +33,7 @@ const PHONE = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
 // don't share the line with them, and each takes its print's place as it comes (later, below)
 const FIRST = 4;
 const fetchPage = async ([file], k) => {
+  if (!PRINTS) return blank;                          // (not drawn: not fetched)
   const url = `${import.meta.env.BASE_URL}assets/fan/${PHONE}${file}.webp`;   // public/assets
   try { const blob = await (await fetch(url, { priority: k < FIRST ? 'high' : 'low' })).blob(); window.pileGot?.(k, blob); return await createImageBitmap(blob); } catch {}
   const img = new Image();
@@ -593,15 +597,15 @@ const tick = (time, deltaMs) => {
   // the print's last stretch is a few pixels at most, so the DOM copy fades in over it unseen;
   // once it covers the stage the scene has nothing left to show and is not drawn
   const dom = smooth(phase(u, .94, .99));
-  overLabel(u > 0 && dom < 1);
-  if (dom !== lastFinale) {                            // written only when it changes
+  overLabel(PRINTS && u > 0 && dom < 1);
+  if (PRINTS && dom !== lastFinale) {                            // written only when it changes
     // the page hears when the last print has become its own, and when it stops being (motion.js
     // turns the weathervane then)
     if ((dom === 1) !== (lastFinale === 1)) finaleEl.dispatchEvent(new CustomEvent('finale', { detail: dom === 1 }));
     finaleEl.style.opacity = lastFinale = dom;
   }
   drawn = dom < 1;
-  if (drawn) renderer.render(scene, camera);
+  if (drawn && PRINTS) renderer.render(scene, camera);
 };
 let drawn = false;
 new IntersectionObserver(([e]) => {
@@ -649,7 +653,7 @@ export function quads() {
 // (read when asked: a print still to come is at the pages' size)
 const pageOf = k => k < WORKS.length ? (pages[k] === blank ? [WORKS[k][1], DW, DH] : [WORKS[k][1], pages[k].naturalWidth || pages[k].width, pages[k].naturalHeight || pages[k].height]) : ['You have enough love for design?', DW, DH];
 export function outlines() {
-  if (!active || !drawn) return [];
+  if (!active || !drawn || !PRINTS) return [];
   const r = renderer.domElement.getBoundingClientRect(), sx = r.width / stageW, sy = r.height / stageH, NEAR = -camera.near * 1.01;
   return cards.map((m, k) => {
     const U = m.material.uniforms, mid = U.uMid.value * .5 * CW;

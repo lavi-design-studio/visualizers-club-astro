@@ -48,7 +48,7 @@ import body from '../partials/body.html?raw';
   document.documentElement.classList.add('loading');
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('intro');
-  setTimeout(() => { document.documentElement.classList.remove('intro', 'loading'); document.getElementById('loader')?.remove(); }, 9000);
+  setTimeout(() => { document.documentElement.classList.remove('intro', 'loading'); document.documentElement.classList.add('hero-lines'); document.getElementById('loader')?.remove(); }, 9000);
 </script>
 <link rel="preload" href="/fonts/PPNeueWorld-SemiExtendedUltralight.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/PPMigra-ExtralightItalic.woff2" as="font" type="font/woff2" crossorigin>
@@ -60,7 +60,7 @@ import body from '../partials/body.html?raw';
 <script>
   // fetched once the first frame is painted (the loader up), so that paint never waits on them; a tab
   // in the background paints no frame, and fetches them a moment later all the same
-  let go = () => { go = () => {}; import('../scripts/dither.js'); import('../scripts/fan.js'); import('../scripts/motion.js'); import('../scripts/ring.js'); };
+  let go = () => { go = () => {}; import('../scripts/dither.js'); import('../scripts/fan.js'); import('../scripts/motion.js'); import('../scripts/ring.js'); import('../scripts/title-shader.js'); import('../scripts/ice.js'); };
   requestAnimationFrame(() => setTimeout(() => go()));
   setTimeout(() => go(), 250);
 </script>
