@@ -1,69 +1,11 @@
 <a class="skip" href="#khoa-hoc">tới nội dung khoá học</a>
-<!-- the loader: the students' twelve sites, each flying onto a pile as it arrives, counted -->
-<div class="loader" id="loader" aria-hidden="true">
-  <div class="loader-row"><div class="loader-pile"></div><p class="loader-count">0%</p></div>
-</div>
-<script>
-  // the same pages, in the same order, as the fan's (fan.js WORKS); the browser keeps them for it.
-  // The loader waits only for the first FIRST, the prints the hero shows (fan.js FIRST): the counter
-  // runs on to 100% at a steady pace, never past the share of those that are in, and once it is done
-  // no more land on the pile (the fan takes the rest as they come)
-  (() => {
-    const files = ['dizai-1', 'freshspawn-1', 'surfclub-1', 'simons-1', 'dizai-2', 'freshspawn-2', 'surfclub-2', 'simons-2', 'dizai-3', 'freshspawn-3', 'surfclub-3', 'simons-3'];
-    const pile = document.querySelector('.loader-pile'), count = document.querySelector('.loader-count');
-    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const FIRST = 4;
-    let n = 0, shown = 0, done, last = performance.now(), dealt = false;
-    window.loaderPile = new Promise(r => (done = () => { dealt = true; r(); }));
-    // the GPU's first WebGL context holds up the thread that makes it (a tenth of a second on a phone):
-    // one is made first in a worker, off the page's thread, so the fan's own, later, is quick; once the
-    // first frame is painted, as it can hold the GPU up too
-    requestAnimationFrame(() => setTimeout(() => { try {
-      const warm = new Worker(URL.createObjectURL(new Blob(["try { new OffscreenCanvas(1, 1).getContext('webgl2') } catch {} postMessage(0)"], { type: 'text/javascript' })));
-      window.warmGL = warm;                      // (kept: its context, let go, would take the warmth with it)
-    } catch {} }));
-    const tick = now => {
-      shown = Math.min(Math.min(n, FIRST) / FIRST * 100, shown + (now - last) * (still ? 1 : .25)); last = now;
-      count.textContent = `${Math.floor(shown)}%`;
-      if (shown >= 100) setTimeout(done, still ? 0 : 60); else requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    const land = (img, k) => {
-      if (dealt || k >= FIRST) return;
-      const card = document.createElement('div');
-      card.className = 'loader-card'; card.append(img); pile.append(card);
-      Object.assign(card.dataset, { k, r: 0, tx: 0, ty: 0 });    // which print it is, and how it lies on the stack
-      n++;
-      // popped up onto the stack, as GridFlow's loader grows its images in
-      if (!still) card.animate([{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(.16, 1, .3, 1)' });
-    };
-    // they land in the fan's order, each on the one before, the first at the bottom: a print waits for
-    // the ones before it, and lands a beat after the last at the soonest
-    // on a phone screen the 800-across copies (assets/fan/sm), which fan.js and ring.js take there too
-    const small = Math.min(screen.width, screen.height) < 600 ? 'sm/' : '';
-    // the pictures come from fan.js, which fetches each for itself and hands the file on (pileGot), so
-    // each is fetched once, and only once the scripts are in (on a slow line they are not kept waiting
-    // behind them); any it has not handed on after five seconds the loader fetches itself
-    const got = [], put = [], ready = files.map((f, k) => new Promise(r => (put[k] = r)));
-    const show = (k, src) => {
-      if (got[k]) return;
-      got[k] = true;
-      const img = new Image();
-      img.src = src; img.alt = '';
-      img.decode().catch(() => {}).then(() => put[k](img));
-    };
-    window.pileGot = (k, blob) => show(k, URL.createObjectURL(blob));
-    setTimeout(() => files.forEach((f, k) => show(k, `assets/fan/${small}${f}.webp`)), 5000);
-    ready.reduce((prev, p, k) => prev.then(() => p).then(img => { land(img, k); return new Promise(r => setTimeout(r, still ? 0 : 40)); }), Promise.resolve());
-  })();
-</script>
 <main>
   <section class="fan" id="fan" aria-label="Bài của học viên">
     <div class="fan-stage" id="fanStage">
       <ul class="sr-only" id="fanList"></ul>
       <a class="hero-scroll" href="#fanSlot">scroll</a>
-      <svg class="finale" id="finale" viewBox="0 0 1728 1117" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     </div>
+    <svg class="finale" id="finale" viewBox="0 0 1728 1117" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
 
     <header class="hero grid" id="hero">
       <nav class="hero-bar" aria-label="Trang">
@@ -73,7 +15,7 @@
       <h1 class="hero-title display">
         <span class="line">the</span>
         <span class="line serif">Visualizers</span>
-        <span class="line">{*)CLUB(*}</span>
+        <span class="line">{<span class="star">*</span>)CLUB(<span class="star">*</span>}</span>
       </h1>
       <div class="hero-intro">
         <p>thử thách bản thân</p>
@@ -243,3 +185,66 @@
     <div class="foot-ring" aria-hidden="true"><canvas></canvas></div>
   </footer>
 </main>
+<script>
+  // the loader is the hero's title: set in the middle of the screen, plain (its shader comes once it is
+  // in place), while the page's parts come in: the fonts and the weathervane's model (ice.js takes it from
+  // the browser's cache); --load runs 0 to 1 as they do. At 1 motion.js sends the title up to its place
+  (() => {
+    const root = document.documentElement, title = document.querySelector('.hero-title'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // (each line moved by the same amount: they go up to their places one after another)
+    const lines = title.querySelectorAll('.line');
+    const centre = () => { lines.forEach(l => { l.style.transform = ''; }); const r = title.getBoundingClientRect(), y = (innerHeight / 2 - (r.top + r.height / 2)).toFixed(1); lines.forEach(l => { l.style.transform = `translateY(${y}px)`; }); };
+    // the title's two stars turn while it loads, each about the middle of its own drawn shape (the star
+    // sits high in its line: its turning point from the font's own measures of it)
+    const pivot = () => {
+      for (const s of title.querySelectorAll('.star')) {
+        const cs = getComputedStyle(s), g = document.createElement('canvas').getContext('2d');
+        g.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const m = g.measureText('*'), em = parseFloat(cs.fontSize), box = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
+        const base = (s.offsetHeight - box) / 2 + m.fontBoundingBoxAscent;   // the baseline, down the star's box
+        s.style.transformOrigin = `${((m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2).toFixed(2)}px ${(base - (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2).toFixed(2)}px`;
+      }
+    };
+    // shown only once it is set, in its own fonts, where it is to be (landing.css hides it till then), so
+    // it never shows first somewhere else or in a stand-in face; none of this waits on GSAP or the shader
+    // the stars turn at a steady pace while it loads; when it is done, each runs on from where it is,
+    // slowing to a stop on a whole turn, then the title's shader takes them in (title-shader.js, 'stars-still')
+    const PERIOD = 1600, STOP = 1400, stars = [...title.querySelectorAll('.star')];
+    const turn = () => {
+      const spins = stars.map(s => { s.classList.add('turning'); return s.animate([{ rotate: '0deg' }, { rotate: '360deg' }], { duration: PERIOD, iterations: Infinity }); });
+      new MutationObserver((_, o) => {
+        if (root.classList.contains('loading')) return;
+        o.disconnect();
+        let left = stars.length;
+        stars.forEach((s, i) => {
+          // on to the next whole turn (at least a quarter of one on), easing out over STOP: still by the
+          // time the title is in place and its shader comes
+          const at = (spins[i].currentTime % PERIOD) / PERIOD * 360, to = Math.ceil((at + 90) / 360) * 360;
+          spins[i].cancel();
+          const end = s.animate([{ rotate: `${at}deg` }, { rotate: `${to}deg` }], { duration: STOP, easing: 'cubic-bezier(.33, 1, .68, 1)' });
+          end.onfinish = () => { s.classList.remove('turning'); if (!--left) document.dispatchEvent(new Event('stars-still')); };
+        });
+      }).observe(root, { attributes: true, attributeFilter: ['class'] });
+    };
+    let set = false;
+    const place = () => {
+      if (set) return;
+      set = true;
+      if (!still && root.classList.contains('loading')) { centre(); pivot(); turn(); }
+      root.classList.add('title-set');
+    };
+    document.fonts.load(`200 1em "PP Neue World"`).then(() => document.fonts.load(`italic 200 1em "PP Migra"`)).then(() => document.fonts.ready).then(place, place);
+    setTimeout(place, 3000);
+    let ready = 0, shown = 0, last = performance.now(), done;
+    window.loaderPile = new Promise(r => (done = r));
+    const parts = [document.fonts.ready, fetch('/assets/logo.glb').then(r => r.blob()).catch(() => {})];
+    parts.forEach(p => p.then(() => ready++));
+    // at a steady pace, never past the share of what is in
+    const tick = now => {
+      shown = Math.min(ready / parts.length, shown + (now - last) * (still ? 1 : .0004)); last = now;
+      root.style.setProperty('--load', shown.toFixed(4));
+      if (shown >= 1) setTimeout(done, 250); else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  })();
+</script>

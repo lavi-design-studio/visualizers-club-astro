@@ -49,7 +49,8 @@ async function loader(setup, enter) {
   await setupP;
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));   // its work off the deal's first frame
   const open = () => { el?.remove(); root.classList.remove('loading'); gsap.set('.fan-stage', { autoAlpha: 1 }); fan?.lenis.start(); };
-  if (!el || !fan || reduce) { if (el) gsap.to(el, { autoAlpha: 0, duration: .4, onComplete: open }); else open(); return; }
+  // (the loader is a plain count now, with no pile to deal: it fades)
+  if (!el || !fan || reduce || !$('.loader-card', el)) { if (el) gsap.to(el, { autoAlpha: 0, duration: .6, onComplete: open }); else open(); return; }
   scrollTo(0, 0);
   // each card, out of the pile's flow, at its corners as it lies (the pile's box, moved and turned)
   const p = $('.loader-pile', el).getBoundingClientRect(), w = p.width, h = p.height;
@@ -282,6 +283,10 @@ function rules() {
   return lay(box, ys, parseFloat(hs.paddingLeft), hr.width - parseFloat(hs.paddingRight), ink, 'hero-rule');
 }
 let ruling = 0, settled = false, fanLenis = null;   // settled: the hero's intro is over and its type at rest
+// told to the page too (the root's class and an event, 'hero-settled'; the title marked 'risen'), for the
+// titles' shader (title-shader.js) and the ice (ice.js)
+const risen = h => { h?.classList.add('risen'); h?.dispatchEvent(new Event('risen')); };
+const settle = () => { settled = true; root.classList.add('hero-settled'); document.dispatchEvent(new Event('hero-settled')); risen($('.hero-title')); };
 addEventListener('resize', () => { cancelAnimationFrame(ruling); ruling = requestAnimationFrame(() => rules()); });
 
 // ----- 2b. By Lavi -----
@@ -492,6 +497,24 @@ function camera() {
 // between (it closes while the page scrolls fast); the lens only moves, a transform. On a mouse only:
 // on touch nothing hovers. A switch in the screen's bottom right corner turns it off and on again
 // ("Reveal On" / "Reveal Off"), remembered on this browser
+// What the lens shows, each part on (true) or off (false), to be picked as the site's owners like.
+// Type under outlineFrom px stays solid, as it reads on the page; type that size and over is drawn
+// as outlines (0: all of it outlined, Infinity: all of it solid)
+const LENS = {
+  outlineFrom: 48,   // the size (px) from which type is drawn as outlines
+  columns: true,     // the 12 columns, numbered, with the margin, gutter and column widths
+  pictures: true,    // the pictures' frames and sizes
+  rules: true,       // the page's ruled lines, faint
+  boxes: true,       // each block of type's box, dashed
+  lines: true,       // each line's cap height and baseline
+  labels: true,      // each block's name, face, size and tracking
+  ranks: true,       // the order the eye reads the blocks in (by size)
+  spaces: true,      // the spaces between blocks
+  marquee: true,     // By Lavi's running strip
+  level: true,       // Level up's stairs
+  prints: true,      // the fan's prints, framed and named
+  clock: true,       // the clock's names
+};
 function xray() {
   if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
   let enabled = true;
@@ -536,33 +559,35 @@ function xray() {
     // the pictures: left open, framed and sized
     // (a canvas over most of the screen is a backdrop, the fan's or Level up's turn, not a picture: the fan's
     // own frame stands for it while the hero is up)
-    const pics = $$('main :is(img, canvas, video)').filter(e => { const r = e.getBoundingClientRect(); return on(r) && r.width * r.height > 2500 && r.width * r.height < .5 * W * H && shown(e) && !e.closest('.xr-lens, .fan-stage'); });
+    const pics = $$('.by :is(img, canvas, video)').filter(e => { const r = e.getBoundingClientRect(); return on(r) && r.width * r.height > 2500 && r.width * r.height < .5 * W * H && shown(e) && !e.closest('.xr-lens, .fan-stage, .title-shader'); });
     const slot = $('#fanSlot'), fanCanvas = $('.fan-stage canvas');
     if (scrollY < innerHeight * .4) { if (on(slot.getBoundingClientRect())) pics.push(slot); }
-    else if (fanCanvas && on(fanCanvas.getBoundingClientRect())) pics.push(fanCanvas);
+    else if (fanCanvas && shown(fanCanvas) && on(fanCanvas.getBoundingClientRect())) pics.push(fanCanvas);
     // (the type turned on its side and running, the strip's quote and Level up's stairs, and the
     // clock's names in the SVG, are drawn in the lens's live layer, every frame: drawLive)
     for (const e of pics) { const r = e.getBoundingClientRect(); g.clearRect(r.left, r.top, r.width, r.height); }
     // the columns
     const m = 16 * W / 1728, cw = (W - 2 * m - 11 * m) / 12;
-    for (let i = 0; i < 12; i++) {
-      const x = m + i * (cw + m);
-      g.fillStyle = 'rgba(194,57,199,.11)'; g.fillRect(x, 0, cw, H);
-      label(String(i + 1), x, H - 14);
+    if (LENS.columns) {
+      for (let i = 0; i < 12; i++) {
+        const x = m + i * (cw + m);
+        g.fillStyle = 'rgba(194,57,199,.11)'; g.fillRect(x, 0, cw, H);
+        label(String(i + 1), x, H - 14);
+      }
+      label(`Lề ${Math.round(m)} · rãnh ${Math.round(m)} · cột ${cw.toFixed(1)}`, W - m, H - 34, 'right');
     }
-    label(`Lề ${Math.round(m)} · rãnh ${Math.round(m)} · cột ${cw.toFixed(1)}`, W - m, H - 34, 'right');
     g.lineWidth = 1;
-    for (const e of pics) {
-      const r = e.getBoundingClientRect(), kind = e === slot || e === fanCanvas ? 'Show work · fan 3D (WebGL)' : e.tagName === 'IMG' ? 'Ảnh' : e.tagName === 'VIDEO' ? 'Video' : 'Canvas';
+    if (LENS.pictures) for (const e of pics) {
+      const r = e.getBoundingClientRect(), kind = e === slot ? 'Logo băng · 3D (WebGL)' : e === fanCanvas ? 'Show work · fan 3D (WebGL)' : e.tagName === 'IMG' ? 'Ảnh' : e.tagName === 'VIDEO' ? 'Video' : 'Canvas';
       g.strokeStyle = MAG; g.setLineDash([6, 4]); g.strokeRect(Math.max(0, r.left) + .5, Math.max(0, r.top) + .5, Math.min(W, r.right) - Math.max(0, r.left) - 1, Math.min(H, r.bottom) - Math.max(0, r.top) - 1); g.setLineDash([]);
       label(`${kind} · ${Math.round(r.width)} × ${Math.round(r.height)}`, Math.max(0, r.left) + 8, Math.max(0, r.top) + 14);
     }
     // the page's ruled lines, faint
     g.strokeStyle = 'rgba(194,57,199,.35)';
-    for (const i of $$('.hero-rule i, .by-rules i, .page-rules i')) { const r = i.getBoundingClientRect(); if (on({ ...r.toJSON(), height: 1 })) { g.beginPath(); g.moveTo(r.left, r.top + .5); g.lineTo(r.right, r.top + .5); g.stroke(); } }
+    if (LENS.rules) for (const i of $$('.hero-rule i, .by-rules i, .page-rules i')) { const r = i.getBoundingClientRect(); if (on({ ...r.toJSON(), height: 1 })) { g.beginPath(); g.moveTo(r.left, r.top + .5); g.lineTo(r.right, r.top + .5); g.stroke(); } }
     // the blocks of type on the screen: boxes holding only inline content
     const blocks = [];
-    for (const e of $$('main *')) {
+    for (const e of $$('.by *')) {   // (it opens over By Lavi only: its type only)
       if (e.closest('.sr-only, .xr-lens, svg, .by-strip, .level-stack') || inline(e) || !e.textContent.trim()) continue;
       const r = e.getBoundingClientRect();
       if (!on(r) || !shown(e) || ![...e.querySelectorAll('*')].every(inline)) continue;
@@ -576,7 +601,8 @@ function xray() {
       const mH = meas.measureText('H'), asc = mH.fontBoundingBoxAscent, cap = mH.actualBoundingBoxAscent;
       const walk = document.createTreeWalker(e, NodeFilter.SHOW_TEXT, { acceptNode: t => drawn(t) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT }), rg = document.createRange();
       const lines = [];
-      g.font = font; g.textBaseline = 'alphabetic'; g.strokeStyle = MAG;
+      g.font = font; g.textBaseline = 'alphabetic'; g.strokeStyle = g.fillStyle = MAG;
+      const solid = fs < LENS.outlineFrom;
       for (let t; (t = walk.nextNode());) for (let k = 0; k < t.length; k++) {
         const ch = t.data[k];
         if (!ch.trim()) continue;
@@ -584,7 +610,7 @@ function xray() {
         const b = rg.getBoundingClientRect();
         if (!b.width || b.bottom < 0 || b.top > H) continue;
         const base = b.top + asc;
-        g.strokeText(up ? ch.toUpperCase() : ch, b.left, base);
+        if (solid) g.fillText(up ? ch.toUpperCase() : ch, b.left, base); else g.strokeText(up ? ch.toUpperCase() : ch, b.left, base);
         const l = lines.find(l => Math.abs(l.base - base) < 1);
         if (l) { l.x0 = Math.min(l.x0, b.left); l.x1 = Math.max(l.x1, b.right); } else lines.push({ base, x0: b.left, x1: b.right });
       }
@@ -596,18 +622,20 @@ function xray() {
     const sizes = [...new Set(info.map(i => Math.round(i.fs)))].sort((a, b) => b - a);
     for (const i of info) {
       const { x, y, w, h } = i.box;
-      g.strokeStyle = MAG; g.setLineDash([3, 3]); g.strokeRect(x + .5, y + .5, w - 1, h - 1); g.setLineDash([]);
-      for (const l of i.lines) {
+      if (LENS.boxes) { g.strokeStyle = MAG; g.setLineDash([3, 3]); g.strokeRect(x + .5, y + .5, w - 1, h - 1); g.setLineDash([]); }
+      if (LENS.lines) for (const l of i.lines) {
         g.strokeStyle = 'rgba(194,57,199,.45)'; g.beginPath(); g.moveTo(l.x0 - 6, l.base - i.cap + .5); g.lineTo(l.x1 + 6, l.base - i.cap + .5); g.stroke();
         g.strokeStyle = MAG; g.beginPath(); g.moveTo(l.x0 - 6, l.base + .5); g.lineTo(l.x1 + 6, l.base + .5); g.stroke();
       }
-      const rank = sizes.indexOf(Math.round(i.fs)) + 1;
-      g.fillStyle = MAG; g.beginPath(); g.arc(x - 12, y + 6, 8, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#000'; g.font = '500 10px "ABC Areal", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(rank), x - 12, y + 6.5); g.textAlign = 'left';
-      label(`${i.name} · ${i.face}${i.italic ? ' Italic' : ''} · ${Math.round(i.fs)}px · tracking ${i.ls.toFixed(0)}%`, x, y - 10);
+      if (LENS.ranks) {
+        const rank = sizes.indexOf(Math.round(i.fs)) + 1;
+        g.fillStyle = MAG; g.beginPath(); g.arc(x - 12, y + 6, 8, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#000'; g.font = '500 10px "ABC Areal", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(rank), x - 12, y + 6.5); g.textAlign = 'left';
+      }
+      if (LENS.labels) label(`${i.name} · ${i.face}${i.italic ? ' Italic' : ''} · ${Math.round(i.fs)}px · tracking ${i.ls.toFixed(0)}%`, x, y - 10);
     }
     // the spaces: from each block to the nearest one under it that shares some width with it
-    for (const a of info) {
+    if (LENS.spaces) for (const a of info) {
       let best = null;
       for (const b of info) {
         if (b === a || b.box.y < a.box.y + a.box.h - 1) continue;
@@ -648,8 +676,8 @@ function xray() {
     const near = el => { const r = el.getBoundingClientRect(); return r.right > ox && r.left < ox + S && r.bottom > oy && r.top < oy + S; };
     // the stairs' tags and the strip's words: outlined where they are, turned and scaled as they are,
     // inside the box that clips them, with their box, cap line and baseline, and named
-    const groups = [...$$('.level-col').map(col => [$$('.level-tag > span', col), col, col.offsetParent, 'Level up']),
-      [$$('.by-strip-run > span'), $('.by-strip'), $('.by-strip'), 'Marquee']];
+    const groups = [...(LENS.level ? $$('.level-col').map(col => [$$('.level-tag > span', col), col, col.offsetParent, 'Level up']) : []),
+      ...(LENS.marquee ? [[$$('.by-strip-run > span'), $('.by-strip'), $('.by-strip'), 'Marquee']] : [])];
     let named = 0;
     for (const [spans, clip, stop, name] of groups) {
       if (!clip || !near(clip)) continue;
@@ -666,15 +694,19 @@ function xray() {
         const k = Math.hypot(m.a, m.b) || 1;
         lg.lineWidth = 1 / k;
         lg.font = meas.font; lg.textBaseline = 'alphabetic'; lg.textAlign = 'left';
-        lg.strokeStyle = MAG; lg.strokeText(cs.textTransform === 'uppercase' ? sp.textContent.toUpperCase() : sp.textContent, 0, base);
-        lg.strokeStyle = 'rgba(194,57,199,.45)'; lg.beginPath(); lg.moveTo(-6, base - cap); lg.lineTo(w + 6, base - cap); lg.stroke();
-        lg.strokeStyle = MAG; lg.beginPath(); lg.moveTo(-6, base); lg.lineTo(w + 6, base); lg.stroke();
-        lg.setLineDash([3 / k, 3 / k]); lg.strokeRect(0, 0, w, h); lg.setLineDash([]);
+        const word = cs.textTransform === 'uppercase' ? sp.textContent.toUpperCase() : sp.textContent;
+        lg.strokeStyle = lg.fillStyle = MAG;
+        if (fs * k < LENS.outlineFrom) lg.fillText(word, 0, base); else lg.strokeText(word, 0, base);
+        if (LENS.lines) {
+          lg.strokeStyle = 'rgba(194,57,199,.45)'; lg.beginPath(); lg.moveTo(-6, base - cap); lg.lineTo(w + 6, base - cap); lg.stroke();
+          lg.strokeStyle = MAG; lg.beginPath(); lg.moveTo(-6, base); lg.lineTo(w + 6, base); lg.stroke();
+        }
+        if (LENS.boxes) { lg.setLineDash([3 / k, 3 / k]); lg.strokeRect(0, 0, w, h); lg.setLineDash([]); }
       }
       lg.restore();
       // its name, once, upright, at the first of its runs in the lens
       const first = spans.find(near);
-      if (first && named < 3) {
+      if (first && named < 3 && LENS.labels) {
         named++;
         const r = first.getBoundingClientRect(), cs = getComputedStyle(first), m = toScreen(first, stop), k = Math.hypot(m.a, m.b);
         lg.setTransform(view);
@@ -683,7 +715,7 @@ function xray() {
     }
     // the fan's prints, each framed where it is this frame, bent as it is: a print seen face on in
     // magenta, one seen from behind faint, each named with its picture's size
-    const prints = fanMod?.outlines() ?? [];
+    const prints = LENS.prints ? fanMod?.outlines() ?? [] : [];
     if (prints.length) {
       const c = prints[0].clip;
       lg.save(); lg.setTransform(view); lg.beginPath(); lg.rect(c.left, c.top, c.width, c.height); lg.clip();
@@ -718,7 +750,7 @@ function xray() {
     }
     // the clock's names, upright, in its SVG's scale
     const svg = $('.level-clock');
-    if (svg && near(svg)) {
+    if (LENS.clock && svg && near(svg)) {
       const sr = svg.getBoundingClientRect(), sc = sr.width / 1117;
       lg.setTransform(view);
       for (const t of clockText()) {
@@ -727,9 +759,10 @@ function xray() {
         const word = t.textContent.toUpperCase(), w = lg.measureText(word).width, anchor = t.getAttribute('text-anchor');
         const x0 = anchor === 'middle' ? x - w / 2 : anchor === 'end' ? x - w : x;
         if (x0 + w < ox || x0 > ox + S || y < oy || y - fs > oy + S) continue;
-        lg.lineWidth = 1; lg.strokeStyle = MAG; lg.textAlign = 'left'; lg.textBaseline = 'alphabetic'; lg.strokeText(word, x0, y);
-        lg.beginPath(); lg.moveTo(x0 - 6, y + .5); lg.lineTo(x0 + w + 6, y + .5); lg.stroke();
-        g2label(`Chữ · ${cs.fontFamily.split(',')[0].replace(/"/g, '')} · ${Math.round(fs)}px`, x0, y - fs - 10);
+        lg.lineWidth = 1; lg.strokeStyle = lg.fillStyle = MAG; lg.textAlign = 'left'; lg.textBaseline = 'alphabetic';
+        if (fs < LENS.outlineFrom) lg.fillText(word, x0, y); else lg.strokeText(word, x0, y);
+        if (LENS.lines) { lg.beginPath(); lg.moveTo(x0 - 6, y + .5); lg.lineTo(x0 + w + 6, y + .5); lg.stroke(); }
+        if (LENS.labels) g2label(`Chữ · ${cs.fontFamily.split(',')[0].replace(/"/g, '')} · ${Math.round(fs)}px`, x0, y - fs - 10);
       }
     }
   };
@@ -742,6 +775,7 @@ function xray() {
   };
   // the lens: eased toward the pointer; open once the hero's intro is done, while the page is at rest
   // (drawn afresh each time it comes to rest), closed while it scrolls or the pointer is off the page
+  const byEl = $('.by');
   const at = { x: 0, y: 0, r: 0 }, go = { x: gsap.quickTo(at, 'x', { duration: .35, ease: 'power3' }), y: gsap.quickTo(at, 'y', { duration: .35, ease: 'power3' }) };
   let px = -1, py = -1, over = false, open = false, still = 0, drawnAt = NaN, last = 0, prevY = scrollY;
   addEventListener('pointermove', e => { if (!over) { at.x = e.clientX; at.y = e.clientY; } over = true; px = e.clientX; py = e.clientY; }, { passive: true });
@@ -752,13 +786,14 @@ function xray() {
     // open while the page is still or gliding slowly (the eased scroll glides on for seconds after the
     // wheel stops); the screen's drawing slides with the page as it glides, and is drawn afresh every
     // third of a second, so the outlines stay on the type, the rising reveals and the sticky fan too
-    const speed = Math.abs(scrollY - prevY);
+    // (only over By Lavi: it opens as the pointer comes into that section and closes as it leaves, not
+    // as the page scrolls; the drawing slides with the page between its redrawings)
     prevY = scrollY;
-    still = speed > 4 ? 0 : still + dt;
-    const want = enabled && over && settled && still > 120;
+    const by = byEl.getBoundingClientRect();
+    const want = enabled && over && settled && py >= by.top && py <= by.bottom;
     // (and always every 0.4 s while it is open: a block may start rising in after the page has stopped)
     if (want && (isNaN(drawnAt) || Math.abs(scrollY - drawnAt) > innerHeight * .3 || time - last > .4)) { draw(); drawnAt = scrollY; last = time; }
-    if (want !== open) { open = want; gsap.to(at, { r: open ? R : 0, duration: open ? .5 : .25, ease: open ? 'power3.out' : 'power2.in', overwrite: 'auto' }); }
+    if (want !== open) { open = want; gsap.to(at, { r: open ? R : 0, duration: open ? .6 : .45, ease: open ? 'power3.out' : 'power3.in', overwrite: 'auto' }); }   // grown in, shrunk out
     if (!open && at.r < .5) { if (lens.style.visibility !== 'hidden') lens.style.visibility = 'hidden'; return; }
     lens.style.visibility = 'visible';
     go.x(px); go.y(py);
@@ -770,36 +805,49 @@ function xray() {
 }
 
 let heroRuled = null;
+// the rules drawn in from both ends to the middle: a clip of two pieces, one from each side, growing to
+// meet (a polygon whose middle part, between them, has no area)
+const SIDES = a => `polygon(0% 0%, ${a}% 0%, ${a}% 100%, ${100 - a}% 100%, ${100 - a}% 0%, 100% 0%, 100% 100%, 0% 100%)`;
 function intro() {
-  // ruled where the type will rest, before it is set down to rise (under the loader, when it ran)
-  const ruled = heroRuled ?? rules();
-  const lines = riseIn($$('.hero-title .line'));
-  const small = [$('.hero-bar'), ...$$('.hero-intro > *'), $('.hero-refund'), ...$$('.hero-promise > li'), $('.hero-scroll')];
-  gsap.set(lines, { yPercent: RISE });
-  gsap.set($('.hero-title .serif .rise'), { skewX: -14 });
-  gsap.set(small, { autoAlpha: 0, y: 14 });
-  root.classList.remove('intro');
-  gsap.timeline({ defaults: { ease: 'expo.out' }, onComplete: () => { $$('.hero-title .line').forEach(l => l.classList.remove('masked')); settled = true; } })
-    .to(lines, { yPercent: 0, skewX: 0, duration: 1.3, stagger: .09 }, .1)
-    .to(small, { autoAlpha: 1, y: 0, duration: .9, stagger: .045 }, .55)
-    .fromTo(ruled, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 1.4, stagger: .05, ease: 'expo.inOut' }, .45);
+  const ruled = heroRuled ?? rules(), lines = $$('.hero-title > .line');
+  // the title, in the screen's middle while the page loaded, goes up to its place line by line
+  gsap.to(lines, { y: 0, duration: 1.8, ease: 'expo.inOut', stagger: .12, onComplete: () => { lines.forEach(l => { l.style.transform = ''; }); settle(); } });
+  // as it goes, the hero's small type is uncovered where it stands, each block from its own side
+  // (from the left on the screen's left, the right on its right, from its middle out in the middle);
+  // then its rules are drawn in from both sides to the middle, the lowest first and up from there; and
+  // as they start, the rooster grows in (ice.js, on 'hero-lines'): last, as it shows the page through
+  // its ice, once there is the whole page to show
+  const REST = .2, LINES = REST + .5;   // (the rest starts .2 s into the title's going up)
+  const small = [...$$('.hero-bar > *'), ...$$('.hero-intro > *'), $('.hero-refund'), ...$$('.hero-promise > li'), $('.hero-scroll')].filter(Boolean);
+  const from = small.map(e => {
+    const r = e.getBoundingClientRect(), c = (r.left + r.width / 2) / innerWidth;
+    // (reaching past the trimmed box above and below, so no accent is cut off as it goes)
+    return c < .4 ? 'inset(-.6em 100% -.4em 0%)' : c > .6 ? 'inset(-.6em 0% -.4em 100%)' : 'inset(-.6em 50% -.4em 50%)';
+  });
+  gsap.set(small, { clipPath: i => from[i] });
+  gsap.delayedCall(REST, () => root.classList.remove('intro'));
+  gsap.to(small, { clipPath: 'inset(-.6em 0% -.4em 0%)', duration: .8, ease: 'power2.out', stagger: .03, delay: REST, clearProps: 'clipPath' });
+  gsap.delayedCall(LINES - .3, () => { root.classList.add('hero-lines'); document.dispatchEvent(new Event('hero-lines')); });   // (the rooster, .3 s ahead of its rules)
+  gsap.fromTo([...ruled].reverse(), { clipPath: SIDES(0) }, { clipPath: SIDES(50), duration: .9, stagger: .06, ease: 'expo.inOut', delay: LINES,
+    onComplete() { this.targets().forEach(r => { r.style.clipPath = ''; }); } });
+}
+
+// By Lavi's rules, as the section comes into view: drawn in one after another, from the left and from the
+// right in turn (the only motion the section has as it comes)
+function byRulesIn() {
+  const rs = $$('.by-rules > *');
+  if (!rs.length || reduce) return;
+  const from = rs.map((_, i) => (i % 2 ? 'inset(0 0% 0 100%)' : 'inset(0 100% 0 0%)'));
+  gsap.set(rs, { clipPath: i => from[i] });
+  gsap.to(rs, { clipPath: 'inset(0 0% 0 0%)', duration: .9, ease: 'expo.inOut', stagger: .035, clearProps: 'clipPath',
+    scrollTrigger: { trigger: '.by', start: 'top 75%', once: true } });
 }
 
 // ----- 1b. the headings -----
-// every section's title comes in as the hero's does, line by line up through its own mask, the italic
-// lines straightening as they rise, when it scrolls into view; then it rests on the design's grid (no
-// drift: each line stays where the Figma sets it, in its columns)
+// every section's title is at rest on the design's grid from the start, filled with its shader
 function headings() {
-  for (const sel of ['.by-head h2', '.price h2', '.foot h2']) {
-    const h2 = $(sel), lines = $$('.line', h2), rises = riseIn(lines);
-    // the price's title has no box of its own (its lines sit on the section's grid): its first line marks it
-    const at = getComputedStyle(h2).display === 'contents' ? lines[0] : h2;
-    gsap.set(rises, { yPercent: RISE });
-    gsap.set(rises.filter(r => r.parentElement.classList.contains('serif')), { skewX: -14 });
-    gsap.timeline({ scrollTrigger: { trigger: at, start: 'top 82%', once: true }, defaults: { ease: 'expo.out' },
-      onComplete: () => lines.forEach(l => l.classList.remove('masked')) })
-      .to(rises, { yPercent: 0, skewX: 0, duration: 1.3, stagger: .1 });
-  }
+  // (they no longer rise in: they are at rest from the start, so their shader is there at once, title-shader.js)
+  for (const sel of ['.by-head h2', '.price h2', '.foot h2']) risen($(sel));
 }
 
 // ----- 2. the grid -----
@@ -1148,17 +1196,14 @@ function price() {
     roll.style.setProperty('--cap-top', `${n.top - f.top}px`); roll.style.setProperty('--cap-h', `${n.height}px`);
   };
   fit(); addEventListener('resize', fit);
-  gsap.set(col, { yPercent: -75 });                   // showing the 8
-  gsap.set(strike, { scaleX: 0, transformOrigin: '0 50%' });
-  gsap.timeline({ scrollTrigger: { trigger: '.price-tag', start: 'top 75%', once: true }, onComplete: () => roll.classList.add('done') })
-    .to(strike, { scaleX: 1, duration: .8, ease: 'expo.inOut' })
-    .to(col, { yPercent: 0, duration: 1.4, ease: 'power3.inOut' }, '-=.15');
+  // (no longer drawn and rolled on the scroll: struck and at 5 from the start, so its shader is there at once)
+  roll.classList.add('done'); risen(was); risen(now);
 }
 
 async function start() {
   gridKey();
   // the footer's clip stands still under reduced motion
-  if (reduce) { root.classList.remove('intro'); $('.foot-media video')?.pause(); await loader(); rules(); byRules(); pageRules(); strip(); camera(); socials(); settled = true; return; }
+  if (reduce) { root.classList.remove('intro'); root.classList.add('hero-lines'); $$('.hero-title > .line').forEach(l => { l.style.transform = ''; }); $('.foot-media video')?.pause(); await loader(); rules(); byRules(); pageRules(); strip(); camera(); socials(); settle(); return; }
   // (each part set up in a task of its own, so the page is never held up long while the loader shows)
   const pause = () => new Promise(r => setTimeout(r, 0));
   let entered = false;
@@ -1166,24 +1211,22 @@ async function start() {
   await loader(async fan => {
     await pause();
     await warmGlyphs(pause); await pause();
-    await byRules(pause); await pause();
+    await byRules(pause); byRulesIn(); await pause();
     await pageRules(pause); await pause();
     strip(fan?.lenis);
     camera(); await pause();
     headings(); await pause();
-    reveal(); await pause();
     portrait(); await pause();
     await levelUp(pause); await pause();
     xray();
-    vane();
+    // (the last frame's dithered weathervane is gone: the ice one, ice.js, is the page's rooster now)
     socials();
     price(); await pause();
     // the fan's eased scroll drives the triggers, in the same frame as the scene
     fanLenis = fan?.lenis;
     fan?.lenis.on('scroll', ScrollTrigger.update);
-    if (fan) warp(fan.lenis);
     // the hero's rules, laid where its type will rest and hidden for the intro to draw (as intro would)
-    heroRuled = rules(); gsap.set(heroRuled, { clipPath: 'inset(0 100% 0 0)' });
+    heroRuled = rules(); gsap.set(heroRuled, { clipPath: SIDES(0) });
     await pause();
     ScrollTrigger.sort();                                // by where they sit: Level up's pin makes room for what comes after it
     ScrollTrigger.addEventListener('refresh', snapSoon);
