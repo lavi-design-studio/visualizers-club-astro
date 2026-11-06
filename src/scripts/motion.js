@@ -527,6 +527,9 @@ function xray() {
   const show = () => { $('.xr-state', toggle).textContent = enabled ? 'On' : 'Off'; toggle.setAttribute('aria-checked', String(enabled)); };
   toggle.addEventListener('click', () => { enabled = !enabled; show(); try { localStorage.setItem('reveal', enabled ? 'on' : 'off'); } catch {} });
   show(); document.body.append(toggle);
+  // it steps aside going down the page, where it would sit over the type in the corner, and comes back
+  // going up (landing.css .xr-toggle.away)
+  ScrollTrigger.create({ start: 0, end: 'max', onUpdate: st => toggle.classList.toggle('away', st.direction > 0 && st.scroll() > 80) });
   const lens = document.createElement('div'), map = document.createElement('canvas'), ring = document.createElement('div');
   lens.className = 'xr-lens'; ring.className = 'xr-ring'; lens.setAttribute('aria-hidden', 'true');
   const live = document.createElement('canvas'), lg = live.getContext('2d');   // the type that moves, drawn every frame
