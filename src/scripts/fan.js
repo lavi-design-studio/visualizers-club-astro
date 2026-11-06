@@ -470,7 +470,12 @@ const measure = () => {
   labelAt.x = scrollEl.offsetLeft; labelAt.y = scrollEl.offsetTop;
   fanRun = Math.max(1, (fanH - stageH) * (1 - HOLD));
   openRun = Math.max(1, heroEl.offsetHeight * .8);    // the box fills the screen as the hero leaves it
+  finaleAt = finaleEl.getBoundingClientRect().top + scrollY;
 };
+// "scroll" stays at the screen's foot with the rooster (landing.css: fixed), under the last frame as
+// that comes up over it; once the frame has reached the screen's top it is put away, so it never shows
+// over what comes after (and back as the page goes up again)
+let finaleAt = Infinity, scrollGone = false;
 const progressAt = y => clamp((y - fanTop) / fanRun);
 const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
 fan.addEventListener('pointermove', e => {
@@ -578,6 +583,8 @@ let lastFinale = -1;
 const tick = (time, deltaMs) => {
   const dt = Math.min(1 / 30, deltaMs / 1000);
   lenis.raf(time * 1000);
+  const gone = lenis.animatedScroll >= finaleAt;
+  if (gone !== scrollGone) { scrollGone = gone; scrollEl.style.visibility = gone ? 'hidden' : ''; }
   if (!active) return;
   keepPace(deltaMs);
   cur = progressAt(lenis.animatedScroll);

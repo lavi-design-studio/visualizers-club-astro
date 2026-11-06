@@ -195,11 +195,12 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
    on the stage under its empty part (and under the picture box, a measure for fan.js), is clickable */
 .hero { pointer-events: none; }
 .hero > :is(.hero-bar, .hero-title, .hero-intro, .hero-refund, .hero-promise) { pointer-events: auto; }
-/* "scroll" rides the sticky stage, at the foot of the screen through the whole fan (Figma has it 20 up
-   from the hero's foot, centred). It sits over the prints, but the last one, flying at us, goes over
-   it: fan.js cuts that print's shape out of it, and the DOM copy of the print covers it after */
+/* "scroll" stays at the foot of the screen with the rooster (ice.js) through the screens it turns over
+   (Figma has it 20 up from the hero's foot, centred): fixed, under the last frame (#finale, z-index 3)
+   as that comes up over it from the foot, as the rooster flies into its brackets; fan.js puts it away
+   once the frame has reached the screen's top */
 .hero-scroll {
-  position: absolute; left: 0; right: 0; bottom: calc(20 * var(--px) + 100lvh - 100svh); margin-inline: auto; width: max-content;
+  position: fixed; left: 0; right: 0; bottom: calc(20 * var(--px)); margin-inline: auto; width: max-content;
   font-size: var(--f20); line-height: 1.2; letter-spacing: -.02em;
   text-decoration: none; text-box: trim-both cap alphabetic;
 }
@@ -550,7 +551,7 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
   .by-exp { row-gap: 8px; }
   .hero { padding-bottom: 16px; display: flex; flex-direction: column; }
   .hero-bar { position: static; margin-top: max(16px, env(safe-area-inset-top, 0px)); }
-  .hero-scroll { bottom: calc(16px + 100lvh - 100svh); }
+  .hero-scroll { bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
   .hero-title { margin-top: 32px; gap: 10px; }
   .hero-intro, .hero-refund, .hero-promise { margin-top: 32px; }
   .hero-intro { gap: 5px; }
