@@ -988,11 +988,19 @@ async function levelUp(pause) {
   const place = phase => {
     for (const col of tags) col.forEach((el, i) => {
       const t = i - phase, top = t => { const k = R ** (3 - t); return Y - H * (1 - k) / (1 - R) - H * k; };   // past the tiers bigger than it, then its own height
-      // both ends are the column's clip: the smallest, stepping on past the inner end, keeps its size
-      // and is pushed out under it by the tag stepping in to its place, what is left of it narrowing to
-      // nothing; the one coming in at the page's edge comes out from under that edge the same way
-      const k = t >= 0 ? R ** (3 - t) : R ** 3, y = t >= 0 ? top(t) : top(t + 1) - H * k;
+      // both ends are a clip mask: the smallest, stepping on past the inner end, keeps its size and is
+      // shut as the tag stepping in to its place takes the room, its window closing from the screen's
+      // top and from both its sides at once (to a point at its foot), kept in the middle of the room
+      // left; the one coming in at the page's edge opens the same way out of the room it is given.
+      // g: the room, along the column; s: how much of the tag is shut, 0 to 1
+      const out = t < 0, k = out ? R ** 3 : R ** (3 - t);
+      const g = out ? top(t + 1) - top(0) : t > 3 ? Y - top(t) : H * k;
+      const sh = Math.min(1, Math.max(0, 1 - g / (H * k)));
+      const y = out ? top(0) + g / 2 - H * k / 2 : t > 3 ? top(t) + g / 2 - H * k / 2 : top(t);
       el.style.setProperty('--y', y.toFixed(3)); el.style.setProperty('--k', k.toFixed(5));
+      // (in the tag's own box, turned a quarter: its left is the screen's top, its top and foot the sides)
+      const clip = sh > 0 ? `inset(${(sh * 50).toFixed(2)}% 0 ${(sh * 50).toFixed(2)}% ${(sh * 100).toFixed(2)}%)` : '';
+      if (el._clip !== clip) { el._clip = clip; el.style.clipPath = clip; }
     });
   };
   // the levels round the clock: the hand on the level reached, the arc behind it the way come, the
