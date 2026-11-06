@@ -981,43 +981,18 @@ function flipper() {
 // the tiers bigger than it
 // the course's eight levels, as the syllabus names them
 const LEVELS = ['brief', 'grid', 'chữ', 'màu', 'claude', 'website', 'motion', 'critique'];
-// masks of the page's dither, from none of a cell's pixels kept to all of them, a Bayer 4x4 tile each,
-// in device pixels (a cell about 2 CSS pixels before the tag's own scale); made as Level up is set up
-// (each a PNG made off the page's thread, toBlob, and used by its blob URL)
-let MASKS;
-const tileURL = c => new Promise(r => c.toBlob(b => r(`url(${URL.createObjectURL(b)})`)));
-const masksOf = () => {
-  const m = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5], dpr = devicePixelRatio || 1, cell = Math.max(1, Math.round(2 * dpr));
-  return Promise.all(Array.from({ length: 17 }, async (_, k) => {
-    const c = document.createElement('canvas'); c.width = c.height = 4 * cell;
-    const g = c.getContext('2d');
-    for (let i = 0; i < 16; i++) if (m[i] < k) g.fillRect((i % 4) * cell, (i >> 2) * cell, cell, cell);
-    return { url: await tileURL(c), size: `${4 * cell / dpr}px` };
-  }));
-};
 // (pause as byRules takes it)
 async function levelUp(pause) {
-  MASKS = await masksOf();
-  if (pause) await pause();
   const R = .75, H = 245.4733, Y = 670.2942;
   const tags = $$('.level-col').map(col => $$('.level-tag', col));
-  // a tag's dither: the smallest is half dust at the stair's inner end and keeps it as it shrinks away
-  // there, the one coming in at the page's edge comes out of it; set only when its level of the 17 changes
-  const dust = (el, d) => {
-    const k = Math.round(Math.min(1, Math.max(0, d)) * 16);
-    if (el._dust === k) return;
-    el._dust = k;
-    const v = k === 16 ? 'none' : `${MASKS[k].url} 0 0 / ${MASKS[k].size} repeat`;
-    el.style.mask = v; el.style.webkitMask = v;
-  };
   const place = phase => {
     for (const col of tags) col.forEach((el, i) => {
       const t = i - phase, top = t => { const k = R ** (3 - t); return Y - H * (1 - k) / (1 - R) - H * k; };   // past the tiers bigger than it, then its own height
-      // the smallest, stepping on past the inner end, shrinks away to nothing there instead, against
-      // the tag stepping in to its place (and kept off the end, where the column would cut it)
-      const k = t >= 0 ? R ** (3 - t) : R ** 3 * Math.max(0, 1 + t), y = t >= 0 ? top(t) : Math.max(top(0), top(t + 1) - H * k);
+      // both ends are the column's clip: the smallest, stepping on past the inner end, keeps its size
+      // and is pushed out under it by the tag stepping in to its place, what is left of it narrowing to
+      // nothing; the one coming in at the page's edge comes out from under that edge the same way
+      const k = t >= 0 ? R ** (3 - t) : R ** 3, y = t >= 0 ? top(t) : top(t + 1) - H * k;
       el.style.setProperty('--y', y.toFixed(3)); el.style.setProperty('--k', k.toFixed(5));
-      dust(el, Math.min((Math.max(t, 0) + .35) / .9, (4.15 - t) / .7));
     });
   };
   // the levels round the clock: the hand on the level reached, the arc behind it the way come, the
