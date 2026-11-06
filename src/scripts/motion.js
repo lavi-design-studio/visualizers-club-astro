@@ -989,17 +989,16 @@ async function levelUp(pause) {
     for (const col of tags) col.forEach((el, i) => {
       const t = i - phase, top = t => { const k = R ** (3 - t); return Y - H * (1 - k) / (1 - R) - H * k; };   // past the tiers bigger than it, then its own height
       // both ends are a clip mask: the smallest, stepping on past the inner end, keeps its size and is
-      // shut as the tag stepping in to its place takes the room, its window closing from the screen's
-      // top and from both its sides at once (to a point at its foot), kept in the middle of the room
-      // left; the one coming in at the page's edge opens the same way out of the room it is given.
+      // shut as the tag stepping in to its place takes the room, its window closing in from all four
+      // edges at once to the tag's centre, kept in the middle of the room left; the one coming in at
+      // the page's edge opens the same way, out from its centre, in the room it is given.
       // g: the room, along the column; s: how much of the tag is shut, 0 to 1
       const out = t < 0, k = out ? R ** 3 : R ** (3 - t);
       const g = out ? top(t + 1) - top(0) : t > 3 ? Y - top(t) : H * k;
       const sh = Math.min(1, Math.max(0, 1 - g / (H * k)));
       const y = out ? top(0) + g / 2 - H * k / 2 : t > 3 ? top(t) + g / 2 - H * k / 2 : top(t);
       el.style.setProperty('--y', y.toFixed(3)); el.style.setProperty('--k', k.toFixed(5));
-      // (in the tag's own box, turned a quarter: its left is the screen's top, its top and foot the sides)
-      const clip = sh > 0 ? `inset(${(sh * 50).toFixed(2)}% 0 ${(sh * 50).toFixed(2)}% ${(sh * 100).toFixed(2)}%)` : '';
+      const clip = sh > 0 ? `inset(${(sh * 50).toFixed(2)}%)` : '';
       if (el._clip !== clip) { el._clip = clip; el.style.clipPath = clip; }
     });
   };
