@@ -517,8 +517,9 @@ const LENS = {
 };
 function xray() {
   if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-  let enabled = true;
-  try { enabled = localStorage.getItem('reveal') !== 'off'; } catch {}
+  // (off till the visitor turns it on; as they left it on their next visit)
+  let enabled = false;
+  try { enabled = localStorage.getItem('reveal') === 'on'; } catch {}
   // a switch: "Reveal", its state, and a track the knob slides along
   const toggle = document.createElement('button');
   toggle.type = 'button'; toggle.className = 'xr-toggle'; toggle.setAttribute('role', 'switch');
@@ -559,7 +560,7 @@ function xray() {
     // the pictures: left open, framed and sized
     // (a canvas over most of the screen is a backdrop, the fan's or Level up's turn, not a picture: the fan's
     // own frame stands for it while the hero is up)
-    const pics = $$('.by :is(img, canvas, video)').filter(e => { const r = e.getBoundingClientRect(); return on(r) && r.width * r.height > 2500 && r.width * r.height < .5 * W * H && shown(e) && !e.closest('.xr-lens, .fan-stage, .title-shader'); });
+    const pics = $$('main :is(img, canvas, video)').filter(e => { const r = e.getBoundingClientRect(); return on(r) && r.width * r.height > 2500 && r.width * r.height < .5 * W * H && shown(e) && !e.closest('.xr-lens, .fan-stage, .title-shader'); });
     const slot = $('#fanSlot'), fanCanvas = $('.fan-stage canvas');
     if (scrollY < innerHeight * .4) { if (on(slot.getBoundingClientRect())) pics.push(slot); }
     else if (fanCanvas && shown(fanCanvas) && on(fanCanvas.getBoundingClientRect())) pics.push(fanCanvas);
@@ -587,7 +588,7 @@ function xray() {
     if (LENS.rules) for (const i of $$('.hero-rule i, .by-rules i, .page-rules i')) { const r = i.getBoundingClientRect(); if (on({ ...r.toJSON(), height: 1 })) { g.beginPath(); g.moveTo(r.left, r.top + .5); g.lineTo(r.right, r.top + .5); g.stroke(); } }
     // the blocks of type on the screen: boxes holding only inline content
     const blocks = [];
-    for (const e of $$('.by *')) {   // (it opens over By Lavi only: its type only)
+    for (const e of $$('main *')) {   // (it opens over every section: all of the page's type)
       if (e.closest('.sr-only, .xr-lens, svg, .by-strip, .level-stack') || inline(e) || !e.textContent.trim()) continue;
       const r = e.getBoundingClientRect();
       if (!on(r) || !shown(e) || ![...e.querySelectorAll('*')].every(inline)) continue;
@@ -775,7 +776,6 @@ function xray() {
   };
   // the lens: eased toward the pointer; open once the hero's intro is done, while the page is at rest
   // (drawn afresh each time it comes to rest), closed while it scrolls or the pointer is off the page
-  const byEl = $('.by');
   const at = { x: 0, y: 0, r: 0 }, go = { x: gsap.quickTo(at, 'x', { duration: .35, ease: 'power3' }), y: gsap.quickTo(at, 'y', { duration: .35, ease: 'power3' }) };
   let px = -1, py = -1, over = false, open = false, still = 0, drawnAt = NaN, last = 0, prevY = scrollY;
   addEventListener('pointermove', e => { if (!over) { at.x = e.clientX; at.y = e.clientY; } over = true; px = e.clientX; py = e.clientY; }, { passive: true });
@@ -786,11 +786,10 @@ function xray() {
     // open while the page is still or gliding slowly (the eased scroll glides on for seconds after the
     // wheel stops); the screen's drawing slides with the page as it glides, and is drawn afresh every
     // third of a second, so the outlines stay on the type, the rising reveals and the sticky fan too
-    // (only over By Lavi: it opens as the pointer comes into that section and closes as it leaves, not
-    // as the page scrolls; the drawing slides with the page between its redrawings)
+    // (over every section, as long as the pointer is on the page; it stays open as the page scrolls,
+    // the drawing sliding with the page between its redrawings)
     prevY = scrollY;
-    const by = byEl.getBoundingClientRect();
-    const want = enabled && over && settled && py >= by.top && py <= by.bottom;
+    const want = enabled && over && settled;
     // (and always every 0.4 s while it is open: a block may start rising in after the page has stopped)
     if (want && (isNaN(drawnAt) || Math.abs(scrollY - drawnAt) > innerHeight * .3 || time - last > .4)) { draw(); drawnAt = scrollY; last = time; }
     if (want !== open) { open = want; gsap.to(at, { r: open ? R : 0, duration: open ? .6 : .45, ease: open ? 'power3.out' : 'power3.in', overwrite: 'auto' }); }   // grown in, shrunk out

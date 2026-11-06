@@ -68,7 +68,8 @@ Loader chạy đều `PACE` (2,5 giây cả vòng) khi đang tải; tải xong t
 
 ### 5. Lens Reveal — hàm `xray()` trong `src/scripts/motion.js`
 
-- Chỉ mở trong section By Lavi; phóng to khi con trỏ vào, thu nhỏ khi ra.
+- Mặc định tắt (nút Reveal góc dưới phải); bật lên thì kính mở ở mọi section, theo con trỏ, kể cả khi đang cuộn.
+  Trình duyệt nhớ lựa chọn của người xem cho lần sau.
 - Chữ nhỏ trong lens hiện đặc cho dễ đọc; chữ lớn vẫn là nét viền.
 - Đường kẻ của By Lavi chạy vào xen kẽ từ trái và phải khi section vào khung nhìn (`byRulesIn()`).
 
