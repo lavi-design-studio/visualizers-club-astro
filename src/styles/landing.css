@@ -845,3 +845,40 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-stopped { overflow: clip; }
+
+/* on a tablet and a phone, the body text of some sections set in the screen's right half, the labels and
+   the titles keeping the left: the price's three blocks (its year the label on the first one's row),
+   the footer's caption, note and credit, By Lavi's note under the portrait on a phone (on a tablet the
+   frame has that half), and on a tablet, where its lines fit there, By Lavi's syllabus beside its label.
+   (On a phone, the last three of its four columns: see below) */
+@media (max-width: 899px) {
+  .price :is(.price-first, .price-fund, .price-gets) { grid-column: 1 / -1; justify-self: end; width: calc((100% - 16px) / 2); }
+  .price .price-year { grid-column: 1 / -1; grid-row: 2; justify-self: start; text-align: left; margin-top: 56px; }
+  .price .price-first { grid-row: 2; }
+  .foot-media figcaption, .foot .foot-note, .foot .foot-made { align-self: flex-end; width: calc((100% - 16px) / 2); max-width: none; }
+  .foot .foot-made { flex-wrap: wrap; row-gap: 0; }
+  .foot-media figcaption { margin-left: auto; }
+  .foot-note span:nth-child(2) { padding-left: 0; }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  /* (the title's lines are the price's own rows 1 to 3 here) */
+  .price :is(.price-first, .price-year) { grid-row: 4; }
+  .price .price-fund { grid-row: 5; }
+  .price .price-gets { grid-row: 6; }
+  .price .price-label { grid-row: 7; }
+  .price .price-tag { grid-row: 8; }
+  .by .by-ruled { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 16px; }
+  .by .by-label { grid-column: 1; grid-row: 1; }
+  .by .by-syllabus { grid-column: 2; grid-row: 1; }
+}
+/* a phone's half is too narrow for its 16px type (most lines would break in three): there the body text
+   takes the last three of the phone's four columns, the first left to the labels */
+@media (max-width: 599px) {
+  .price :is(.price-first, .price-fund, .price-gets) { grid-column: 2 / -1; width: auto; justify-self: stretch; }
+  .price .price-year { grid-column: 1; }
+  .foot-media figcaption, .foot .foot-note, .foot .foot-made { width: calc((100% - 48px) * .75 + 32px); }
+  /* By Lavi's right column is 300 wide against the screen's right: the note the screen's last three
+     columns of it, its (*) hung in the first */
+  .by .by-note { justify-self: end; width: calc((100vw - 80px) * .75 + 32px); }
+  .by .by-mark { justify-self: end; margin: 20px calc((100vw - 80px) * .75 + 40px) 0 0; }
+}
