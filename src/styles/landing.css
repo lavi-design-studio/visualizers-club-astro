@@ -66,15 +66,30 @@ br.tb { display: none; }                 /* a line break only the tablet's layou
   appearance: none; background: var(--magenta); color: #000; border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px var(--magenta);
   font: 400 var(--f20, max(12px, calc(20 * var(--bpx))))/1 "ABC Areal", system-ui, sans-serif; letter-spacing: -.02em; text-transform: uppercase;
   text-decoration: none; white-space: nowrap; cursor: pointer; text-box: normal;
-  transition: background-color .25s, color .25s;
+  position: relative; isolation: isolate;
+  transition: background-color .25s, color .25s, scale .2s cubic-bezier(.65, 0, .35, 1);
 }
 .btn .serif { letter-spacing: -.01em; }
-.btn:hover:not(:disabled) { background: #000; color: var(--magenta); }
+/* turned about as the site draws its rules (motion.js rulesIn): from both ends to the middle. A plate of
+   the magenta laid over the button's inside (its rim kept), in difference: magenta under it goes black
+   and black goes magenta, so plate and type turn together, exactly at the plate's edges as they meet;
+   it opens back out to the ends as the pointer leaves. (on touch, only while pressed) */
+.btn::after {
+  content: ""; position: absolute; inset: 1px; z-index: 1; pointer-events: none;
+  background: var(--magenta); mix-blend-mode: difference;
+  clip-path: polygon(0% 0%, 0% 0%, 0% 100%, 100% 100%, 100% 0%, 100% 0%, 100% 100%, 0% 100%);
+  transition: clip-path .5s cubic-bezier(.65, 0, .35, 1);
+}
+@media (hover: hover) { .btn:hover::after { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 50% 100%, 50% 0%, 100% 0%, 100% 100%, 0% 100%); } }
+.btn:focus-visible::after, .btn:active::after { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 50% 100%, 50% 0%, 100% 0%, 100% 100%, 0% 100%); }
+.btn:active { scale: .97; }
+.btn:active::after { transition-duration: .25s; }
+.btn:disabled::after { content: none; }
+.btn:disabled { scale: 1; }
 .btn:focus-visible { outline: 1px solid var(--magenta); outline-offset: 3px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn-alt { background: #000; color: var(--magenta); }
-.btn-alt:hover:not(:disabled) { background: var(--magenta); color: #000; }
-@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .btn, .btn::after { transition: none; } }
 
 /* ----- the fan, with the hero over its start ----- */
 /* (a plain page now: the hero's screen, then the last frame as a screen of its own, scrolled to as any
@@ -197,7 +212,7 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
   position: fixed; right: var(--gap, 16px); bottom: var(--gap, 16px); z-index: 46;
   gap: 8px;   /* (the site's button turned about, .btn .btn-alt: motion.js) */
 }
-.xr-toggle.btn-alt:hover { background: #000; color: var(--magenta); }   /* (its track and knob are the magenta: no plate under them) */
+.xr-toggle::after { content: none; }   /* (kept black under the pointer: its track and knob are the magenta) */
 .xr-state { min-width: 2.2em; }
 .xr-track { position: relative; flex: none; width: 30px; height: 16px; border: 1px solid var(--magenta); border-radius: 8px; transition: background-color .25s; }
 .xr-knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--magenta); transition: transform .3s cubic-bezier(.2, .8, .2, 1), background-color .25s; }

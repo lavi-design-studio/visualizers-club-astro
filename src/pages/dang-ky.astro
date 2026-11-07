@@ -441,6 +441,8 @@ main { container-type: inline-size; }
   import '../scripts/dither.js';
   import '../scripts/ring.js';
   import { footRules, socials } from '../scripts/rules.js';
+  import { buttonsIn } from '../scripts/buttons.js';
+  buttonsIn([document.querySelector('[data-send]')]);
   const root = document.documentElement, h1 = document.querySelector('.signup-title'), lines = [...h1.querySelectorAll('.line')];
   // (the footer is not held back: far under the fold, and its title's ice reads its letters as it is set)
   const rest = [...document.querySelectorAll('.page > *')].filter(e => e !== h1);

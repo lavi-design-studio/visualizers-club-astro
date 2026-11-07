@@ -16,6 +16,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger.js';
 import { photo, tile, roundEven, draw as ditherDraw } from './dither.js';
 // the letters' ink and the rules laid round it, the footer's rules and its links (shared with the sign-up page)
 import { glyph, inkOf, inkOfSliced, lay, snapRules, snapSoon, layer, tidy, footRules, socials } from './rules.js';
+import { buttonsIn } from './buttons.js';
 
 gsap.registerPlugin(ScrollTrigger);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1042,7 +1043,7 @@ async function start() {
     await pause();
     await warmGlyphs(pause); await pause();
     await byRules(pause); byRulesIn(); await pause();
-    await pageRules(pause); pageRulesIn(); await pause();
+    await pageRules(pause); pageRulesIn(); buttonsIn([$('.price-cta .btn')]); await pause();
     strip(fan?.lenis);
     camera(); await pause();
     headings(); await pause();
