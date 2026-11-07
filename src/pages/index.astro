@@ -92,9 +92,9 @@ const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/f
   // places are taken (paid or waiting to pay, as the sheet counts them): "hết chỗ", the price's plate
   // turned about; they still lead to the page, which says when the next class opens. Asked once the
   // page has loaded, so it never holds anything up
-  import { SIGNUP_URL, CAP } from '../signup.js';
-  const ask = () => fetch(SIGNUP_URL).then(r => r.json()).then(d => {
-    if ((d.paid ?? d.taken ?? 0) + (d.wait ?? 0) < CAP) return;
+  // (closed, signup.js: so from the start, the sheet not asked)
+  import { SIGNUP_URL, CAP, CLOSED } from '../signup.js';
+  const taken = () => {
     for (const a of document.querySelectorAll('a[data-signup]')) {
       const cta = a.closest('.price-cta');
       if (cta) a.innerHTML = 'hết chỗ <span class="serif">(→)</span>';
@@ -102,8 +102,10 @@ const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/f
       a.setAttribute('aria-label', 'Hết chỗ: xem trang đăng ký');
       if (cta) { cta.classList.add('full'); a.classList.add('btn-alt'); }
     }
-  }).catch(() => {});
-  if (document.readyState === 'complete') setTimeout(ask, 1000); else addEventListener('load', () => setTimeout(ask, 1000), { once: true });
+  };
+  const ask = () => fetch(SIGNUP_URL).then(r => r.json()).then(d => { if ((d.paid ?? d.taken ?? 0) + (d.wait ?? 0) >= CAP) taken(); }).catch(() => {});
+  if (CLOSED) taken();
+  else if (document.readyState === 'complete') setTimeout(ask, 1000); else addEventListener('load', () => setTimeout(ask, 1000), { once: true });
 </script>
 </body>
 </html>

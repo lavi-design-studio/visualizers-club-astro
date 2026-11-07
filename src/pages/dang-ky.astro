@@ -12,7 +12,7 @@
 // title centred as the hero's, then the form as one sheet of ruled paper across the page
 import '../styles/landing.css';   // (the landing page's styles: its footer, shared, is set by them)
 import foot from '../partials/foot.html?raw';
-import { SIGNUP_URL, CAP } from '../signup.js';   // the sheet's web app (…/exec) and the places
+import { SIGNUP_URL, CAP, CLOSED } from '../signup.js';   // the sheet's web app (…/exec), the places, and whether it is closed
 ---
 <!doctype html>
 <html lang="vi" data-pass-wait>
@@ -409,7 +409,7 @@ main { container-type: inline-size; }
 <Fragment set:html={foot} />
 </main>
 
-<script define:vars={{ SIGNUP_URL, CAP }}>
+<script define:vars={{ SIGNUP_URL, CAP, CLOSED }}>
   // the lines drawn in: each row's, the lowest first, as the row comes into view (not under reduced
   // motion); from when the title starts going up ('signup-lines', below), or at once if that never comes
   // (a sheet shown later, the done one, is made ready the same way and drawn in when it comes into view)
@@ -497,10 +497,12 @@ main { container-type: inline-size; }
       forget(); clearInterval(polling); polling = 0;
       if (dropped) say('Đăng ký trước của bạn đã được huỷ. Bạn có thể đăng ký lại.', 'bad');
     }
-    if (!mine && CAP - (d.paid ?? 0) - (d.wait ?? 0) <= 0 && done.hidden) full();
+    if (!mine && (CLOSED || CAP - (d.paid ?? 0) - (d.wait ?? 0) <= 0) && done.hidden) full();
   }).catch(() => {}).finally(() => document.dispatchEvent(new Event('signup-state')));
 
 
+  // (closed: fully booked at once for anyone not signed up here, before the title comes in)
+  if (CLOSED && !mine) full();
   if (!SIGNUP_URL) {
     send.disabled = true;
     say('Form sắp mở. Trong lúc chờ, nhắn thầy qua Discord để giữ chỗ.');
@@ -554,7 +556,8 @@ main { container-type: inline-size; }
   // reads the titles' letters as it comes in); its words changed later ('retitle'), the ice made again,
   // and the footer's rules laid again where its title now stands
   // (come by the way from the landing page, less: the card is waiting on it)
-  const settled = new Promise(r => { document.addEventListener('signup-state', r, { once: true }); setTimeout(r, root.classList.contains('passed') ? 700 : 1500); });
+  // (a state set already, the sign-up closed: at once)
+  const settled = document.body.dataset.state ? Promise.resolve() : new Promise(r => { document.addEventListener('signup-state', r, { once: true }); setTimeout(r, root.classList.contains('passed') ? 700 : 1500); });
   const shader = settled.then(() => import('../scripts/title-shader.js'));
   h1.addEventListener('retitle', () => {
     if (h1.classList.contains('risen')) shader.then(m => m.reshade(h1));
