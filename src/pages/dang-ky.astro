@@ -7,8 +7,9 @@
 // so two at once never make a tenth), whose address is SIGNUP_URL (src/signup.js); the page asks it how
 // many places are taken as it opens. Set as the landing page is: black, the magenta, PP Neue World
 // and Migra for the title, ABC Areal for the small type on hairline rules. The bank's QR code is
-// public/pay/vpbank-qr.png (the VPBank VietQR, cut from the bank app; a frame says so if it is missing). Laid on the landing page's grid:
-// each row's label in columns 4-5, its body from column 6, the title centred as the hero's
+// public/pay/vpbank-qr.png (the VPBank VietQR, cut from the bank app; a frame says so if it is missing). Laid as
+// Figma's "Sign up / Desktop / Open" (The Visualizers Club, Website): on the landing page's grid, the
+// title centred as the hero's, then the form as one sheet of ruled paper across the page
 import '../styles/landing.css';   // (the landing page's styles: its footer, shared, is set by them)
 import foot from '../partials/foot.html?raw';
 import { SIGNUP_URL, CAP } from '../signup.js';   // the sheet's web app (…/exec) and the places
@@ -80,7 +81,6 @@ main { container-type: inline-size; }
   --f20: max(12px, calc(20 * var(--px)));
   --f40: max(20px, calc(40 * var(--px)));
   --f160: calc(160 * var(--tpx));
-  --line: max(44px, calc(56 * var(--px)));   /* the form's ruled line */
   display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap);
   padding: 0 var(--gap) max(var(--gap), env(safe-area-inset-bottom, 0px)); align-content: start; position: relative;
 }
@@ -90,142 +90,139 @@ main { container-type: inline-size; }
 .bar a::before { content: ""; position: absolute; inset: -8px; }
 /* the title as the hero's: centred on the page, 16 between its lines (columns 2 to 11: its Migra line
    is wider than the hero's 4 to 9), each line whole */
-.title { grid-column: 2 / span 10; white-space: nowrap; margin-top: calc(21 * var(--px) + 64px); font-size: var(--f160); display: flex; flex-direction: column; gap: .3em; text-align: center; letter-spacing: 0; }   /* (more than the hero's 16: the Vietnamese marks over the second line need it) */
+.title { grid-column: 2 / span 10; white-space: nowrap; margin-top: calc(21 * var(--px) + 64px); font-size: var(--f160); display: flex; flex-direction: column; gap: .15em; text-align: center; letter-spacing: 0; }   /* (24 between its lines at 160, as Figma's) */
 .title .serif { letter-spacing: -.01em; }
 
-/* the rows: a hairline across the page, the label two columns to the left of the body (columns 4-5),
-   the body from column 6 (as the price's "cái giá phải trả" and the footer's "liên hệ qua") */
-.row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: relative; padding-block: calc(32 * var(--px)) calc(64 * var(--px)); }
-/* every line on the page drawn in as the landing page's rules are (its hero's): from both ends to the
-   middle, the lowest of a row first and up from there, as the row comes into view (the script below).
-   --d: how far in from each end a line is drawn, 0 to 50 (50: whole) */
+/* the form as ruled paper across the whole page (Figma's "Sign up / Desktop / Open"): hairlines from
+   edge to edge, a line apart, and everything on them set in the middle of its line. Two sheets: what you
+   write, its lines 50 apart, and the payment, 58 apart (so the price's caps fill two). On the first: the
+   places left, as a big number (columns 2-4), the step's name (columns 5-7, its number hanging in the
+   gutter before it, as the fields' A. B. C.), and the fields, a name on one line and what you write on
+   the next (columns 8 on). On the second: the step's name, the QR over five lines (columns 8-9), the
+   price over two (column 6 on), and what the page has to say on the last. Then "sign up", large, as
+   the button.
+   Each line is its own element (.rl, a row of the sheet's grid: its foot is the line), so the lines are
+   drawn in one after another, the lowest first, from both ends to the middle (--d, 0 to 50, as every
+   rule on the site), as the sheet comes into view (the script below). A thing on the sheet sits in
+   rows --r to --r + --s (on a phone, --mr and --ms) */
 @property --d { syntax: '<number>'; inherits: true; initial-value: 50; }
-.row, .field label, .field input, .field textarea { transition: --d .9s cubic-bezier(.87, 0, .13, 1) var(--wait, 0s); }
+.sheet, .send { transition: --d .9s cubic-bezier(.87, 0, .13, 1) var(--wait, 0s); }
+.rl { transition: --d .9s cubic-bezier(.87, 0, .13, 1) var(--wait, 0s); }
 .off { --d: 0; }
-.row::before {
-  content: ""; position: absolute; left: calc(-1 * var(--gap)); right: calc(-1 * var(--gap)); top: 0; height: 1px; background: var(--magenta);
-  clip-path: polygon(0% 0%, calc(var(--d) * 1%) 0%, calc(var(--d) * 1%) 100%, calc(100% - var(--d) * 1%) 100%, calc(100% - var(--d) * 1%) 0%, 100% 0%, 100% 100%, 0% 100%);
+.sheet {
+  --line: max(40px, calc(50 * var(--px)));
+  grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; grid-auto-rows: var(--line);
+  position: relative; isolation: isolate;
 }
-.places { margin-top: calc(120 * var(--px)); }
-.label { grid-column: 4 / span 2; font-size: var(--f20); letter-spacing: -.02em; line-height: 1.2; }
-.label .serif { margin-right: .4em; }
-.body { grid-column: 6 / span 6; }
+.sheet.info { margin-top: calc(292 * var(--px)); }   /* (the first line 619 down, as Figma's) */
+.sheet.pay { --line: max(46px, calc(58 * var(--px))); }
+.sheet > *, .fields > * { grid-row: var(--r) / span var(--s, 1); align-self: center; min-width: 0; }
+.rl {
+  grid-column: 1 / -1; align-self: stretch; margin-inline: calc(-1 * var(--gap)); z-index: -1; pointer-events: none;
+  border-bottom: 1px solid var(--magenta);
+  /* (the clip reaches 2 past the line above and below: its edge never cuts the hairline, which sits
+     between pixels where the row does, so it never greys) */
+  clip-path: polygon(0% -2px, calc(var(--d) * 1%) -2px, calc(var(--d) * 1%) calc(100% + 2px), calc(100% - var(--d) * 1%) calc(100% + 2px), calc(100% - var(--d) * 1%) -2px, 100% -2px, 100% calc(100% + 2px), 0% calc(100% + 2px));
+}
+.rl.top { border-top: 1px solid var(--magenta); }
+.rl.m { display: none; }   /* (the lines only a phone's longer sheet needs) */
 
-/* the places: nine squares, the taken ones filled, and how many are left */
-.places .body { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--gap); }
-.places ol { display: grid; grid-template-columns: repeat(9, calc(48 * var(--px) + 12px)); gap: calc(8 * var(--px)); }
-.places li { aspect-ratio: 1; border: 1px solid var(--magenta); position: relative; transition: background-color .5s; text-box: normal; }
-.places li.taken { background: var(--magenta); }
-.places li.wait { background: repeating-linear-gradient(-45deg, var(--magenta) 0 1px, transparent 1px 7px); }
-.places .counts { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-.places .waiting { font-size: var(--f16); letter-spacing: -.02em; }
-.places li span { position: absolute; left: 4px; bottom: 4px; font-size: 10px; line-height: 1; }
-.places li.taken span { color: #000; }
-.places p { font-size: var(--f20); letter-spacing: -.02em; white-space: nowrap; }
-.places .left { font-family: "PP Neue World", serif; font-weight: 200; font-size: var(--f40); letter-spacing: -.02em; margin-right: .2em; }
+/* the small type: ABC Areal 20, its number in Migra hanging in the gutter before it */
+.lab, .field-name { position: relative; font-size: var(--f20); letter-spacing: -.02em; line-height: 1.2; }
+.lab .n, .field-name .n { position: absolute; right: calc(100% + var(--gap)); letter-spacing: 0; }
+.places-lab { grid-column: 2 / span 3; }
+.step-lab { grid-column: 5 / span 3; }
+/* the places left: Migra 160, from just under the second line */
+.left { grid-column: 2 / span 3; align-self: start; margin-top: calc(5 * var(--px)); font-size: calc(160 * var(--px)); letter-spacing: -.01em; line-height: 1; white-space: nowrap; }
 
-/* the fields as ruled paper, as the landing page's small type sits: every line the same height
-   (--line), a hairline under each, the type in its middle; a field's name on one line, the line or
-   lines to write on under it, the fields one after another with no gap, so the rules run evenly down
-   the whole form. All in the magenta: what is written, the names, the hints (the placeholder at half) */
-.field { display: grid; }
-.field label {
-  min-height: var(--line); display: flex; align-items: center; justify-content: space-between; gap: 1em;
-  font-size: var(--f20); letter-spacing: -.02em; text-box: normal;
+/* the fields: a name on one line, what you write on the next (the wish on four), the magenta whole, the
+   hint at half; where you are writing, its lines a little lit; a field left empty, in the warning pink */
+.fields { display: contents; }
+.field-name, .info input, .info textarea { grid-column: 8 / -1; }
+.info input, .info textarea {
+  align-self: stretch; display: block; width: 100%; height: 100%; margin: 0; padding: 0;
+  background: transparent; color: var(--magenta); border: 0; border-radius: 0; appearance: none;
+  font: 400 var(--f20)/var(--line) "ABC Areal", system-ui, sans-serif; letter-spacing: -.02em; text-transform: uppercase;
+  caret-color: var(--magenta); text-box: normal;
 }
-.field label, .field input {
-  --rule: var(--magenta);
-  background-image: linear-gradient(var(--rule), var(--rule)), linear-gradient(var(--rule), var(--rule));
-  background-size: calc(var(--d) * 1%) 1px; background-position: left bottom, right bottom; background-repeat: no-repeat;
-}
-.field label small { font-size: var(--f16); letter-spacing: -.02em; text-align: right; }
-.field input, .field textarea {
-  display: block; width: 100%; margin: 0; padding: 0; background-color: transparent; color: var(--magenta);
-  border: 0; border-radius: 0; appearance: none;
-  height: var(--line); font: 400 max(17px, calc(24 * var(--px)))/calc(var(--line) - 1px) "ABC Areal", system-ui, sans-serif;
-  letter-spacing: -.01em; text-transform: none; caret-color: var(--magenta); text-box: normal;
-}
-/* the wish: four lines, its rules drawn on it a line apart (they move with what is written) */
-.field textarea {
-  height: calc(4 * var(--line)); line-height: var(--line); resize: none; overflow-y: auto;
-  --rule: var(--magenta);
-  background-image: linear-gradient(transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px)), linear-gradient(transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px));
-  background-size: calc(var(--d) * 1%) var(--line); background-position: left top, right top; background-repeat: repeat-y;
-  background-attachment: local;
-}
-.field input::placeholder, .field textarea::placeholder { color: var(--magenta); opacity: .5; }
-/* (where you are writing: its lines a little lit) */
-.field input:focus, .field textarea:focus { outline: none; background-color: rgba(194, 57, 199, .1); }
-.field [aria-invalid="true"] { --rule: #ff4d8d; }
-/* the step's own name on the first of its lines, level with the first field's */
-.info { padding-top: 0; }
-.info > .label { align-self: start; min-height: var(--line); display: flex; align-items: center; text-box: normal; }
+.info textarea { resize: none; overflow-y: auto; }
+.info input::placeholder, .info textarea::placeholder { color: var(--magenta); opacity: .5; }
+.info input:focus, .info textarea:focus { outline: none; background-color: rgba(194, 57, 199, .1); }
+.info [aria-invalid="true"], .info [aria-invalid="true"]::placeholder { color: #ff4d8d; }
+.info [aria-invalid="true"]::placeholder { opacity: .7; }
+.field-name:has(+ [aria-invalid="true"]) { color: #ff4d8d; }
 .trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 
-/* the payment, as the price's own block: the QR two columns wide, the old price and the new beside it */
-.pay .body { display: grid; grid-template-columns: subgrid; grid-column: 6 / span 6; }
-.bank-qr { grid-column: 1 / span 2; aspect-ratio: 1; border: 1px solid var(--magenta); padding: calc(12 * var(--px) + 4px); background: #fff; position: relative; align-self: start; }
+/* once signed up, or the nine taken: where the fields were, a word in Migra over two lines, then what it
+   means, a line of type to a ruled line */
+.done { grid-column: 8 / -1; align-self: start; font-size: var(--f20); letter-spacing: -.02em; }
+.done :is(h2, p, dt, dd) { text-box: normal; }
+.done h2 { height: calc(2 * var(--line)); display: flex; align-items: center; font-size: calc(110 * var(--px)); letter-spacing: -.01em; line-height: 1; white-space: nowrap; }
+.done p, .done dl { line-height: var(--line); }
+.done dl { display: grid; grid-template-columns: max-content 1fr; column-gap: var(--gap); }
+
+/* the payment */
+.bank-qr { grid-column: 8 / span 2; height: calc(5 * var(--line) - 22 * var(--px)); aspect-ratio: 1; justify-self: start; border: 1px solid var(--magenta); padding: calc(16 * var(--px)); background: #fff; position: relative; }
 .bank-qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .bank-qr .none { position: absolute; inset: 0; display: grid; place-items: center; background: #000; text-align: center; padding: 12px; font-size: var(--f16); line-height: 1.4; text-box: normal; }
-.amount { grid-column: 3 / -1; display: flex; flex-direction: column; gap: var(--gap); }
-.amount .was { font-family: "PP Migra", serif; font-style: italic; font-weight: 200; font-size: var(--f40); text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-skip-ink: none; }
-.amount .now { font-size: calc(96 * var(--px)); letter-spacing: -.02em; }
-.amount .terms { font-size: var(--f20); letter-spacing: -.02em; }
-/* the payment's details in the page's small type, as the landing page's: ABC Areal in capitals, the
-   magenta whole, 1.2 its line, a name and its value on one line grid (no fading, no bold) */
-.amount dl { display: grid; grid-template-columns: max-content 1fr; gap: 0 var(--gap); margin-top: calc(16 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.2; }
-.amount :is(dt, dd) { text-box: normal; }
-.amount dd b { font-weight: 400; }
-
-/* the send: the site's button (.btn, landing.css) */
-.send { padding-bottom: calc(96 * var(--px)); }
-.send .body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap) calc(24 * var(--px) + 8px); }
-.status { font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; max-width: 34em; text-box: normal; }
-.status.good { color: var(--magenta); }
+.fee { grid-column: 6 / -1; font-size: calc(160 * var(--px)); white-space: nowrap; }   /* (not .price: the landing page's section) */
+.status { grid-column: 8 / -1; font-size: var(--f20); letter-spacing: -.02em; line-height: var(--line); text-box: normal; }
 .status.bad { color: #ff4d8d; }
 
-/* once signed up, or the nine taken: a word at the size of the price, in the body's columns */
-.done h2 { font-size: calc(96 * var(--px)); letter-spacing: -.02em; }
-.done p { margin-top: calc(32 * var(--px) + 8px); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; max-width: 30em; text-box: normal; }
-/* the sign-up's own code and where it stands, as the payment's details are set */
-.done dl { display: grid; grid-template-columns: max-content 1fr; gap: calc(16 * var(--px) + 6px) var(--gap); margin-top: calc(40 * var(--px) + 8px); font-size: var(--f20); letter-spacing: -.02em; align-items: baseline; }
-.done :is(dt, dd) { text-box: normal; line-height: 1.2; }
-.done dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6em 1.2em; }
-.done .code { font-family: "PP Neue World", serif; font-weight: 200; font-size: var(--f40); letter-spacing: 0; }
-.done button, .again { appearance: none; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-transform: uppercase; text-decoration: underline; text-underline-position: from-font; cursor: pointer; }
-.again { display: inline-block; margin-top: calc(40 * var(--px) + 8px); font-size: var(--f16); letter-spacing: -.02em; }
+/* the button: "sign up" in Migra 160 from column 8, 48 under the last line, its rule under it. Under the
+   pointer (or held, or in focus) its rule goes back to its ends and is drawn in again to the middle, as
+   the site's rules are; the arrow steps on */
+.send { grid-column: 8 / -1; padding: calc(48 * var(--px)) 0 calc(110 * var(--px)); }
+.cta {
+  display: inline-flex; padding: 0; margin: 0; background: none; border: 0; color: var(--magenta); cursor: pointer;
+  font-size: calc(160 * var(--px)); letter-spacing: -.01em; line-height: 1; text-transform: uppercase; white-space: nowrap;
+}
+/* (the words on their caps, so the rule is set from the baseline: a button's own box is not trimmed) */
+.cta .ct { position: relative; display: inline-block; text-box: trim-both cap alphabetic; }
+.cta .ct::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: calc(-10 * var(--px)); height: max(1px, calc(2 * var(--px))); background: currentColor;
+  clip-path: polygon(0% 0%, calc(var(--d) * 1%) 0%, calc(var(--d) * 1%) 100%, calc(100% - var(--d) * 1%) 100%, calc(100% - var(--d) * 1%) 0%, 100% 0%, 100% 100%, 0% 100%);
+}
+.cta .arrow { display: inline-block; transition: translate .5s cubic-bezier(.65, 0, .35, 1); }
+@keyframes redraw {
+  0% { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 50% 100%, 50% 0%, 100% 0%, 100% 100%, 0% 100%); }
+  40% { clip-path: polygon(0% 0%, 0% 0%, 0% 100%, 100% 100%, 100% 0%, 100% 0%, 100% 100%, 0% 100%); }
+  100% { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 50% 100%, 50% 0%, 100% 0%, 100% 100%, 0% 100%); }
+}
+@media (hover: hover) { .cta:hover:not(:disabled) .ct::after { animation: redraw .9s cubic-bezier(.87, 0, .13, 1); } .cta:hover:not(:disabled) .arrow { translate: .12em 0; } }
+.cta:focus-visible .ct::after, .cta:active .ct::after { animation: redraw .9s cubic-bezier(.87, 0, .13, 1); }
+.cta:focus-visible { outline: 1px solid var(--magenta); outline-offset: calc(24 * var(--px)); }
+.cta:disabled { opacity: .45; cursor: not-allowed; }
 
-
-/* a tablet and a phone: the columns stacked, as the landing page's (16 margins; the title 80 and 48;
-   the small type 14 and 16), each row's label over its body */
+/* a tablet and a phone: the columns stacked (16 margins; the title 80 and 48; the small type 14 and 16),
+   the sheets one column, their lines 44 apart: the places' name with its number to the right of it, the
+   step's name, each field's name and its line or lines; the payment's name, the QR over six lines, the
+   price over two, the page's word under it; the button under the sheet */
 @media (max-width: 899px) {
   .page { --gap: 16px; --f16: 12px; --f20: 14px; --f40: 24px; display: flex; flex-direction: column; padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
   .bar { position: static; margin-top: max(16px, env(safe-area-inset-top, 0px)); }
   .title { margin-top: 48px; font-size: 80px; letter-spacing: -.02em; }
   .title .serif { letter-spacing: -.04em; }
-  .row { display: flex; flex-direction: column; gap: 24px; padding-block: 24px 48px; }
-  .places { margin-top: 64px; }
-  .places .body { flex-direction: column; align-items: flex-start; }
-  .places .counts { align-items: flex-start; }
-  .places ol { grid-template-columns: repeat(9, minmax(0, 1fr)); width: 100%; max-width: 480px; gap: 6px; }
-  .field input, .field textarea { font-size: 18px; }
-  .info { padding-top: 24px; }
-  .info > .label { min-height: 0; }
-  .pay .body { display: flex; flex-direction: column; gap: 32px; }
-  .bank-qr { width: min(100%, 280px); padding: 12px; }
-  .amount .now, .done h2 { font-size: 64px; }
-  .amount dl { margin-top: 8px; gap: 0 16px; }
-  .send { padding-bottom: 64px; }
+  .sheet, .sheet.pay { --line: 44px; grid-template-columns: minmax(0, 1fr); }
+  .sheet.info { margin-top: 64px; }
+  .page .sheet > *, .page .fields > * { grid-row: var(--mr) / span var(--ms, 1); grid-column: 1 / -1; }
+  .rl.m { display: block; }
+  .lab .n, .field-name .n { position: static; margin-right: .5em; }
+  .left { justify-self: end; align-self: center; margin: 0; font-size: 96px; }
+  .info input, .info textarea { font-size: 16px; }
+  .done h2 { height: var(--line); font-size: min(72px, calc((100cqi - 32px) / 5.6)); }
+  .bank-qr { height: calc(6 * var(--line) - 22px); padding: 12px; }
+  .fee { font-size: min(72px, calc((100cqi - 32px) / 4.9)); }
+  .send { padding: 40px 0 72px; }
+  .cta { font-size: min(112px, calc((100cqi - 32px) / 4.3)); }
+  .cta .ct::after { bottom: -8px; height: 1.5px; }
 }
 @media (max-width: 599px) {
   .page { --f16: 12px; --f20: 16px; }
   .title { font-size: 48px; }
-  .amount .now, .done h2 { font-size: 44px; }
-  .field label { flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; padding-block: 8px; }
-  .field label small { text-align: left; }
-  .send .btn { width: 100%; }
-  :root main :is(p, li, span, a, label, dt, dd, button):not(.serif, .serif *, .display, .display *) { letter-spacing: -.01em; }
+  :root main :is(p, span, a, label, dt, dd):not(.serif, .serif *, .display, .display *) { letter-spacing: -.01em; }
 }
+@media (pointer: coarse) and (min-width: 900px) { .info input, .info textarea { font-size: max(16px, var(--f20)); } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 /* the title made of the rooster's ice, as the landing page's titles are (title-shader.js): a canvas over
    the type, seen through its letters, the type going clear under it once it draws, still there to be
@@ -249,71 +246,68 @@ main { container-type: inline-size; }
 
   <h1 class="title signup-title display"><span class="line">sign up</span><span class="line serif">first season</span></h1>
 
-  <section class="row places" aria-label="Số chỗ">
-    <p class="label"><span class="serif">(*)</span>số chỗ</p>
-    <div class="body" aria-live="polite">
-      <ol aria-hidden="true">{Array.from({ length: CAP }, (_, i) => <li><span>{String(i + 1).padStart(2, '0')}</span></li>)}</ol>
-      <div class="counts">
-        <p><span class="left" data-left>(0{CAP})</span><span data-left-word>chỗ còn trống</span></p>
-        <p class="waiting" data-waiting hidden></p>
-      </div>
-    </div>
-  </section>
-
   <form data-form novalidate style="display: contents">
-    <section class="row step info" aria-labelledby="s1">
-      <h2 class="label" id="s1"><span class="serif">(1)</span>thông tin của bạn</h2>
-      <div class="body">
-        <div class="field">
-          <label for="name">Tên <small>như bạn muốn được gọi</small></label>
-          <input id="name" name="name" autocomplete="name" required maxlength="80" placeholder="Nguyễn Văn A">
-        </div>
-        <div class="field">
-          <label for="discord">Nick Discord <small>để thầy thêm bạn vào lớp</small></label>
-          <input id="discord" name="discord" autocomplete="off" autocapitalize="off" spellcheck="false" required maxlength="40" placeholder="vd. lavi.designer">
-        </div>
-        <div class="field">
-          <label for="wish">Mong muốn khi tham gia <small>bạn muốn làm được gì sau khoá học</small></label>
-          <textarea id="wish" name="wish" required maxlength="1000" rows="4" placeholder="Mình muốn tự dựng được website portfolio…"></textarea>
-        </div>
+    <!-- what you write: the places, your name, your Discord, your wish; ruled 50 apart -->
+    <section class="sheet info" aria-labelledby="s1">
+      <i class="rl top" style="--r: 1; --mr: 1" aria-hidden="true"></i>
+      <i class="rl" style="--r: 2; --mr: 2" aria-hidden="true"></i>
+      <i class="rl" style="--r: 3; --mr: 3" aria-hidden="true"></i>
+      <i class="rl" style="--r: 4; --mr: 4" aria-hidden="true"></i>
+      <i class="rl" style="--r: 5; --mr: 5" aria-hidden="true"></i>
+      <i class="rl" style="--r: 6; --mr: 6" aria-hidden="true"></i>
+      <i class="rl" style="--r: 7; --mr: 7" aria-hidden="true"></i>
+      <i class="rl" style="--r: 8; --mr: 8" aria-hidden="true"></i>
+      <i class="rl" style="--r: 9; --mr: 9" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 10; --mr: 10" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 11; --mr: 11" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 12; --mr: 12" aria-hidden="true"></i>
+      <p class="lab places-lab" style="--r: 1; --mr: 1"><span class="n serif">(*)</span>số chỗ còn trống</p>
+      <p class="left serif" style="--r: 2; --s: 2; --mr: 1; --ms: 2" data-left aria-live="polite">(0{CAP})</p>
+      <h2 class="lab step-lab" id="s1" style="--r: 1; --mr: 3"><span class="n serif" data-step-n>(1)</span><span data-step-name>thông tin của bạn</span></h2>
+      <div class="fields" data-fields>
+        <label class="field-name" for="name" style="--r: 1; --mr: 4"><span class="n serif">A.</span>Tên của bạn</label>
+        <input id="name" name="name" style="--r: 2; --mr: 5" autocomplete="name" required maxlength="80" placeholder="Nguyễn Văn A">
+        <label class="field-name" for="discord" style="--r: 3; --mr: 6"><span class="n serif">B.</span>Nick Discord</label>
+        <input id="discord" name="discord" style="--r: 4; --mr: 7" autocomplete="off" autocapitalize="off" spellcheck="false" required maxlength="40" placeholder="vd. lavi.designer">
+        <label class="field-name" for="wish" style="--r: 5; --mr: 8"><span class="n serif">C.</span>Mong muốn khi tham gia</label>
+        <textarea id="wish" name="wish" style="--r: 6; --s: 4; --mr: 9; --ms: 4" required maxlength="1000" rows="4" placeholder="Mình muốn tự dựng được website portfolio…"></textarea>
         <input class="trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       </div>
-    </section>
-
-    <section class="row step pay" aria-labelledby="s2">
-      <h2 class="label" id="s2"><span class="serif">(2)</span>chuyển khoản</h2>
-      <div class="body">
-        <figure class="bank-qr">
-          <img src="/pay/vpbank-qr.png" alt="Mã QR chuyển khoản VPBank (VietQR)" width="647" height="648" data-qr>
-          <p class="none" data-qr-none hidden>QR ngân hàng<br>sẽ có ở đây</p>
-        </figure>
-        <div class="amount">
-          <p class="was"><span class="sr-only">Giá gốc </span>8.000.000đ</p>
-          <p class="now display">5.000.000đ</p>
-          <p class="terms">ưu đãi cho mùa đầu tiên</p>
-        </div>
+      <div class="done" data-done hidden aria-live="polite" style="--r: 1; --s: 9; --mr: 4; --ms: 9">
+        <h2 class="serif" data-done-title>fully booked</h2>
+        <p data-done-text>All nine places of the first season are taken. Follow the Discord to hear when the next class opens.</p>
+        <dl data-mine hidden>
+          <dt>Status</dt><dd data-state></dd>
+        </dl>
       </div>
     </section>
 
-    <div class="row send">
-      <div class="body">
-        <button class="btn" type="submit" data-send>gửi đăng ký <span class="serif">(→)</span></button>
-        <p class="status" role="status" data-status></p>
-      </div>
+    <!-- the payment: ruled 58 apart -->
+    <section class="sheet pay" aria-labelledby="s2">
+      <i class="rl" style="--r: 1; --mr: 1" aria-hidden="true"></i>
+      <i class="rl" style="--r: 2; --mr: 2" aria-hidden="true"></i>
+      <i class="rl" style="--r: 3; --mr: 3" aria-hidden="true"></i>
+      <i class="rl" style="--r: 4; --mr: 4" aria-hidden="true"></i>
+      <i class="rl" style="--r: 5; --mr: 5" aria-hidden="true"></i>
+      <i class="rl" style="--r: 6; --mr: 6" aria-hidden="true"></i>
+      <i class="rl" style="--r: 7; --mr: 7" aria-hidden="true"></i>
+      <i class="rl" style="--r: 8; --mr: 8" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 9; --mr: 9" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 10; --mr: 10" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 11; --mr: 11" aria-hidden="true"></i>
+      <h2 class="lab step-lab" id="s2" style="--r: 1; --mr: 1"><span class="n serif">(2)</span>thông tin chuyển khoản</h2>
+      <figure class="bank-qr" style="--r: 1; --s: 5; --mr: 2; --ms: 6">
+        <img src="/pay/vpbank-qr.png" alt="Mã QR chuyển khoản VPBank (VietQR)" width="647" height="648" data-qr>
+        <p class="none" data-qr-none hidden>QR ngân hàng<br>sẽ có ở đây</p>
+      </figure>
+      <p class="fee display" style="--r: 6; --s: 2; --mr: 8; --ms: 2"><span class="sr-only">Học phí </span>5.000.000đ</p>
+      <p class="status" role="status" style="--r: 8; --mr: 10; --ms: 2" data-status></p>
+    </section>
+
+    <div class="send">
+      <button class="cta serif" type="submit" data-send><span class="ct">sign up <span class="arrow" aria-hidden="true">→</span></span></button>
     </div>
   </form>
-
-  <section class="row done" data-done hidden aria-live="polite">
-    <p class="label"><span class="serif">(✓)</span>sign-up</p>
-    <div class="body">
-      <h2 class="display" data-done-title>fully booked</h2>
-      <p data-done-text>All nine places of the first season are taken. Follow the Discord to hear when the next class opens.</p>
-      <dl data-mine hidden>
-        <dt>Status</dt><dd data-state></dd>
-      </dl>
-    </div>
-  </section>
-
 </div>
 <Fragment set:html={foot} />
 </main>
@@ -322,8 +316,8 @@ main { container-type: inline-size; }
   // the lines drawn in: each row's, the lowest first, as the row comes into view (not under reduced
   // motion); from when the title starts going up ('signup-lines', below), or at once if that never comes
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const rows = [...document.querySelectorAll('.row')];
-    const hostsOf = row => [row, ...row.querySelectorAll('.field label, .field input, .field textarea')];
+    const rows = [...document.querySelectorAll('.sheet, .send')];
+    const hostsOf = row => row.matches('.send') ? [row] : [...row.querySelectorAll('.rl')].filter(r => r.offsetParent);
     rows.forEach(r => hostsOf(r).forEach(h => h.classList.add('off')));
     const draw = row => hostsOf(row).sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)
       .forEach((h, i) => { h.style.setProperty('--wait', `${(i * .06).toFixed(2)}s`); h.classList.remove('off'); });
@@ -335,29 +329,28 @@ main { container-type: inline-size; }
   }
   const $ = s => document.querySelector(s);
   const form = $('[data-form]'), send = $('[data-send]'), status = $('[data-status]'), done = $('[data-done]');
-  const boxes = [...document.querySelectorAll('.places li')], pay = form.querySelectorAll('.step')[1];
+  const pay = $('.sheet.pay');
   // the QR's frame says so while the image is not there yet
   const qr = $('[data-qr]');
   const noQr = () => { qr.hidden = true; $('[data-qr-none]').hidden = false; };
   if (qr.complete && !qr.naturalWidth) noQr(); else qr.addEventListener('error', noQr);
 
   const say = (text, kind = '') => { status.textContent = text; status.className = `status ${kind}`; };
-  // the places: paid filled, waiting hatched, the number left in the corner
+  // the places left (paid and waiting to pay both taken)
   const show = d => {
     const paid = Math.max(0, d.paid ?? d.taken ?? 0), wait = Math.max(0, d.wait ?? 0), left = Math.max(0, CAP - paid - wait);
-    boxes.forEach((b, i) => { b.classList.toggle('taken', i < paid); b.classList.toggle('wait', i >= paid && i < paid + wait); });
     $('[data-left]').textContent = `(${String(left).padStart(2, '0')})`;
-    $('[data-left-word]').textContent = left ? 'chỗ còn trống' : 'hết chỗ';
-    const w = $('[data-waiting]'); w.hidden = !wait; w.textContent = `${wait} đang chờ chuyển khoản`;
     return left;
   };
-  // the form put away and a word in its place (the payment kept under it while it is still to pay)
+  // the fields put away and a word in their place, the step named for it (the payment kept under it while
+  // it is still to pay)
   const close = (title, text, keepPay = false) => {
     form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = true; });
-    for (const s of form.querySelectorAll('.step, .send')) s.hidden = true;
+    $('[data-fields]').hidden = true; send.parentElement.hidden = true;
+    $('[data-step-n]').textContent = '(✓)'; $('[data-step-name]').textContent = 'sign-up';
     $('[data-done-title]').textContent = title; $('[data-done-text]').textContent = text;
     done.hidden = false;
-    if (keepPay) { pay.hidden = false; done.after(pay); }
+    pay.hidden = !keepPay;
   };
   const full = () => close('fully booked', 'All nine places of the first season are taken. Follow the Discord to hear when the next class opens.');
 
@@ -441,8 +434,6 @@ main { container-type: inline-size; }
   import '../scripts/dither.js';
   import '../scripts/ring.js';
   import { footRules, socials } from '../scripts/rules.js';
-  import { buttonsIn } from '../scripts/buttons.js';
-  buttonsIn([document.querySelector('[data-send]')]);
   const root = document.documentElement, h1 = document.querySelector('.signup-title'), lines = [...h1.querySelectorAll('.line')];
   // (the footer is not held back: far under the fold, and its title's ice reads its letters as it is set)
   const rest = [...document.querySelectorAll('.page > *')].filter(e => e !== h1);
