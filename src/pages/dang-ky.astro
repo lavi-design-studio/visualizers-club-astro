@@ -4,15 +4,14 @@
 // to "Đã nhận tiền"; the page, remembering the code, then says the place is confirmed. The places:
 // filled, paid; hatched, waiting to pay; empty, free. The form is sent to a Google Sheet by
 // its Apps Script web app (tools/signup-apps-script.gs: one row a sign-up, the ninth the last, a lock
-// so two at once never make a tenth), whose address goes in SIGNUP_URL below; the page asks it how
+// so two at once never make a tenth), whose address is SIGNUP_URL (src/signup.js); the page asks it how
 // many places are taken as it opens. Set as the landing page is: black, the magenta, PP Neue World
 // and Migra for the title, ABC Areal for the small type on hairline rules. The bank's QR code is
 // public/pay/vpbank-qr.png (the VPBank VietQR, cut from the bank app; a frame says so if it is missing). Laid on the landing page's grid:
 // each row's label in columns 4-5, its body from column 6, the title centred as the hero's
 import '../styles/landing.css';   // (the landing page's styles: its footer, shared, is set by them)
 import foot from '../partials/foot.html?raw';
-const SIGNUP_URL = 'https://script.google.com/macros/s/AKfycbx3DCU2X8QmRxVt0Q6uzFBMPDvXh92wKVFffXJy3wS_8Oz-t7Rg8_yWqaAKFFgn1O9NIA/exec';   // the Apps Script web app's address (…/exec)
-const CAP = 9;
+import { SIGNUP_URL, CAP } from '../signup.js';   // the sheet's web app (…/exec) and the places
 ---
 <!doctype html>
 <html lang="vi">

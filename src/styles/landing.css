@@ -497,6 +497,9 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
 .price-cta a .serif { letter-spacing: -.01em; }
 .price-cta a:hover { background: #000; color: var(--magenta); }
 .price-cta a:focus-visible { outline: 1px solid var(--magenta); outline-offset: 3px; }
+/* once the places are taken (index.astro): the plate turned about, a magenta rim on the black */
+.price-cta.full a { background: #000; color: var(--magenta); }
+.price-cta.full a:hover { background: var(--magenta); color: #000; }
 
 /* ----- the end ----- */
 /* Figma's footer frame keeps 240 above its title; under its note the ring of the work (ring.js) ends the page */

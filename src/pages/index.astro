@@ -70,5 +70,22 @@ const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/f
   requestAnimationFrame(() => setTimeout(() => go()));
   setTimeout(() => go(), 250);
 </script>
+<script>
+  // the links to the sign-up page (the hero's "đăng ký", the price's "giữ chỗ") say so once the nine
+  // places are taken (paid or waiting to pay, as the sheet counts them): "hết chỗ", the price's plate
+  // turned about; they still lead to the page, which says when the next class opens. Asked once the
+  // page has loaded, so it never holds anything up
+  import { SIGNUP_URL, CAP } from '../signup.js';
+  const ask = () => fetch(SIGNUP_URL).then(r => r.json()).then(d => {
+    if ((d.paid ?? d.taken ?? 0) + (d.wait ?? 0) < CAP) return;
+    for (const a of document.querySelectorAll('a[data-signup]')) {
+      const cta = a.closest('.price-cta');
+      a.innerHTML = cta ? 'hết chỗ <span class="serif">(→)</span>' : 'hết chỗ';
+      a.setAttribute('aria-label', 'Hết chỗ: xem trang đăng ký');
+      cta?.classList.add('full');
+    }
+  }).catch(() => {});
+  if (document.readyState === 'complete') setTimeout(ask, 1000); else addEventListener('load', () => setTimeout(ask, 1000), { once: true });
+</script>
 </body>
 </html>
