@@ -313,12 +313,12 @@ main { container-type: inline-size; }
   </form>
 
   <section class="row done" data-done hidden aria-live="polite">
-    <p class="label"><span class="serif">(✓)</span>đăng ký</p>
+    <p class="label"><span class="serif">(✓)</span>sign-up</p>
     <div class="body">
-      <h2 class="display" data-done-title>đã đủ 9 bạn</h2>
-      <p data-done-text>Mùa đầu tiên đã kín chỗ. Theo dõi Discord để biết khi nào mở lớp sau.</p>
+      <h2 class="display" data-done-title>fully booked</h2>
+      <p data-done-text>All nine places of the first season are taken. Follow the Discord to hear when the next class opens.</p>
       <dl data-mine hidden>
-        <dt>Trạng thái</dt><dd data-state></dd>
+        <dt>Status</dt><dd data-state></dd>
       </dl>
     </div>
   </section>
@@ -368,7 +368,7 @@ main { container-type: inline-size; }
     done.hidden = false;
     if (keepPay) { pay.hidden = false; done.after(pay); }
   };
-  const full = () => close(`đã đủ ${CAP} bạn`, 'Mùa đầu tiên đã kín chỗ. Theo dõi Discord để biết khi nào mở lớp sau.');
+  const full = () => close('fully booked', 'All nine places of the first season are taken. Follow the Discord to hear when the next class opens.');
 
   // the sign-up made on this browser: its code, kept so the page can say how it stands when it is opened again
   const KEY = 'vsc-signup';
@@ -381,12 +381,12 @@ main { container-type: inline-size; }
     $('[data-mine]').hidden = false;
     if (st === 'paid') {
       clearInterval(polling);
-      close('đã có chỗ', `Chào mừng ${mine.name} đến với mùa đầu tiên. Thầy đã nhận chuyển khoản, chỗ của bạn đã được xác nhận. Hẹn gặp bạn ở Discord của lớp.`);
+      close('you’re in', `Welcome to the first season, ${mine.name}. Your transfer has arrived and your place is confirmed. See you on the class Discord.`);
       pay.hidden = true;
-      $('[data-state]').textContent = 'đã xác nhận';
+      $('[data-state]').textContent = 'confirmed';
     } else {
-      close('đã giữ chỗ', `Cảm ơn ${mine.name}. Chuyển khoản 5.000.000đ theo QR bên dưới, nội dung ghi nick Discord của bạn (${mine.discord || 'nick Discord'}). Khi thầy nhận được, trang này sẽ báo chỗ của bạn đã được xác nhận.`, true);
-      $('[data-state]').textContent = 'đang chờ thầy xác nhận chuyển khoản';
+      close('place held', `Thank you, ${mine.name}. Transfer 5.000.000đ with the QR below, with your Discord nick (${mine.discord || 'your Discord nick'}) as the transfer note. Once it arrives, this page will confirm your place.`, true);
+      $('[data-state]').textContent = 'waiting for your transfer to be confirmed';
       // (asked again every 20 s while the page is in view)
       if (!polling) polling = setInterval(() => { if (!document.hidden) ask(); }, 20000);
     }
@@ -430,7 +430,7 @@ main { container-type: inline-size; }
         window.va?.('event', { name: 'signup' });
         // (the sheet's older script gives no code: thanked all the same, the payment kept in view)
         if (d.code) { remember({ code: d.code, name: data.name.trim(), discord: data.discord.trim() }); view('wait'); }
-        else close('đã giữ chỗ', `Cảm ơn ${data.name.trim()}. Chuyển khoản 5.000.000đ theo QR bên dưới, nội dung ghi nick Discord của bạn.`, true);
+        else close('place held', `Thank you, ${data.name.trim()}. Transfer 5.000.000đ with the QR below, with your Discord nick as the transfer note.`, true);
       } else if (d.error === 'full') { show(d); full(); }
       else if (d.error === 'dup') { send.disabled = false; say('Nick Discord này đã đăng ký rồi. Nếu là nhầm lẫn, nhắn thầy qua Discord.', 'bad'); }
       else { send.disabled = false; say('Thiếu thông tin, kiểm tra lại các ô nhé.', 'bad'); }
