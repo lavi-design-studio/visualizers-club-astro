@@ -367,6 +367,11 @@ function shade(el) {
 
 // a title whose words have changed (the sign-up page's, as its sign-up stands): its old ice taken off and
 // each of its lines read and shaded again
+// (and the lines of one that are not shaded yet: put in after it was read, as the sign-up page's are
+// when its state comes late)
+export function shadeNew(h) {
+  if (gpu) for (const el of h.querySelectorAll('.line')) if (!el.__title && !el.classList.contains('shading')) shade(el);
+}
 export function reshade(h) {
   for (const c of h.querySelectorAll('.title-shader')) c.remove();
   for (const el of h.querySelectorAll('.line')) {
@@ -388,6 +393,6 @@ else {
     const h = el.closest('h1, h2') ?? el;
     // (the hero's title at once: it is the loader, its shader rising through it as the page loads)
     if (reduce || h.classList.contains('risen') || el.closest('.hero-title')) shade(el);
-    else h.addEventListener('risen', () => shade(el), { once: true });
+    else h.addEventListener('risen', () => { if (el.isConnected) shade(el); }, { once: true });   // (a line taken out meanwhile: left)
   }
 }

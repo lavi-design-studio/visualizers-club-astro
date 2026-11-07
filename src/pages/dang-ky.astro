@@ -173,6 +173,10 @@ main { container-type: inline-size; }
 .done-right { right: 0; top: calc(15 * var(--px)); width: calc(411 * var(--px)); text-align: right; font-size: var(--f20); letter-spacing: -.02em; line-height: 1.2; }
 .done-right .serif { letter-spacing: 0; }
 .vane { left: 50%; translate: -50% 0; top: calc(-50 * var(--px)); width: calc(598 * var(--px)); height: auto; pointer-events: none; }
+/* the landing page's rooster in its ice (rooster.js), over the weathervane's place, the picture hidden
+   under it once it is drawn */
+.done > .rooster { position: absolute; z-index: 1; pointer-events: none; grid-column: auto; grid-row: auto; margin: 0; }
+.vane.iced { visibility: hidden; }
 [data-state="full"] .vane { top: calc(-79 * var(--px)); }
 .done .bank-qr { position: absolute; grid-column: auto; grid-row: auto; left: calc(999 * var(--px)); top: calc(183 * var(--px)); width: calc(267 * var(--px)); height: auto; }
 .done .fee { grid-column: auto; grid-row: auto; left: calc(764 * var(--px)); top: calc(462 * var(--px)); }
@@ -240,7 +244,7 @@ main { container-type: inline-size; }
     background: repeating-linear-gradient(to bottom, var(--magenta) 0 1px, transparent 1px var(--line));
   }
   .sheet.done .rl { display: none; }
-  .done > :not(.rl), .done-pay > * { position: static; translate: none; width: auto; align-self: stretch; }
+  .done > :not(.rl, .rooster), .done-pay > * { position: static; translate: none; width: auto; align-self: stretch; }
   .done :is(.done-left, .done-right) { line-height: var(--line); text-box: normal; text-align: left; }
   .done .bank-qr { position: static; width: calc(8 * var(--line)); }
   .done .fee { font-size: min(56px, calc((100cqi - 32px) / 4.9)); line-height: calc(2 * var(--line)); text-box: normal; }
@@ -522,14 +526,25 @@ main { container-type: inline-size; }
   const shader = settled.then(() => import('../scripts/title-shader.js'));
   h1.addEventListener('retitle', () => {
     if (h1.classList.contains('risen')) shader.then(m => m.reshade(h1));
-    requestAnimationFrame(() => footRules());
+    requestAnimationFrame(() => { footRules(); iced(); });
   });
+  // once settled or full, the landing page's rooster in its ice where the weathervane stands (rooster.js;
+  // the weathervane's picture where there is no WebGL)
+  let roosted = false;
+  const iced = () => {
+    const vane = document.querySelector('[data-vane]');
+    if (roosted || !['confirmed', 'full'].includes(document.body.dataset.state) || !vane?.offsetParent) return;
+    roosted = true;
+    import('../scripts/rooster.js').then(m => m.rooster(vane));
+  };
+  settled.then(() => requestAnimationFrame(iced));
 
   // the footer as the landing page sets it: its title in ice at once (title-shader.js, on 'risen'), its
   // rules laid round its type and drawn in as it comes into view (from both ends to the middle, the
   // lowest first, as all the rules are), laid again on a resize; its links opening out on hover
   const SIDES = a => `polygon(0% 0%, ${a}% 0%, ${a}% 100%, ${100 - a}% 100%, ${100 - a}% 0%, 100% 0%, 100% 100%, 0% 100%)`;
-  document.fonts.ready.then(async () => {
+  // (once the page's state is known: the footer comes up under a done sheet, and its rules are counted from its title)
+  Promise.all([document.fonts.ready, settled]).then(async () => {
     const fh = document.querySelector('.foot h2');
     fh?.classList.add('risen'); fh?.dispatchEvent(new Event('risen'));
     socials();
@@ -547,7 +562,11 @@ main { container-type: inline-size; }
     let t = 0;
     addEventListener('resize', () => { cancelAnimationFrame(t); t = requestAnimationFrame(() => footRules()); });
   });
-  const risen = () => { h1.querySelectorAll('.line').forEach(l => { l.style.transform = ''; }); h1.classList.add('risen'); h1.dispatchEvent(new Event('risen')); };
+  const risen = () => {
+    h1.querySelectorAll('.line').forEach(l => { l.style.transform = ''; }); h1.classList.add('risen'); h1.dispatchEvent(new Event('risen'));
+    // (its words changed while it came in, the state coming late: the new lines shaded after the old)
+    setTimeout(() => shader.then(m => m.shadeNew(h1)));
+  };
   if (reduce) shader.then(risen);
   else Promise.all([document.fonts.ready, shader]).then(() => {
     // (the title's lines and the rest as they are once the state is known; the footer is not held back:
