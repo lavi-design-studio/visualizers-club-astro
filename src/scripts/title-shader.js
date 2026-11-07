@@ -30,6 +30,8 @@ const STYLES = ['cells', 'ice', 'neon', 'club'];
 const STYLE = STYLES.find(k => k === new URLSearchParams(location.search).get('title')) ?? 'ice';
 
 const PAD = .3;   // the canvas reaches this many em past the title's box, for the glyphs that overhang it
+// (more for the sign-up page's Vietnamese title: the marks stacked over its capitals, as Ầ's, reach higher)
+const padOf = el => (el.closest('.signup-title') ? .6 : PAD);
 // the titles on black: the hero's, the price's (its lines, as the title has no box of its own), the prices
 // themselves and the foot's (By Lavi's, on the magenta, stays as it is)
 // (the hero's by its lines: they go up to their places one after another, each with its own)
@@ -46,7 +48,7 @@ const root = document.documentElement;
 // page sets it (measured with every transform off, as it rests)
 function mask(el, canvas, ink) {
   root.classList.add('measuring');
-  const fs = parseFloat(getComputedStyle(el).fontSize), pad = PAD * fs;
+  const fs = parseFloat(getComputedStyle(el).fontSize), pad = padOf(el) * fs;
   const w = el.offsetWidth + 2 * pad, h = el.offsetHeight + 2 * pad, tr = el.getBoundingClientRect();
   Object.assign(canvas.style, { left: `${-pad}px`, top: `${-pad}px`, width: `${w}px`, height: `${h}px` });
   const dpr = Math.min(devicePixelRatio || 1, 2), g = ink.getContext('2d');

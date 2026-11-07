@@ -1,5 +1,8 @@
 ---
-// The sign-up page: a place in the first season, nine at most. The form is sent to a Google Sheet by
+// The sign-up page: a place in the first season, nine at most. A sign-up waits for its transfer
+// (its own code, VSC and four letters, to write as the transfer's content) till the sheet's owner sets it
+// to "Đã nhận tiền"; the page, remembering the code, then says the place is confirmed. The places:
+// filled, paid; hatched, waiting to pay; empty, free. The form is sent to a Google Sheet by
 // its Apps Script web app (tools/signup-apps-script.gs: one row a sign-up, the ninth the last, a lock
 // so two at once never make a tenth), whose address goes in SIGNUP_URL below; the page asks it how
 // many places are taken as it opens. Set as the landing page is: black, the magenta, PP Neue World
@@ -112,6 +115,9 @@ main { container-type: inline-size; }
 .places ol { display: grid; grid-template-columns: repeat(9, calc(48 * var(--px) + 12px)); gap: calc(8 * var(--px)); }
 .places li { aspect-ratio: 1; border: 1px solid var(--magenta); position: relative; transition: background-color .5s; text-box: normal; }
 .places li.taken { background: var(--magenta); }
+.places li.wait { background: repeating-linear-gradient(-45deg, var(--magenta) 0 1px, transparent 1px 7px); }
+.places .counts { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.places .waiting { font-size: var(--f16); letter-spacing: -.02em; }
 .places li span { position: absolute; left: 4px; bottom: 4px; font-size: 10px; line-height: 1; }
 .places li.taken span { color: #000; }
 .places p { font-size: var(--f20); letter-spacing: -.02em; white-space: nowrap; }
@@ -187,6 +193,13 @@ main { container-type: inline-size; }
 /* once signed up, or the nine taken: a word at the size of the price, in the body's columns */
 .done h2 { font-size: calc(96 * var(--px)); letter-spacing: -.02em; }
 .done p { margin-top: calc(32 * var(--px) + 8px); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; max-width: 30em; text-box: normal; }
+/* the sign-up's own code and where it stands, as the payment's details are set */
+.done dl { display: grid; grid-template-columns: max-content 1fr; gap: calc(16 * var(--px) + 6px) var(--gap); margin-top: calc(40 * var(--px) + 8px); font-size: var(--f20); letter-spacing: -.02em; align-items: baseline; }
+.done dt { opacity: .7; }
+.done dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6em 1.2em; }
+.done .code { font-family: "PP Neue World", serif; font-weight: 200; font-size: var(--f40); letter-spacing: 0; }
+.done button, .again { appearance: none; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-transform: uppercase; text-decoration: underline; text-underline-position: from-font; cursor: pointer; }
+.again { display: inline-block; margin-top: calc(40 * var(--px) + 8px); font-size: var(--f16); letter-spacing: -.02em; }
 
 /* the footer's contacts: "liên hệ qua" two columns to the left of the links, which are the footer's own */
 .foot ul { display: grid; grid-template-columns: subgrid; grid-column: 6 / -1; }
@@ -204,6 +217,7 @@ main { container-type: inline-size; }
   .row { display: flex; flex-direction: column; gap: 24px; padding-block: 24px 48px; }
   .places { margin-top: 64px; }
   .places .body { flex-direction: column; align-items: flex-start; }
+  .places .counts { align-items: flex-start; }
   .places ol { grid-template-columns: repeat(9, minmax(0, 1fr)); width: 100%; max-width: 480px; gap: 6px; }
   .field input, .field textarea { font-size: 18px; }
   .info { padding-top: 24px; }
@@ -250,7 +264,10 @@ main { container-type: inline-size; }
     <p class="label"><span class="serif">(*)</span>số chỗ</p>
     <div class="body" aria-live="polite">
       <ol aria-hidden="true">{Array.from({ length: CAP }, (_, i) => <li><span>{String(i + 1).padStart(2, '0')}</span></li>)}</ol>
-      <p><span class="left" data-left>(0{CAP})</span><span data-left-word>chỗ còn trống</span></p>
+      <div class="counts">
+        <p><span class="left" data-left>(0{CAP})</span><span data-left-word>chỗ còn trống</span></p>
+        <p class="waiting" data-waiting hidden></p>
+      </div>
     </div>
   </section>
 
@@ -286,8 +303,8 @@ main { container-type: inline-size; }
           <p class="now display">5.000.000đ</p>
           <p class="terms">ưu đãi cho mùa đầu tiên</p>
           <dl>
-            <dt>Nội dung</dt><dd><b data-memo>VSC tên Discord của bạn</b></dd>
-            <dt>Sau khi chuyển</dt><dd>Thầy xác nhận qua Discord trong 24 giờ</dd>
+            <dt>Nội dung</dt><dd><b data-memo>mã riêng của bạn, có sau khi gửi đăng ký</b></dd>
+            <dt>Sau khi chuyển</dt><dd>Thầy xác nhận ngay trên trang này, thường trong 24 giờ</dd>
           </dl>
         </div>
       </div>
@@ -306,6 +323,11 @@ main { container-type: inline-size; }
     <div class="body">
       <h2 class="display" data-done-title>đã đủ 9 bạn</h2>
       <p data-done-text>Mùa đầu tiên đã kín chỗ. Theo dõi Discord để biết khi nào mở lớp sau.</p>
+      <dl data-mine hidden>
+        <dt>Mã chuyển khoản</dt><dd><b class="code" data-code></b><button type="button" data-copy>sao chép</button></dd>
+        <dt>Trạng thái</dt><dd data-state></dd>
+      </dl>
+      <button type="button" class="again" data-again hidden>đăng ký cho người khác</button>
     </div>
   </section>
 
@@ -336,38 +358,75 @@ main { container-type: inline-size; }
   }
   const $ = s => document.querySelector(s);
   const form = $('[data-form]'), send = $('[data-send]'), status = $('[data-status]'), done = $('[data-done]');
-  const boxes = [...document.querySelectorAll('.places li')];
+  const boxes = [...document.querySelectorAll('.places li')], pay = form.querySelectorAll('.step')[1];
   // the QR's frame says so while the image is not there yet
   const qr = $('[data-qr]');
   const noQr = () => { qr.hidden = true; $('[data-qr-none]').hidden = false; };
   if (qr.complete && !qr.naturalWidth) noQr(); else qr.addEventListener('error', noQr);
-  // the memo follows the Discord nick as it is typed
-  const memo = $('[data-memo]');
-  $('#discord').addEventListener('input', e => { const v = e.target.value.trim(); memo.textContent = v ? `VSC ${v}` : 'VSC tên Discord của bạn'; });
 
   const say = (text, kind = '') => { status.textContent = text; status.className = `status ${kind}`; };
-  // the places: the taken ones filled, the number left in the corner
-  const show = taken => {
-    const t = Math.min(CAP, Math.max(0, taken | 0)), left = CAP - t;
-    boxes.forEach((b, i) => b.classList.toggle('taken', i < t));
+  // the places: paid filled, waiting hatched, the number left in the corner
+  const show = d => {
+    const paid = Math.max(0, d.paid ?? d.taken ?? 0), wait = Math.max(0, d.wait ?? 0), left = Math.max(0, CAP - paid - wait);
+    boxes.forEach((b, i) => { b.classList.toggle('taken', i < paid); b.classList.toggle('wait', i >= paid && i < paid + wait); });
     $('[data-left]').textContent = `(${String(left).padStart(2, '0')})`;
     $('[data-left-word]').textContent = left ? 'chỗ còn trống' : 'hết chỗ';
+    const w = $('[data-waiting]'); w.hidden = !wait; w.textContent = `${wait} đang chờ chuyển khoản`;
     return left;
   };
-  const close = (title, text) => {
+  // the form put away and a word in its place (the payment kept under it while it is still to pay)
+  const close = (title, text, keepPay = false) => {
     form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = true; });
     for (const s of form.querySelectorAll('.step, .send')) s.hidden = true;
     $('[data-done-title]').textContent = title; $('[data-done-text]').textContent = text;
     done.hidden = false;
+    if (keepPay) { pay.hidden = false; done.after(pay); }
   };
   const full = () => close(`đã đủ ${CAP} bạn`, 'Mùa đầu tiên đã kín chỗ. Theo dõi Discord để biết khi nào mở lớp sau.');
+
+  // the sign-up made on this browser: its code, kept so the page can say how it stands when it is opened again
+  const KEY = 'vsc-signup';
+  let mine = null;
+  try { mine = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch {}
+  const forget = () => { mine = null; try { localStorage.removeItem(KEY); } catch {} };
+  const remember = m => { mine = m; try { localStorage.setItem(KEY, JSON.stringify(m)); } catch {} };
+  let polling = 0;
+  const view = st => {
+    $('[data-mine]').hidden = false; $('[data-again]').hidden = false;
+    $('[data-code]').textContent = mine.code; $('[data-memo]').textContent = mine.code;
+    if (st === 'paid') {
+      clearInterval(polling);
+      close('đã có chỗ', `Chào mừng ${mine.name} đến với mùa đầu tiên. Thầy đã nhận chuyển khoản, chỗ của bạn đã được xác nhận. Hẹn gặp bạn ở Discord của lớp.`);
+      pay.hidden = true;
+      $('[data-state]').textContent = 'đã xác nhận';
+    } else {
+      close('đã giữ chỗ', `Cảm ơn ${mine.name}. Chuyển khoản 5.000.000đ theo QR bên dưới, nội dung ghi đúng mã của bạn. Khi thầy nhận được, trang này sẽ báo chỗ của bạn đã được xác nhận.`, true);
+      $('[data-state]').textContent = 'đang chờ thầy xác nhận chuyển khoản';
+      // (asked again every 20 s while the page is in view)
+      if (!polling) polling = setInterval(() => { if (!document.hidden) ask(); }, 20000);
+    }
+  };
+  // the places, and how this browser's sign-up stands
+  const ask = () => fetch(mine ? `${SIGNUP_URL}?code=${encodeURIComponent(mine.code)}` : SIGNUP_URL).then(r => r.json()).then(d => {
+    show(d);
+    if (mine && (d.status === 'wait' || d.status === 'paid')) return view(d.status);
+    if (mine && (d.status === 'drop' || d.status === 'none')) {
+      const dropped = d.status === 'drop';
+      forget(); clearInterval(polling); polling = 0;
+      if (dropped) say('Đăng ký trước của bạn đã được huỷ. Bạn có thể đăng ký lại.', 'bad');
+    }
+    if (!mine && CAP - (d.paid ?? 0) - (d.wait ?? 0) <= 0 && done.hidden) full();
+  }).catch(() => {});
+
+  $('[data-copy]').addEventListener('click', e => {
+    navigator.clipboard?.writeText(mine?.code || '').then(() => { e.target.textContent = 'đã sao chép'; setTimeout(() => { e.target.textContent = 'sao chép'; }, 1600); }).catch(() => {});
+  });
+  $('[data-again]').addEventListener('click', () => { forget(); location.reload(); });
 
   if (!SIGNUP_URL) {
     send.disabled = true;
     say('Form sắp mở. Trong lúc chờ, nhắn thầy qua Discord để giữ chỗ.');
-  } else {
-    fetch(SIGNUP_URL).then(r => r.json()).then(d => { if (show(d.taken) <= 0) full(); }).catch(() => {});
-  }
+  } else ask();
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
@@ -386,12 +445,12 @@ main { container-type: inline-size; }
       const r = await fetch(SIGNUP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
       const d = await r.json();
       if (d.ok) {
-        show(d.taken);
+        show(d);
         window.va?.('event', { name: 'signup' });
-        close('đã giữ chỗ', `Cảm ơn ${data.name.trim()}. Chuyển khoản theo QR với nội dung "VSC ${data.discord.trim()}", thầy sẽ xác nhận qua Discord trong 24 giờ.`);
-        // (the payment stays in view under the word, the QR to pay by)
-        const pay = form.querySelectorAll('.step')[1]; pay.hidden = false; done.after(pay);
-      } else if (d.error === 'full') { show(CAP); full(); }
+        // (the sheet's older script gives no code: thanked all the same, the payment kept in view)
+        if (d.code) { remember({ code: d.code, name: data.name.trim() }); view('wait'); }
+        else close('đã giữ chỗ', `Cảm ơn ${data.name.trim()}. Chuyển khoản 5.000.000đ theo QR bên dưới, nội dung ghi nick Discord của bạn.`, true);
+      } else if (d.error === 'full') { show(d); full(); }
       else if (d.error === 'dup') { send.disabled = false; say('Nick Discord này đã đăng ký rồi. Nếu là nhầm lẫn, nhắn thầy qua Discord.', 'bad'); }
       else { send.disabled = false; say('Thiếu thông tin, kiểm tra lại các ô nhé.', 'bad'); }
     } catch {
