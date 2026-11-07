@@ -177,17 +177,9 @@ main { container-type: inline-size; }
 .amount :is(dt, dd) { text-box: normal; }
 .amount dd b { font-weight: 400; }
 
-/* the send: the price's button, a magenta plate, black type, turned about under the pointer */
+/* the send: the site's button (.btn, landing.css) */
 .send { padding-bottom: calc(96 * var(--px)); }
 .send .body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap) calc(24 * var(--px) + 8px); }
-.send button {
-  display: inline-flex; align-items: center; gap: .5em; min-height: 48px; padding: 0 max(16px, calc(24 * var(--px)));
-  background: var(--magenta); color: #000; border: 0; box-shadow: inset 0 0 0 1px var(--magenta); border-radius: 0;
-  font: 400 var(--f20)/1 "ABC Areal", system-ui, sans-serif; text-transform: uppercase; letter-spacing: -.02em; cursor: pointer;
-  transition: background-color .25s, color .25s;
-}
-.send button:hover:not(:disabled) { background: #000; color: var(--magenta); }
-.send button:disabled { opacity: .45; cursor: not-allowed; }
 .status { font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; max-width: 34em; text-box: normal; }
 .status.good { color: var(--magenta); }
 .status.bad { color: #ff4d8d; }
@@ -231,7 +223,7 @@ main { container-type: inline-size; }
   .amount .now, .done h2 { font-size: 44px; }
   .field label { flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; padding-block: 8px; }
   .field label small { text-align: left; }
-  .send button { width: 100%; justify-content: center; }
+  .send .btn { width: 100%; }
   :root main :is(p, li, span, a, label, dt, dd, button):not(.serif, .serif *, .display, .display *) { letter-spacing: -.01em; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -305,7 +297,7 @@ main { container-type: inline-size; }
 
     <div class="row send">
       <div class="body">
-        <button type="submit" data-send>gửi đăng ký <span class="serif">(→)</span></button>
+        <button class="btn" type="submit" data-send>gửi đăng ký <span class="serif">(→)</span></button>
         <p class="status" role="status" data-status></p>
       </div>
     </div>

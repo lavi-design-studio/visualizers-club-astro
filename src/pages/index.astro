@@ -82,7 +82,7 @@ const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/f
       const cta = a.closest('.price-cta');
       a.innerHTML = cta ? 'hết chỗ <span class="serif">(→)</span>' : 'hết chỗ';
       a.setAttribute('aria-label', 'Hết chỗ: xem trang đăng ký');
-      cta?.classList.add('full');
+      if (cta) { cta.classList.add('full'); a.classList.add('btn-alt'); }
     }
   }).catch(() => {});
   if (document.readyState === 'complete') setTimeout(ask, 1000); else addEventListener('load', () => setTimeout(ask, 1000), { once: true });

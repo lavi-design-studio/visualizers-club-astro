@@ -378,7 +378,7 @@ function xray() {
   try { enabled = localStorage.getItem('reveal') === 'on'; } catch {}
   // a switch: "Reveal", its state, and a track the knob slides along
   const toggle = document.createElement('button');
-  toggle.type = 'button'; toggle.className = 'xr-toggle'; toggle.setAttribute('role', 'switch');
+  toggle.type = 'button'; toggle.className = 'xr-toggle btn btn-alt'; toggle.setAttribute('role', 'switch');
   toggle.innerHTML = '<span class="xr-name">Reveal</span><span class="xr-state"></span><span class="xr-track" aria-hidden="true"><span class="xr-knob"></span></span>';
   const show = () => { $('.xr-state', toggle).textContent = enabled ? 'On' : 'Off'; toggle.setAttribute('aria-checked', String(enabled)); };
   toggle.addEventListener('click', () => { enabled = !enabled; show(); try { localStorage.setItem('reveal', enabled ? 'on' : 'off'); } catch {} });
