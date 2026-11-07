@@ -318,10 +318,8 @@ main { container-type: inline-size; }
       <h2 class="display" data-done-title>đã đủ 9 bạn</h2>
       <p data-done-text>Mùa đầu tiên đã kín chỗ. Theo dõi Discord để biết khi nào mở lớp sau.</p>
       <dl data-mine hidden>
-        <dt>Mã chuyển khoản</dt><dd><b class="code" data-code></b><button type="button" data-copy>sao chép</button></dd>
         <dt>Trạng thái</dt><dd data-state></dd>
       </dl>
-      <button type="button" class="again" data-again hidden>đăng ký cho người khác</button>
     </div>
   </section>
 
@@ -380,15 +378,14 @@ main { container-type: inline-size; }
   const remember = m => { mine = m; try { localStorage.setItem(KEY, JSON.stringify(m)); } catch {} };
   let polling = 0;
   const view = st => {
-    $('[data-mine]').hidden = false; $('[data-again]').hidden = false;
-    $('[data-code]').textContent = mine.code;
+    $('[data-mine]').hidden = false;
     if (st === 'paid') {
       clearInterval(polling);
       close('đã có chỗ', `Chào mừng ${mine.name} đến với mùa đầu tiên. Thầy đã nhận chuyển khoản, chỗ của bạn đã được xác nhận. Hẹn gặp bạn ở Discord của lớp.`);
       pay.hidden = true;
       $('[data-state]').textContent = 'đã xác nhận';
     } else {
-      close('đã giữ chỗ', `Cảm ơn ${mine.name}. Chuyển khoản 5.000.000đ theo QR bên dưới, nội dung ghi đúng mã của bạn. Khi thầy nhận được, trang này sẽ báo chỗ của bạn đã được xác nhận.`, true);
+      close('đã giữ chỗ', `Cảm ơn ${mine.name}. Chuyển khoản 5.000.000đ theo QR bên dưới, nội dung ghi nick Discord của bạn (${mine.discord || 'nick Discord'}). Khi thầy nhận được, trang này sẽ báo chỗ của bạn đã được xác nhận.`, true);
       $('[data-state]').textContent = 'đang chờ thầy xác nhận chuyển khoản';
       // (asked again every 20 s while the page is in view)
       if (!polling) polling = setInterval(() => { if (!document.hidden) ask(); }, 20000);
@@ -406,10 +403,6 @@ main { container-type: inline-size; }
     if (!mine && CAP - (d.paid ?? 0) - (d.wait ?? 0) <= 0 && done.hidden) full();
   }).catch(() => {});
 
-  $('[data-copy]').addEventListener('click', e => {
-    navigator.clipboard?.writeText(mine?.code || '').then(() => { e.target.textContent = 'đã sao chép'; setTimeout(() => { e.target.textContent = 'sao chép'; }, 1600); }).catch(() => {});
-  });
-  $('[data-again]').addEventListener('click', () => { forget(); location.reload(); });
 
   if (!SIGNUP_URL) {
     send.disabled = true;
@@ -436,7 +429,7 @@ main { container-type: inline-size; }
         show(d);
         window.va?.('event', { name: 'signup' });
         // (the sheet's older script gives no code: thanked all the same, the payment kept in view)
-        if (d.code) { remember({ code: d.code, name: data.name.trim() }); view('wait'); }
+        if (d.code) { remember({ code: d.code, name: data.name.trim(), discord: data.discord.trim() }); view('wait'); }
         else close('đã giữ chỗ', `Cảm ơn ${data.name.trim()}. Chuyển khoản 5.000.000đ theo QR bên dưới, nội dung ghi nick Discord của bạn.`, true);
       } else if (d.error === 'full') { show(d); full(); }
       else if (d.error === 'dup') { send.disabled = false; say('Nick Discord này đã đăng ký rồi. Nếu là nhầm lẫn, nhắn thầy qua Discord.', 'bad'); }
