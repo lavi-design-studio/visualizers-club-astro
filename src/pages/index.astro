@@ -95,7 +95,8 @@ const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/f
     if ((d.paid ?? d.taken ?? 0) + (d.wait ?? 0) < CAP) return;
     for (const a of document.querySelectorAll('a[data-signup]')) {
       const cta = a.closest('.price-cta');
-      a.innerHTML = cta ? 'hết chỗ <span class="serif">(→)</span>' : 'hết chỗ';
+      if (cta) a.innerHTML = 'hết chỗ <span class="serif">(→)</span>';
+      else (a.querySelector('.nl > span') ?? a).textContent = 'hết chỗ';   // (the corner's, its word in its rolling window)
       a.setAttribute('aria-label', 'Hết chỗ: xem trang đăng ký');
       if (cta) { cta.classList.add('full'); a.classList.add('btn-alt'); }
     }

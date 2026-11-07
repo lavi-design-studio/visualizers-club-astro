@@ -91,6 +91,7 @@ main { container-type: inline-size; }
   --f16: max(11px, calc(16 * var(--px)));
   --f20: max(12px, calc(20 * var(--px)));
   --f40: max(20px, calc(40 * var(--px)));
+  --rule: calc(var(--f20) * 1.2);   /* the landing page's ruled lines: a line of its small type apart */
   --f160: calc(160 * var(--tpx));
   display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap);
   padding: 0 var(--gap) max(var(--gap), env(safe-area-inset-bottom, 0px)); align-content: start; position: relative;
@@ -105,8 +106,9 @@ main { container-type: inline-size; }
 .title .serif { letter-spacing: -.01em; }
 
 /* the form as ruled paper across the whole page (Figma's "Sign up / Desktop / Open"): hairlines from
-   edge to edge, a line apart, and everything on them set in the middle of its line. Two sheets: what you
-   write, its lines 50 apart, and the payment, 58 apart (so the price's caps fill two). On the first: the
+   edge to edge, a line apart, and everything on them set in the middle of its line. The lines are as
+   close as the landing page's: a line of its small type apart (--rule: the small type's size, 1.2 its
+   leading; 24 at 1728), on every sheet. Two sheets: what you write, and the payment. On the first: the
    places left, as a big number (columns 2-4), the step's name (columns 5-7, its number hanging in the
    gutter before it, as the fields' A. B. C.), and the fields, a name on one line and what you write on
    the next (columns 8 on). On the second: the step's name, the QR over five lines (columns 8-9), the
@@ -121,12 +123,11 @@ main { container-type: inline-size; }
 .rl { transition: --d .9s cubic-bezier(.87, 0, .13, 1) var(--wait, 0s); }
 .off { --d: 0; }
 .sheet {
-  --line: max(40px, calc(50 * var(--px)));
+  --line: var(--rule);
   grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; grid-auto-rows: var(--line);
   position: relative; isolation: isolate;
 }
 .sheet.info { margin-top: calc(42 * var(--px)); }   /* (the first line 369 down, as Figma's) */
-.sheet.pay { --line: max(46px, calc(58 * var(--px))); }
 .sheet > *, .fields > * { grid-row: var(--r) / span var(--s, 1); align-self: center; min-width: 0; }
 .rl {
   grid-column: 1 / -1; align-self: stretch; margin-inline: calc(-1 * var(--gap)); z-index: -1; pointer-events: none;
@@ -143,8 +144,8 @@ main { container-type: inline-size; }
 .lab .n, .field-name .n { position: absolute; right: calc(100% + var(--gap)); letter-spacing: 0; }
 .places-lab { grid-column: 2 / span 3; }
 .step-lab { grid-column: 5 / span 3; }
-/* the places left: Migra 160, its caps 37 under the second line */
-.left { grid-column: 2 / span 3; align-self: start; margin-top: calc(37 * var(--px)); font-size: calc(160 * var(--px)); letter-spacing: -.01em; line-height: 1; white-space: nowrap; }
+/* the places left: Migra 160, its caps just under the second line */
+.left { grid-column: 2 / span 3; align-self: start; margin-top: calc(6 * var(--px)); font-size: calc(160 * var(--px)); letter-spacing: -.01em; line-height: 1; white-space: nowrap; }
 
 /* the fields: a name on one line, what you write on the next (the wish on four), the magenta whole, the
    hint at half; where you are writing, its lines a little lit; a field left empty, in the warning pink */
@@ -167,21 +168,20 @@ main { container-type: inline-size; }
 /* once signed up, or the places taken (Figma's "Sign up / Desktop / Reserved", "Confirmed" and "Fully
    booked"): the title says so in its own words (body[data-state], set by the script below), the form is
    put away and a sheet of its own takes its place, its first line 523 down (the title over it, however
-   many lines it has), its lines as the frames draw them: 35, 27, 20, five of 24, then fourteen of 36.
+   many lines it has), 29 lines of the page's pitch.
    On it, from just under its first line: what it means on the left (columns 1-4), its state on the
-   right (columns 10-12, set right, its name in Migra over it); on Confirmed and Fully booked the
+   right (columns 10-12, set right, its name in Migra over it), each line of type between two rules
+   (its lines the page's pitch, as the landing page's); on Confirmed and Fully booked the
    rooster weathervane in the middle, over the lines and past them (/signup/vane.svg, Figma's trace); on
    Reserved the QR (column 8) and the price under it. The footer's title 131 under the last line */
 [data-state] .title { min-height: calc(502 * var(--px) - 64px); }
 .sheet.done {
-  grid-template-rows: calc(35 * var(--px)) calc(27 * var(--px)) calc(20 * var(--px)) repeat(5, calc(24 * var(--px))) repeat(14, calc(36 * var(--px)));
-  grid-auto-rows: 0;
+  grid-auto-rows: var(--line);
 }
 .done > :not(.rl), .done-pay > * { position: absolute; margin: 0; grid-column: auto; grid-row: auto; }
 .done-pay { display: contents; }
-.done-left { left: 0; top: calc(15 * var(--px)); width: calc(554 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; }
-[data-state="reserved"] .done-left { line-height: 1.2; }
-.done-right { right: 0; top: calc(15 * var(--px)); width: calc(411 * var(--px)); text-align: right; font-size: var(--f20); letter-spacing: -.02em; line-height: 1.2; }
+.done-left { left: 0; top: 0; width: calc(554 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; line-height: var(--line); text-box: normal; }
+.done-right { right: 0; top: 0; width: calc(411 * var(--px)); text-align: right; font-size: var(--f20); letter-spacing: -.02em; line-height: var(--line); text-box: normal; }
 .done-right .serif { letter-spacing: 0; }
 .vane { left: 50%; translate: -50% 0; top: calc(-50 * var(--px)); width: calc(598 * var(--px)); height: auto; pointer-events: none; }
 /* the landing page's rooster in its ice (rooster.js), over the weathervane's place, the picture hidden
@@ -195,7 +195,7 @@ main { container-type: inline-size; }
 @media (min-width: 900px) { [data-state] .foot { padding-top: calc(131 * var(--px) - var(--gap)); } }   /* (less the page's own 16 under the sheet) */
 
 /* the payment */
-.bank-qr { grid-column: 8 / span 2; height: calc(5 * var(--line) - 22 * var(--px)); aspect-ratio: 1; justify-self: start; border: 1px solid var(--magenta); padding: calc(16 * var(--px)); background: #fff; position: relative; }
+.bank-qr { grid-column: 8 / span 2; height: calc(11 * var(--line) - 8 * var(--px)); aspect-ratio: 1; justify-self: start; border: 1px solid var(--magenta); padding: calc(16 * var(--px)); background: #fff; position: relative; }
 .bank-qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .bank-qr .none { position: absolute; inset: 0; display: grid; place-items: center; background: #000; text-align: center; padding: 12px; font-size: var(--f16); line-height: 1.4; text-box: normal; }
 .fee { grid-column: 7 / -1; font-size: calc(160 * var(--px)); white-space: nowrap; }   /* (not .price: the landing page's section) */
@@ -232,35 +232,35 @@ main { container-type: inline-size; }
 .cta:disabled { opacity: .45; cursor: not-allowed; }
 
 /* a tablet and a phone: the columns stacked (16 margins; the title 80 and 48; the small type 14 and 16),
-   the sheets one column, their lines 44 apart: the places' name with its number to the right of it, the
-   step's name, each field's name and its line or lines; the payment's name, the QR over six lines, the
+   the sheets one column, their lines the same pitch: the places' name with its number to the right of
+   it, the step's name, each field's name and two lines to write on (the wish six, to be touched); the payment's name, the QR over six lines, the
    price over two, its offer under it; the button under the sheet, the page's word under that */
 @media (max-width: 899px) {
   .page { --gap: 16px; --f16: 12px; --f20: 14px; --f40: 24px; display: flex; flex-direction: column; padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
   .bar { position: static; margin-top: max(16px, env(safe-area-inset-top, 0px)); }
   .title { margin-top: 48px; font-size: 80px; letter-spacing: -.02em; }
   .title .serif { letter-spacing: -.04em; }
-  .sheet, .sheet.pay { --line: 44px; grid-template-columns: minmax(0, 1fr); }
+  .sheet { grid-template-columns: minmax(0, 1fr); }
   .sheet.info { margin-top: 64px; }
   .page .sheet > *, .page .fields > * { grid-row: var(--mr) / span var(--ms, 1); grid-column: 1 / -1; }
   .rl.m { display: block; }
   .lab .n, .field-name .n { position: static; margin-right: .5em; }
-  .left { justify-self: end; align-self: center; margin: 0; font-size: 96px; }
+  .left { justify-self: end; align-self: center; margin: 0; font-size: 64px; }
   .info input, .info textarea { font-size: 16px; }
-  /* once signed up or full: the sheet's lines 28 apart under each line of its type, one thing after
+  /* once signed up or full: the sheet's lines the pitch under each line of its type, one thing after
      another: what it means, its state, the QR and the price, the weathervane last */
   [data-state] .title { min-height: 0; }
   .sheet.done {
-    --line: 28px; display: flex; flex-direction: column; gap: var(--line); margin: 48px calc(-1 * var(--gap)) 0; padding: 0 var(--gap) var(--line);
+    display: flex; flex-direction: column; gap: var(--line); margin: 48px calc(-1 * var(--gap)) 0; padding: 0 var(--gap) var(--line);
     background: repeating-linear-gradient(to bottom, var(--magenta) 0 1px, transparent 1px var(--line));
   }
   .sheet.done .rl { display: none; }
   .done > :not(.rl, .rooster), .done-pay > * { position: static; translate: none; width: auto; align-self: stretch; }
   .done :is(.done-left, .done-right) { line-height: var(--line); text-box: normal; text-align: left; }
-  .done .bank-qr { position: static; width: calc(8 * var(--line)); }
-  .done .fee { font-size: min(56px, calc((100cqi - 32px) / 4.9)); line-height: calc(2 * var(--line)); text-box: normal; }
-  .done .vane { height: calc(14 * var(--line)); width: auto; align-self: center; }
-  .bank-qr { height: calc(6 * var(--line) - 22px); padding: 12px; }
+  .done .bank-qr { position: static; width: calc(12 * var(--line)); }
+  .done .fee { font-size: min(56px, calc((100cqi - 32px) / 4.9)); line-height: calc(3 * var(--line)); text-box: normal; }
+  .done .vane { height: calc(20 * var(--line)); width: auto; align-self: center; }
+  .bank-qr { height: calc(12 * var(--line) - 8px); padding: 12px; }
   .fee { font-size: min(72px, calc((100cqi - 32px) / 4.9)); }
   .send { padding: 40px 0 72px; }
   .cta { font-size: min(112px, calc((100cqi - 32px) / 4.3)); }
@@ -272,7 +272,7 @@ main { container-type: inline-size; }
   .title { font-size: 48px; }
   :root main :is(p, span, a, label, dt, dd):not(.serif, .serif *, .display, .display *) { letter-spacing: -.01em; }
 }
-@media (pointer: coarse) and (min-width: 900px) { .info input, .info textarea { font-size: max(16px, var(--f20)); } }
+@media (pointer: coarse) and (min-width: 900px) { .info input, .info textarea { font-size: max(16px, var(--f20)); } .sheet:not(.done) { --line: max(32px, var(--rule)); } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 /* the title made of the rooster's ice, as the landing page's titles are (title-shader.js): a canvas over
    the type, seen through its letters, the type going clear under it once it draws, still there to be
@@ -291,7 +291,7 @@ main { container-type: inline-size; }
 <div class="page">
   <nav class="bar" aria-label="Điều hướng">
     <span>© 2026</span>
-    <a href="/">trang chủ</a>
+    <a class="nav-link" href="/"><span class="nl"><span>trang chủ</span></span></a>
   </nav>
 
   <h1 class="title signup-title display"><span class="line">sign up</span><span class="line serif">first season</span></h1>
@@ -320,6 +320,13 @@ main { container-type: inline-size; }
       <i class="rl" style="--r: 20" aria-hidden="true"></i>
       <i class="rl" style="--r: 21" aria-hidden="true"></i>
       <i class="rl" style="--r: 22" aria-hidden="true"></i>
+      <i class="rl" style="--r: 23" aria-hidden="true"></i>
+      <i class="rl" style="--r: 24" aria-hidden="true"></i>
+      <i class="rl" style="--r: 25" aria-hidden="true"></i>
+      <i class="rl" style="--r: 26" aria-hidden="true"></i>
+      <i class="rl" style="--r: 27" aria-hidden="true"></i>
+      <i class="rl" style="--r: 28" aria-hidden="true"></i>
+      <i class="rl" style="--r: 29" aria-hidden="true"></i>
     <p class="done-left" data-done-text></p>
     <p class="done-right" data-done-note></p>
     <img class="vane" src="/signup/vane.svg" alt="" width="598" height="849" data-vane>
@@ -330,7 +337,7 @@ main { container-type: inline-size; }
   </section>
 
   <form data-form novalidate style="display: contents">
-    <!-- what you write: the places, your name, your Discord, your wish; ruled 50 apart -->
+    <!-- what you write: the places, your name, your Discord, your wish -->
     <section class="sheet info" aria-labelledby="s1">
       <i class="rl top" style="--r: 1; --mr: 1" aria-hidden="true"></i>
       <i class="rl" style="--r: 2; --mr: 2" aria-hidden="true"></i>
@@ -344,21 +351,26 @@ main { container-type: inline-size; }
       <i class="rl m" style="--r: 10; --mr: 10" aria-hidden="true"></i>
       <i class="rl m" style="--r: 11; --mr: 11" aria-hidden="true"></i>
       <i class="rl m" style="--r: 12; --mr: 12" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 13; --mr: 13" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 14; --mr: 14" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 15; --mr: 15" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 16; --mr: 16" aria-hidden="true"></i>
+      <i class="rl m" style="--r: 17; --mr: 17" aria-hidden="true"></i>
       <p class="lab places-lab" style="--r: 1; --mr: 1"><span class="n serif">(*)</span>số chỗ còn trống</p>
-      <p class="left serif" style="--r: 2; --s: 2; --mr: 1; --ms: 2" data-left aria-live="polite">(0{CAP})</p>
-      <h2 class="lab step-lab" id="s1" style="--r: 1; --mr: 3"><span class="n serif" data-step-n>(1)</span><span data-step-name>thông tin của bạn</span></h2>
+      <p class="left serif" style="--r: 2; --s: 5; --mr: 1; --ms: 3" data-left aria-live="polite">(0{CAP})</p>
+      <h2 class="lab step-lab" id="s1" style="--r: 1; --mr: 4"><span class="n serif" data-step-n>(1)</span><span data-step-name>thông tin của bạn</span></h2>
       <div class="fields" data-fields>
-        <label class="field-name" for="name" style="--r: 1; --mr: 4"><span class="n serif">A.</span>Tên của bạn</label>
-        <input id="name" name="name" style="--r: 2; --mr: 5" autocomplete="name" required maxlength="80" placeholder="Nguyễn Văn A">
-        <label class="field-name" for="discord" style="--r: 3; --mr: 6"><span class="n serif">B.</span>Nick Discord</label>
-        <input id="discord" name="discord" style="--r: 4; --mr: 7" autocomplete="off" autocapitalize="off" spellcheck="false" required maxlength="40" placeholder="vd. lavi.designer">
-        <label class="field-name" for="wish" style="--r: 5; --mr: 8"><span class="n serif">C.</span>Mong muốn khi tham gia</label>
-        <textarea id="wish" name="wish" style="--r: 6; --s: 4; --mr: 9; --ms: 4" required maxlength="1000" rows="4" placeholder="Mình muốn tự dựng được website portfolio…"></textarea>
+        <label class="field-name" for="name" style="--r: 1; --mr: 5"><span class="n serif">A.</span>Tên của bạn</label>
+        <input id="name" name="name" style="--r: 2; --mr: 6; --ms: 2" autocomplete="name" required maxlength="80" placeholder="Nguyễn Văn A">
+        <label class="field-name" for="discord" style="--r: 3; --mr: 8"><span class="n serif">B.</span>Nick Discord</label>
+        <input id="discord" name="discord" style="--r: 4; --mr: 9; --ms: 2" autocomplete="off" autocapitalize="off" spellcheck="false" required maxlength="40" placeholder="vd. lavi.designer">
+        <label class="field-name" for="wish" style="--r: 5; --mr: 11"><span class="n serif">C.</span>Mong muốn khi tham gia</label>
+        <textarea id="wish" name="wish" style="--r: 6; --s: 4; --mr: 12; --ms: 6" required maxlength="1000" rows="4" placeholder="Mình muốn tự dựng được website portfolio…"></textarea>
         <input class="trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       </div>
     </section>
 
-    <!-- the payment: ruled 58 apart -->
+    <!-- the payment -->
     <section class="sheet pay" aria-labelledby="s2">
       <i class="rl" style="--r: 1; --mr: 1" aria-hidden="true"></i>
       <i class="rl" style="--r: 2; --mr: 2" aria-hidden="true"></i>
@@ -368,16 +380,22 @@ main { container-type: inline-size; }
       <i class="rl" style="--r: 6; --mr: 6" aria-hidden="true"></i>
       <i class="rl" style="--r: 7; --mr: 7" aria-hidden="true"></i>
       <i class="rl" style="--r: 8; --mr: 8" aria-hidden="true"></i>
-      <i class="rl m" style="--r: 9; --mr: 9" aria-hidden="true"></i>
-      <i class="rl m" style="--r: 10; --mr: 10" aria-hidden="true"></i>
-      <i class="rl m" style="--r: 11; --mr: 11" aria-hidden="true"></i>
+      <i class="rl" style="--r: 9; --mr: 9" aria-hidden="true"></i>
+      <i class="rl" style="--r: 10; --mr: 10" aria-hidden="true"></i>
+      <i class="rl" style="--r: 11; --mr: 11" aria-hidden="true"></i>
+      <i class="rl" style="--r: 12; --mr: 12" aria-hidden="true"></i>
+      <i class="rl" style="--r: 13; --mr: 13" aria-hidden="true"></i>
+      <i class="rl" style="--r: 14; --mr: 14" aria-hidden="true"></i>
+      <i class="rl" style="--r: 15; --mr: 15" aria-hidden="true"></i>
+      <i class="rl" style="--r: 16; --mr: 16" aria-hidden="true"></i>
+      <i class="rl" style="--r: 17; --mr: 17" aria-hidden="true"></i>
       <h2 class="lab step-lab" id="s2" style="--r: 1; --mr: 1"><span class="n serif">(2)</span>thông tin chuyển khoản</h2>
-      <figure class="bank-qr" style="--r: 1; --s: 5; --mr: 2; --ms: 6">
+      <figure class="bank-qr" style="--r: 1; --s: 11; --mr: 2; --ms: 12">
         <img src="/pay/vpbank-qr.png" alt="Mã QR chuyển khoản VPBank (VietQR)" width="647" height="648" data-qr>
         <p class="none" data-qr-none hidden>QR ngân hàng<br>sẽ có ở đây</p>
       </figure>
-      <p class="fee display" style="--r: 6; --s: 2; --mr: 8; --ms: 2"><span class="sr-only">Học phí </span>5.000.000đ</p>
-      <p class="terms" style="--r: 8; --mr: 10">ưu đãi cho mùa đầu tiên</p>
+      <p class="fee display" style="--r: 12; --s: 5; --mr: 14; --ms: 3"><span class="sr-only">Học phí </span>5.000.000đ</p>
+      <p class="terms" style="--r: 17; --mr: 17">ưu đãi cho mùa đầu tiên</p>
     </section>
 
     <div class="send">

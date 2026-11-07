@@ -158,6 +158,30 @@ html.loading { overflow: hidden; }
   font-size: var(--f16); letter-spacing: -.02em;
 }
 .hero-bar a { position: relative; text-underline-position: from-font; }
+/* the link in each page's top corner, to the other page ("đăng ký" on the landing page, "trang chủ" on
+   the sign-up page): under the pointer (or in focus) its word rolls up and comes again from below, and
+   its rule goes back to its ends and is drawn in again to the middle, as the site's rules are drawn
+   (the sign-up button's own, dang-ky.astro). The word's copy below it is its shadow, a line down; the
+   window it rolls in reaches over it far enough for the Vietnamese marks */
+.nav-link { position: relative; display: inline-block; text-decoration: none; }
+.nav-link .nl { display: inline-block; vertical-align: top; clip-path: inset(-.3em -.1em 0 -.1em); }
+.nav-link .nl > span { display: inline-block; text-shadow: 0 1.4em currentColor; transition: translate .6s cubic-bezier(.65, 0, .35, 1); }
+.nav-link::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -.14em; height: 1px; background: currentColor; pointer-events: none;
+  clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 50% 100%, 50% 0%, 100% 0%, 100% 100%, 0% 100%);
+}
+@keyframes nav-redraw {
+  0% { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 50% 100%, 50% 0%, 100% 0%, 100% 100%, 0% 100%); }
+  40% { clip-path: polygon(0% 0%, 0% 0%, 0% 100%, 100% 100%, 100% 0%, 100% 0%, 100% 100%, 0% 100%); }
+  100% { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 50% 100%, 50% 0%, 100% 0%, 100% 100%, 0% 100%); }
+}
+@media (hover: hover) {
+  .nav-link:hover .nl > span { translate: 0 -1.4em; }
+  .nav-link:hover::after { animation: nav-redraw .9s cubic-bezier(.87, 0, .13, 1); }
+}
+.nav-link:focus-visible .nl > span { translate: 0 -1.4em; }
+.nav-link:focus-visible::after { animation: nav-redraw .9s cubic-bezier(.87, 0, .13, 1); }
+@media (prefers-reduced-motion: reduce) { .nav-link .nl > span { transition: none; } .nav-link::after { animation: none !important; } }
 /* the small links' hit areas at least 24 tall (their type is 11 to 16): reached past the letters,
    drawn nowhere */
 :is(.hero-bar a, .hero-scroll)::before { content: ""; position: absolute; inset: -8px -8px; }
