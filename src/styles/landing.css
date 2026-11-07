@@ -885,3 +885,11 @@ html.lenis, html.lenis body { height: auto; }
   .by .by-note { justify-self: end; width: calc((100vw - 80px) * .75 + 32px); }
   .by .by-mark { justify-self: end; margin: 20px calc((100vw - 80px) * .75 + 40px) 0 0; }
 }
+
+/* a tablet held sideways (the desktop's layout, a touch screen up to 1366 wide): under Level up the
+   black spacer and the price's top space together came to half the screen or more, the price's title
+   left at its foot; there each is 96, as on an upright tablet */
+@media (min-width: 900px) and (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .level { padding-bottom: 96px; height: calc(100svh + var(--spacer) + 96px); }
+  .price { padding-top: 96px; }
+}
