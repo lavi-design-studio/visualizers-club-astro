@@ -571,10 +571,12 @@ async function build() {
     // drawn: lines joining them in turn, then the fine marks, then the named boxes over them
     tg.lineWidth = 1; tg.font = '400 11px "ABC Areal", sans-serif'; tg.textBaseline = 'alphabetic';
     const shown = blobs.filter(b => b.life > 0).sort((a, b) => a.id - b.id);
-    if (TRACK === 'blobs') {
+    // (in both looks: with the callouts it joins their rings on the ice, the tags standing off)
+    {
+      const on = TRACK === 'orbit' && W < 600 ? [...shown].sort((a, b) => b.n - a.n).slice(0, 5).sort((a, b) => a.id - b.id) : shown;
       tg.strokeStyle = MAG; tg.globalAlpha = .5;
       tg.beginPath();
-      shown.forEach((b, i) => { const x = b.x + b.w / 2, y = b.y + b.h / 2; if (i) tg.lineTo(x, y); else tg.moveTo(x, y); });
+      on.forEach((b, i) => { const x = b.x + b.w / 2, y = b.y + b.h / 2; if (i) tg.lineTo(x, y); else tg.moveTo(x, y); });
       tg.stroke();
     }
     // the fine tracking, as a feature tracker does it: each place that stands out from its neighbours
