@@ -99,8 +99,8 @@ main { container-type: inline-size; }
    places left, as a big number (columns 2-4), the step's name (columns 5-7, its number hanging in the
    gutter before it, as the fields' A. B. C.), and the fields, a name on one line and what you write on
    the next (columns 8 on). On the second: the step's name, the QR over five lines (columns 8-9), the
-   price over two (column 6 on), and what the page has to say on the last. Then "sign up", large, as
-   the button.
+   price over two (column 6 on), and "ưu đãi cho mùa đầu tiên" on the line under it. Then "sign up",
+   large, as the button, and under it what the page has to say.
    Each line is its own element (.rl, a row of the sheet's grid: its foot is the line), so the lines are
    drawn in one after another, the lowest first, from both ends to the middle (--d, 0 to 50, as every
    rule on the site), as the sheet comes into view (the script below). A thing on the sheet sits in
@@ -166,7 +166,11 @@ main { container-type: inline-size; }
 .bank-qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .bank-qr .none { position: absolute; inset: 0; display: grid; place-items: center; background: #000; text-align: center; padding: 12px; font-size: var(--f16); line-height: 1.4; text-box: normal; }
 .fee { grid-column: 6 / -1; font-size: calc(160 * var(--px)); white-space: nowrap; }   /* (not .price: the landing page's section) */
-.status { grid-column: 8 / -1; font-size: var(--f20); letter-spacing: -.02em; line-height: var(--line); text-box: normal; }
+/* under the price, on the next line, from where it starts (as the landing page's price has it) */
+.terms { grid-column: 6 / -1; font-size: var(--f20); letter-spacing: -.02em; }
+/* what the page has to say about the sending, under the button */
+.status { margin-top: calc(40 * var(--px) + 8px); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; max-width: 34em; text-box: normal; }
+.status:empty { display: none; }
 .status.bad { color: #ff4d8d; }
 
 /* the button: "sign up" in Migra 160 from column 8, 48 under the last line, its rule under it. Under the
@@ -197,7 +201,7 @@ main { container-type: inline-size; }
 /* a tablet and a phone: the columns stacked (16 margins; the title 80 and 48; the small type 14 and 16),
    the sheets one column, their lines 44 apart: the places' name with its number to the right of it, the
    step's name, each field's name and its line or lines; the payment's name, the QR over six lines, the
-   price over two, the page's word under it; the button under the sheet */
+   price over two, its offer under it; the button under the sheet, the page's word under that */
 @media (max-width: 899px) {
   .page { --gap: 16px; --f16: 12px; --f20: 14px; --f40: 24px; display: flex; flex-direction: column; padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
   .bar { position: static; margin-top: max(16px, env(safe-area-inset-top, 0px)); }
@@ -216,6 +220,7 @@ main { container-type: inline-size; }
   .send { padding: 40px 0 72px; }
   .cta { font-size: min(112px, calc((100cqi - 32px) / 4.3)); }
   .cta .ct::after { bottom: -8px; height: 1.5px; }
+  .status { margin-top: 28px; }
 }
 @media (max-width: 599px) {
   .page { --f16: 12px; --f20: 16px; }
@@ -301,11 +306,12 @@ main { container-type: inline-size; }
         <p class="none" data-qr-none hidden>QR ngân hàng<br>sẽ có ở đây</p>
       </figure>
       <p class="fee display" style="--r: 6; --s: 2; --mr: 8; --ms: 2"><span class="sr-only">Học phí </span>5.000.000đ</p>
-      <p class="status" role="status" style="--r: 8; --mr: 10; --ms: 2" data-status></p>
+      <p class="terms" style="--r: 8; --mr: 10">ưu đãi cho mùa đầu tiên</p>
     </section>
 
     <div class="send">
       <button class="cta serif" type="submit" data-send><span class="ct">sign up <span class="arrow" aria-hidden="true">→</span></span></button>
+      <p class="status" role="status" data-status></p>
     </div>
   </form>
 </div>
