@@ -256,7 +256,7 @@ main { container-type: inline-size; }
     <a href="/">trang chủ</a>
   </nav>
 
-  <h1 class="title signup-title display"><span class="line">sign up</span><span class="line serif">mùa đầu tiên</span></h1>
+  <h1 class="title signup-title display"><span class="line">sign up</span><span class="line serif">first season</span></h1>
 
   <section class="row places" aria-label="Số chỗ">
     <p class="label"><span class="serif">(*)</span>số chỗ</p>
@@ -300,10 +300,6 @@ main { container-type: inline-size; }
           <p class="was"><span class="sr-only">Giá gốc </span>8.000.000đ</p>
           <p class="now display">5.000.000đ</p>
           <p class="terms">ưu đãi cho mùa đầu tiên</p>
-          <dl>
-            <dt>Nội dung</dt><dd><b data-memo>mã riêng của bạn, có sau khi gửi đăng ký</b></dd>
-            <dt>Sau khi chuyển</dt><dd>Thầy xác nhận ngay trên trang này, thường trong 24 giờ</dd>
-          </dl>
         </div>
       </div>
     </section>
@@ -385,7 +381,7 @@ main { container-type: inline-size; }
   let polling = 0;
   const view = st => {
     $('[data-mine]').hidden = false; $('[data-again]').hidden = false;
-    $('[data-code]').textContent = mine.code; $('[data-memo]').textContent = mine.code;
+    $('[data-code]').textContent = mine.code;
     if (st === 'paid') {
       clearInterval(polling);
       close('đã có chỗ', `Chào mừng ${mine.name} đến với mùa đầu tiên. Thầy đã nhận chuyển khoản, chỗ của bạn đã được xác nhận. Hẹn gặp bạn ở Discord của lớp.`);
