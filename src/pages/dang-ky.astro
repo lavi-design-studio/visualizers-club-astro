@@ -7,7 +7,7 @@
 // so two at once never make a tenth), whose address goes in SIGNUP_URL below; the page asks it how
 // many places are taken as it opens. Set as the landing page is: black, the magenta, PP Neue World
 // and Migra for the title, ABC Areal for the small type on hairline rules. The bank's QR code is
-// public/assets/bank-qr.png (the VPBank VietQR, cut from the bank app; a frame says so if it is missing). Laid on the landing page's grid:
+// public/pay/vpbank-qr.png (the VPBank VietQR, cut from the bank app; a frame says so if it is missing). Laid on the landing page's grid:
 // each row's label in columns 4-5, its body from column 6, the title centred as the hero's
 import '../styles/landing.css';   // (the landing page's styles: its footer, shared, is set by them)
 import foot from '../partials/foot.html?raw';
@@ -293,7 +293,7 @@ main { container-type: inline-size; }
       <h2 class="label" id="s2"><span class="serif">(2)</span>chuyển khoản</h2>
       <div class="body">
         <figure class="bank-qr">
-          <img src="/assets/bank-qr.png" alt="Mã QR chuyển khoản VPBank (VietQR)" width="647" height="648" data-qr>
+          <img src="/pay/vpbank-qr.png" alt="Mã QR chuyển khoản VPBank (VietQR)" width="647" height="648" data-qr>
           <p class="none" data-qr-none hidden>QR ngân hàng<br>sẽ có ở đây</p>
         </figure>
         <div class="amount">
@@ -462,7 +462,8 @@ main { container-type: inline-size; }
   import '../scripts/ring.js';
   import { footRules, socials } from '../scripts/rules.js';
   const root = document.documentElement, h1 = document.querySelector('.signup-title'), lines = [...h1.querySelectorAll('.line')];
-  const rest = [...document.querySelectorAll('.page > *'), document.querySelector('.foot')].filter(e => e && e !== h1);
+  // (the footer is not held back: far under the fold, and its title's ice reads its letters as it is set)
+  const rest = [...document.querySelectorAll('.page > *')].filter(e => e !== h1);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // the footer as the landing page sets it: its title in ice at once (title-shader.js, on 'risen'), its
