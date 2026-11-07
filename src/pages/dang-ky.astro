@@ -84,7 +84,16 @@ main { container-type: inline-size; }
 /* the rows: a hairline across the page, the label two columns to the left of the body (columns 4-5),
    the body from column 6 (as the price's "cái giá phải trả" and the footer's "liên hệ qua") */
 .row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: relative; padding-block: calc(32 * var(--px)) calc(64 * var(--px)); }
-.row::before { content: ""; position: absolute; left: calc(-1 * var(--gap)); right: calc(-1 * var(--gap)); top: 0; height: 1px; background: var(--magenta); }
+/* every line on the page drawn in as the landing page's rules are (its hero's): from both ends to the
+   middle, the lowest of a row first and up from there, as the row comes into view (the script below).
+   --d: how far in from each end a line is drawn, 0 to 50 (50: whole) */
+@property --d { syntax: '<number>'; inherits: true; initial-value: 50; }
+.row, .field label, .field input, .field textarea { transition: --d .9s cubic-bezier(.87, 0, .13, 1) var(--wait, 0s); }
+.off { --d: 0; }
+.row::before {
+  content: ""; position: absolute; left: calc(-1 * var(--gap)); right: calc(-1 * var(--gap)); top: 0; height: 1px; background: var(--magenta);
+  clip-path: polygon(0% 0%, calc(var(--d) * 1%) 0%, calc(var(--d) * 1%) 100%, calc(100% - var(--d) * 1%) 100%, calc(100% - var(--d) * 1%) 0%, 100% 0%, 100% 100%, 0% 100%);
+}
 .places { margin-top: calc(120 * var(--px)); }
 .label { grid-column: 4 / span 2; font-size: var(--f20); letter-spacing: -.02em; line-height: 1.2; }
 .label .serif { margin-right: .4em; }
@@ -107,26 +116,32 @@ main { container-type: inline-size; }
 .field { display: grid; }
 .field label {
   min-height: var(--line); display: flex; align-items: center; justify-content: space-between; gap: 1em;
-  border-bottom: 1px solid var(--magenta); font-size: var(--f20); letter-spacing: -.02em; text-box: normal;
+  font-size: var(--f20); letter-spacing: -.02em; text-box: normal;
+}
+.field label, .field input {
+  --rule: var(--magenta);
+  background-image: linear-gradient(var(--rule), var(--rule)), linear-gradient(var(--rule), var(--rule));
+  background-size: calc(var(--d) * 1%) 1px; background-position: left bottom, right bottom; background-repeat: no-repeat;
 }
 .field label small { font-size: var(--f16); letter-spacing: -.02em; text-align: right; }
 .field input, .field textarea {
-  display: block; width: 100%; margin: 0; padding: 0; background: transparent; color: var(--magenta);
-  border: 0; border-bottom: 1px solid var(--magenta); border-radius: 0; appearance: none;
+  display: block; width: 100%; margin: 0; padding: 0; background-color: transparent; color: var(--magenta);
+  border: 0; border-radius: 0; appearance: none;
   height: var(--line); font: 400 max(17px, calc(24 * var(--px)))/calc(var(--line) - 1px) "ABC Areal", system-ui, sans-serif;
   letter-spacing: -.01em; text-transform: none; caret-color: var(--magenta); text-box: normal;
 }
 /* the wish: four lines, its rules drawn on it a line apart (they move with what is written) */
 .field textarea {
-  height: calc(4 * var(--line)); line-height: var(--line); border-bottom: 0; resize: none; overflow-y: auto;
-  background-image: repeating-linear-gradient(transparent 0 calc(var(--line) - 1px), var(--magenta) calc(var(--line) - 1px) var(--line));
+  height: calc(4 * var(--line)); line-height: var(--line); resize: none; overflow-y: auto;
+  --rule: var(--magenta);
+  background-image: linear-gradient(transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px)), linear-gradient(transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px));
+  background-size: calc(var(--d) * 1%) var(--line); background-position: left top, right top; background-repeat: repeat-y;
   background-attachment: local;
 }
 .field input::placeholder, .field textarea::placeholder { color: var(--magenta); opacity: .5; }
 /* (where you are writing: its lines a little lit) */
 .field input:focus, .field textarea:focus { outline: none; background-color: rgba(194, 57, 199, .1); }
-.field [aria-invalid="true"] { border-bottom-color: #ff4d8d; }
-.field textarea[aria-invalid="true"] { background-image: repeating-linear-gradient(transparent 0 calc(var(--line) - 1px), #ff4d8d calc(var(--line) - 1px) var(--line)); }
+.field [aria-invalid="true"] { --rule: #ff4d8d; }
 /* the step's own name on the first of its lines, level with the first field's */
 .info { padding-top: 0; }
 .info > .label { align-self: start; min-height: var(--line); display: flex; align-items: center; text-box: normal; }
@@ -287,6 +302,16 @@ main { container-type: inline-size; }
 </main>
 
 <script define:vars={{ SIGNUP_URL, CAP }}>
+  // the lines drawn in: each row's, the lowest first, as the row comes into view (not under reduced motion)
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const rows = [...document.querySelectorAll('.row')];
+    const hostsOf = row => [row, ...row.querySelectorAll('.field label, .field input, .field textarea')];
+    rows.forEach(r => hostsOf(r).forEach(h => h.classList.add('off')));
+    const draw = row => hostsOf(row).sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)
+      .forEach((h, i) => { h.style.setProperty('--wait', `${(i * .06).toFixed(2)}s`); h.classList.remove('off'); });
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); draw(e.target); } }), { rootMargin: '0px 0px -20% 0px' });
+    rows.forEach(r => io.observe(r));
+  }
   const $ = s => document.querySelector(s);
   const form = $('[data-form]'), send = $('[data-send]'), status = $('[data-status]'), done = $('[data-done]');
   const boxes = [...document.querySelectorAll('.places li')];

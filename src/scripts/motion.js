@@ -834,16 +834,23 @@ function intro() {
     onComplete() { this.targets().forEach(r => { r.style.clipPath = ''; }); } });
 }
 
-// By Lavi's rules, as the section comes into view: drawn in one after another, from the left and from the
-// right in turn (the only motion the section has as it comes)
-function byRulesIn() {
-  const rs = $$('.by-rules > *');
-  if (!rs.length || reduce) return;
-  const from = rs.map((_, i) => (i % 2 ? 'inset(0 0% 0 100%)' : 'inset(0 100% 0 0%)'));
-  gsap.set(rs, { clipPath: i => from[i] });
-  gsap.to(rs, { clipPath: 'inset(0 0% 0 0%)', duration: .9, ease: 'expo.inOut', stagger: .035, clearProps: 'clipPath',
-    scrollTrigger: { trigger: '.by', start: 'top 75%', once: true } });
+// every set of the page's rules drawn in as the hero's are (intro): from both ends to the middle, the
+// lowest first and up from there, as its section comes into view. rs: the rules (clipped by SIDES);
+// hosts: what draws its rules in CSS (the By Lavi frame's and the session's: --d, landing.css)
+function rulesIn(rs, trigger, hosts = []) {
+  if ((!rs.length && !hosts.length) || reduce) return;
+  const order = [...rs].sort((a, b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top);
+  const stagger = Math.min(.06, 1.2 / Math.max(1, order.length));   // (a long set takes no longer than the hero's)
+  gsap.set(order, { clipPath: SIDES(0) });
+  gsap.set(hosts, { '--d': 0 });
+  const tl = gsap.timeline({ scrollTrigger: { trigger, start: 'top 75%', once: true } });
+  tl.to(order, { clipPath: SIDES(50), duration: .9, ease: 'expo.inOut', stagger, clearProps: 'clipPath' }, 0);
+  hosts.forEach((h, i) => tl.to(h, { '--d': 50, duration: .9, ease: 'expo.inOut', clearProps: '--d' }, i * stagger * 4));
 }
+// By Lavi's: its rules, the frame's two and the one under the session's length
+function byRulesIn() { rulesIn($$('.by-rules > *'), '.by', [$('.by-frame'), $('.by-time')].filter(Boolean)); }
+// the price's and the footer's (pageRules)
+function pageRulesIn() { for (const sec of ['.price', '.foot']) { const box = $(`${sec} > .page-rules`); if (box) rulesIn([...box.children], sec); } }
 
 // ----- 1b. the headings -----
 // every section's title is at rest on the design's grid from the start, filled with its shader
@@ -1196,7 +1203,7 @@ async function start() {
     await pause();
     await warmGlyphs(pause); await pause();
     await byRules(pause); byRulesIn(); await pause();
-    await pageRules(pause); await pause();
+    await pageRules(pause); pageRulesIn(); await pause();
     strip(fan?.lenis);
     camera(); await pause();
     headings(); await pause();

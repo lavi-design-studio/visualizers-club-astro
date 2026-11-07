@@ -220,14 +220,20 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
    credits, the portrait and the note over a rule, then the picture frame under the class's name. The syllabus
    is on one line grid with the left's rules (motion.js byRules), each line between two of them */
 .by { background: var(--magenta); color: #000; padding: calc(209 * var(--px)) 0 calc(47 * var(--px)); }
-.by-frame { position: relative; border-block: 1px solid #000; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+.by-frame { position: relative; border-block: 1px solid transparent; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+/* the frame's two rules (where its borders were: their room kept), drawn in as the hero's rules are, from
+   both ends to the middle (motion.js byRulesIn: --d, 0 to 50, how far in from each end it is drawn) */
+.by-frame::before, .by-frame::after { content: ""; position: absolute; left: 0; right: 0; height: 1px; background: #000; clip-path: var(--sides, none); pointer-events: none; }
+.by-frame::before { top: -1px; }
+.by-frame::after { bottom: -1px; }
+.by-frame, .by-time { --sides: polygon(0% 0%, calc(var(--d, 50) * 1%) 0%, calc(var(--d, 50) * 1%) 100%, calc(100% - var(--d, 50) * 1%) 100%, calc(100% - var(--d, 50) * 1%) 0%, 100% 0%, 100% 100%, 0% 100%); }
 .by-left, .by-right { display: grid; grid-template-columns: subgrid; align-content: start; }
 .by-left { grid-column: 1 / span 8; grid-row: 1; }
 .by-right { grid-column: 10 / -1; grid-row: 1; }
 /* the left's rules run from the page's edge to the strip: a gutter past the columns either side */
 .by-head, .by-time, .by-side { position: relative; }   /* (the right column's rules are motion.js byRules') */
 /* one rule under the session's length, none under the title (Figma's Frame 20: its length 32 under it) */
-.by-time::after { content: ""; position: absolute; left: calc(-1 * var(--gap)); right: calc(-1 * var(--gap)); bottom: 0; border-bottom: 1px solid #000; }
+.by-time::after { content: ""; position: absolute; left: calc(-1 * var(--gap)); right: calc(-1 * var(--gap)); bottom: 0; border-bottom: 1px solid #000; clip-path: var(--sides, none); }
 .by-head { grid-column: 1 / -1; padding: calc(31 * var(--px)) 0 0; }
 .by-head h2 { display: flex; flex-direction: column; gap: calc(16 * var(--px)); text-align: center; }
 .by-head h2 .serif { letter-spacing: -.01em; }
