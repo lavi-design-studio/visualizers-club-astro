@@ -23,7 +23,10 @@ Mở http://localhost:4321.
 
 - Con gà chong chóng bằng băng, khúc xạ chính chữ và đường kẻ của trang, đứng giữa màn hình.
 - Cuộn qua hero: con gà lên giữa màn hình, to hơn, xoay theo cuộn suốt 4 màn hình trống.
-- Tracking: các vệt sáng trên băng được đóng khung hồng kèm từ khoá khoá học, các ô nhỏ bám theo điểm sáng.
+- Tracking: tracker bám các vệt sáng trên băng (vòng tròn nhỏ, ô vuông nhỏ, đường nối các điểm); từ khoá khoá học
+  được kéo ra thành nhãn hồng đứng quanh con gà ở hai bên, nối bằng đường dẫn có khúc gập, và các nhãn nối
+  với nhau thành một vòng. Bảng `ORBIT` trong `ice.js` chỉnh độ xa/góc/khoảng cách. Bản cũ (nhãn nằm ngay trên
+  vệt sáng): thêm `?track=blobs` vào đường dẫn.
 - Khi section tím "You have enough love for design?" lên, con gà bay vào giữa hai dấu ngoặc và chuyển sang
   kiểu dither tím đen.
 - Cụm ảnh fan cũ không còn vẽ (`PRINTS = false` trong `src/scripts/fan.js`); vòng ảnh ở footer vẫn giữ.

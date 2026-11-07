@@ -50,9 +50,9 @@ const KEYWORDS = ['WEBSITE', 'LANDING PAGE', 'HERO', 'LAYOUT', 'GRID', 'BREAKPOI
   'HTML', 'CSS', 'SCROLL', 'HOVER', 'INTERACTION', 'MOTION', 'ANIMATION', 'WEBGL', 'SHADER', '3D', 'CTA', 'SEO',
   'FIGMA', 'FIGMA → AI', 'CLAUDE', 'PROMPT', 'DEPLOY', 'DOMAIN', 'GO LIVE', 'QA', 'BRIEF', 'MOODBOARD', 'CONCEPT',
   'TENSION', 'NHỊP', 'CRITIQUE'].sort(() => Math.random() - .5);
-// the tracking's look: 'blobs' (the keywords on the bright places on the ice, as a blob tracker draws
-// them) or, to try, ?track=orbit: the keywords drawn out from the ice, called out round it
-const TRACK = new URLSearchParams(location.search).get('track') === 'orbit' ? 'orbit' : 'blobs';
+// the tracking's look: 'orbit' (the keywords called out round the rooster, see callouts) or, with
+// ?track=blobs, as it was: the keywords on the bright places on the ice, as a blob tracker draws them
+const TRACK = new URLSearchParams(location.search).get('track') === 'blobs' ? 'blobs' : 'orbit';
 const ORBIT = {
   reach: .62,      // how far out the callouts stand, sideways: a share of the rooster's height (kept on the screen)
   rise: .44,       // and up and down (the same share): an ellipse round it
@@ -629,7 +629,7 @@ async function build() {
     tg.globalAlpha = 1;
   }
 
-  // ---- the callouts (?track=orbit): each named track's keyword drawn out from the ice and set off
+  // ---- the callouts (the default; ?track=blobs for the old look): each named track's keyword drawn out from the ice and set off
   // round it, as a technical drawing calls out its parts. The tag stands on an ellipse round the
   // rooster, on the ray from its middle through the bright place it follows, kept to the rooster's two
   // sides (never over its head or its foot) and apart from the others on its side; a hairline leads
