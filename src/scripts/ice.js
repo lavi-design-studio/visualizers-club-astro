@@ -58,7 +58,7 @@ const ORBIT = {
   rise: .44,       // and up and down (the same share): an ellipse round it
   side: 50,        // how far off the horizontal a callout may stand, at most (degrees): they keep to its two sides
   gap: 22,         // the least angle between two callouts on one side (degrees)
-  grow: .22,       // how much of its leader a new callout draws each frame
+  grow: .5,        // how much of its leader a new callout draws each frame (its tag is there from the first)
 };
 const IOR = { r: 1.15, y: 1.16, g: 1.18, c: 1.22, b: 1.22, v: 1.22 };
 
@@ -633,8 +633,9 @@ async function build() {
   // round it, as a technical drawing calls out its parts. The tag stands on an ellipse round the
   // rooster, on the ray from its middle through the bright place it follows, kept to the rooster's two
   // sides (never over its head or its foot) and apart from the others on its side; a hairline leads
-  // from a ring on the ice out to an elbow and along to the tag. A new one draws its leader out first,
-  // and its tag comes at the end of it; under the tag, the track's reading (its number, its strength) ----
+  // from a ring on the ice out to an elbow and along to the tag. Its tag is there as soon as it is
+  // tracked, for as long as the blob tracking's would be, its leader drawing out to it over a couple of
+  // frames; under the tag, the track's reading (its number, its strength) ----
   const rad = d => d * Math.PI / 180;
   function callouts(all) {
     // (on a narrow screen the strongest few only: there is room for so many down its edges)
@@ -669,7 +670,7 @@ async function build() {
       const tw = tg.measureText(b.word).width, w = Math.round(tw + 14), h = 22;
       // (its end on the ellipse, but the tag kept inside the screen: on a narrow one, down its edges)
       const py = cy + ry * Math.sin(b.ang), px = right ? Math.min(cx + rx * Math.cos(b.ang), W - M - w) : Math.max(cx + rx * Math.cos(b.ang), M + w);
-      const ex = px - dir * 18, alpha = Math.min(1, b.life * 2);
+      const ex = px - dir * 18, alpha = 1;   // (shown whole as long as it is tracked or lingers, as the blob tracking's tags)
       if (b.grow < 1) calling = true;
       // the leader: anchor, out to the elbow, along to the tag; drawn out as far as it has grown
       const legs = [[ax, ay], [ex, py], [px, py]];
@@ -686,7 +687,6 @@ async function build() {
       tg.globalAlpha = alpha; tg.strokeStyle = ICE.pink; tg.fillStyle = ICE.pink;
       tg.beginPath(); tg.arc(ax, ay, 5, 0, Math.PI * 2); tg.stroke();
       tg.fillRect(Math.round(ax) - 1, Math.round(ay) - 1, 2, 2);
-      if (b.grow < 1) continue;
       // the tag at the leader's end, its reading under it
       const x0 = Math.round(right ? px : px - w), y0 = Math.round(py - h / 2);
       tg.fillStyle = ICE.pink; tg.fillRect(x0, y0, w, h);
