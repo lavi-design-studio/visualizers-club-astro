@@ -54,6 +54,10 @@ import body from '../partials/body.html?raw';
 <link rel="preload" href="/fonts/PPMigra-ExtralightItalic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/ABCAreal-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/ABCAreal-Medium.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Vercel Web Analytics: page views, no cookies; the script is served by Vercel itself once the
+     project has Analytics on (deferred, so it never holds up the page) -->
+<script is:inline>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+<script is:inline defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <Fragment set:html={body} />
