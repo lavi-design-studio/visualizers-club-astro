@@ -50,15 +50,15 @@ const KEYWORDS = ['WEBSITE', 'LANDING PAGE', 'HERO', 'LAYOUT', 'GRID', 'BREAKPOI
   'HTML', 'CSS', 'SCROLL', 'HOVER', 'INTERACTION', 'MOTION', 'ANIMATION', 'WEBGL', 'SHADER', '3D', 'CTA', 'SEO',
   'FIGMA', 'FIGMA → AI', 'CLAUDE', 'PROMPT', 'DEPLOY', 'DOMAIN', 'GO LIVE', 'QA', 'BRIEF', 'MOODBOARD', 'CONCEPT',
   'TENSION', 'NHỊP', 'CRITIQUE'].sort(() => Math.random() - .5);
-// the tracking's look: 'blobs' (the bright places on the ice, followed as a blob tracker does) or, to
-// try, ?track=globe: a globe round the rooster, turning with it, the keywords pinned on it
-const TRACK = new URLSearchParams(location.search).get('track') === 'globe' ? 'globe' : 'blobs';
-const GLOBE = {
-  R: .56,          // its radius, a share of the rooster's height
-  tilt: .36,       // how far it leans toward us (radians): seen a little from above, its rings ellipses
-  pins: 7,         // the keywords pinned on it
-  dots: 48,        // the small squares spread over it
-  lats: [-60, -30, 0, 30, 60], lons: 12,   // its lines
+// the tracking's look: 'blobs' (the keywords on the bright places on the ice, as a blob tracker draws
+// them) or, to try, ?track=orbit: the keywords drawn out from the ice, called out round it
+const TRACK = new URLSearchParams(location.search).get('track') === 'orbit' ? 'orbit' : 'blobs';
+const ORBIT = {
+  reach: .62,      // how far out the callouts stand, sideways: a share of the rooster's height (kept on the screen)
+  rise: .44,       // and up and down (the same share): an ellipse round it
+  side: 50,        // how far off the horizontal a callout may stand, at most (degrees): they keep to its two sides
+  gap: 22,         // the least angle between two callouts on one side (degrees)
+  grow: .22,       // how much of its leader a new callout draws each frame
 };
 const IOR = { r: 1.15, y: 1.16, g: 1.18, c: 1.22, b: 1.22, v: 1.22 };
 
@@ -451,7 +451,7 @@ async function build() {
     const yaw = scrollY / Math.max(1, finTop) * Math.PI * 2 * ICE.turns + ptr.x * .12 * (1 - L) + spin;
     const heroTop = fanTop - scrollY;   // the hero lies at the section's top
     const state = [yaw, ptr.y, grow.v, heroTop, L, W, H].map(n => n.toFixed(4)).join();
-    if (state === drawn) return;
+    if (state === drawn && !calling) return;   // (drawn on while a callout is still drawing itself out)
     drawn = state;
     // from its own place to the brackets', in the screen's pixels, then into the scene's units
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z, halfW = halfH * camera.aspect;
@@ -497,13 +497,14 @@ async function build() {
     const cageOn = cage.visible;
     cage.visible = false;
     renderer.render(scene, camera);
-    if (tr > 0 && TRACK === 'blobs') { pgx.clearRect(0, 0, probe.width, probe.height); pgx.drawImage(canvas, 0, 0, probe.width, probe.height); }
+    if (tr > 0) { pgx.clearRect(0, 0, probe.width, probe.height); pgx.drawImage(canvas, 0, 0, probe.width, probe.height); }
     if (cageOn) {
       cage.visible = true; logo.visible = false; halo.visible = false;
       renderer.autoClear = false; renderer.render(scene, camera); renderer.autoClear = true;
       logo.visible = true;
     }
-    if (TRACK === 'globe') globeTrack(tr, yaw); else blobTrack(tr);
+    Object.assign(roost, { x: cx, y: cy, h: ch });
+    blobTrack(tr);
   });
 
   // ---- the tracking, as a blob tracker does it: each frame drawn small, its bright places found (a
@@ -512,9 +513,12 @@ async function build() {
   // a thin box eased after its patch, a mark at its middle, its keyword and a reading, and a line from
   // each to the next. It moves as the light moves over the turning ice ----
   let blobs = [], nextId = 0, feats = [], nextWord = 0;
+  let calling = false;                  // a callout still drawing its leader out (callouts)
+  const roost = { x: 0, y: 0, h: 1 };   // the rooster on the screen now: its mast, its middle, its height (css px)
   const MAG = ICE.magenta;
   function blobTrack(t) {
     tg.clearRect(0, 0, W, H);
+    calling = false;
     if (t < .5) { blobs = []; feats = []; return; }   // (on or off, no fading: it is there once the hero is half gone)
     const sw = probe.width, sh = probe.height;   // (the frame, as it was before the scaffold was drawn over it)
     const px = pgx.getImageData(0, 0, sw, sh).data, lit = new Uint8Array(sw * sh), seen = new Uint8Array(sw * sh);
@@ -567,10 +571,12 @@ async function build() {
     // drawn: lines joining them in turn, then the fine marks, then the named boxes over them
     tg.lineWidth = 1; tg.font = '400 11px "ABC Areal", sans-serif'; tg.textBaseline = 'alphabetic';
     const shown = blobs.filter(b => b.life > 0).sort((a, b) => a.id - b.id);
-    tg.strokeStyle = MAG; tg.globalAlpha = .5;
-    tg.beginPath();
-    shown.forEach((b, i) => { const x = b.x + b.w / 2, y = b.y + b.h / 2; if (i) tg.lineTo(x, y); else tg.moveTo(x, y); });
-    tg.stroke();
+    if (TRACK === 'blobs') {
+      tg.strokeStyle = MAG; tg.globalAlpha = .5;
+      tg.beginPath();
+      shown.forEach((b, i) => { const x = b.x + b.w / 2, y = b.y + b.h / 2; if (i) tg.lineTo(x, y); else tg.moveTo(x, y); });
+      tg.stroke();
+    }
     // the fine tracking, as a feature tracker does it: each place that stands out from its neighbours
     // (its brightness and the sharpness of its edge, the highest within two cells all round) is a feature;
     // the strongest are taken, each followed from frame to frame by the nearest of the last (so it keeps
@@ -606,6 +612,7 @@ async function build() {
       const q = Math.round(3 + 10 * f.s * Math.min(1, f.v / sTop)), X = f.x * k, Y = f.y * k;
       tg.strokeRect(Math.round(X - q / 2) + .5, Math.round(Y - q / 2) + .5, q, q);
     }
+    if (TRACK === 'orbit') { callouts(shown); return; }
     // the named tracks, over the fine ones: a solid pink box (never narrower than its name), the name
     // in its middle in white, in the page's type
     tg.font = '500 13px "ABC Areal", sans-serif'; tg.textAlign = 'center'; tg.textBaseline = 'middle';
@@ -620,106 +627,74 @@ async function build() {
     tg.globalAlpha = 1;
   }
 
-  // ---- the globe (?track=globe): a sphere round the rooster's mast, as big as the rooster, leaning
-  // toward us and turning with it; its rings and meridians hairlines (the far side faint, behind the
-  // ice), the keywords pinned on it with a stem and a pink tag, joined in turn by arcs lifted off its
-  // surface as a flight map draws them, and small squares spread over it. A pin that turns round to the
-  // far side gives up its keyword and comes back round with the next one ----
-  const pins = Array.from({ length: GLOBE.pins }, (_, i) => ({
-    lat: (-35 + Math.random() * 85) * Math.PI / 180, lon: (i / GLOBE.pins + (Math.random() - .5) * .08) * Math.PI * 2, word: null, id: i }));
-  const dots = Array.from({ length: GLOBE.dots }, (_, i) => {   // (a Fibonacci sphere: evenly spread)
-    const y = 1 - (i + .5) / GLOBE.dots * 2, r = Math.sqrt(1 - y * y), a = i * Math.PI * (3 - Math.sqrt(5));
-    return { x: Math.cos(a) * r, y, z: Math.sin(a) * r, s: .35 + .65 * Math.random() };
-  });
-  const unit = (lat, lon) => [Math.cos(lat) * Math.cos(lon), Math.sin(lat), Math.cos(lat) * Math.sin(lon)];
-  const pv = new THREE.Vector3();
-  function globeTrack(t, yaw) {
-    tg.clearRect(0, 0, W, H);
-    if (t < .5) return;   // (on or off with the hero half gone, as the tracking)
-    // (as big as GLOBE.R of the rooster, but kept inside the screen's width, as on a phone)
-    const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
-    const c = pivot.position, rk = Math.min(LOGO_H * GLOBE.R * pivot.scale.x, W * .45 / H * 2 * halfH);
-    const cy = Math.cos(yaw), sy = Math.sin(yaw), ct = Math.cos(GLOBE.tilt), st = Math.sin(GLOBE.tilt);
-    // a point on (or, lift > 1, over) the globe, by its unit vector in the globe's frame, to the screen;
-    // d: how far round toward us it is, -1 (the far side) to 1
-    const P = (x, y, z, lift = 1) => {
-      const X = x * cy + z * sy, Z = -x * sy + z * cy;
-      const Y2 = y * ct - Z * st, Z2 = y * st + Z * ct;
-      pv.set(c.x + X * rk * lift, c.y + Y2 * rk * lift, c.z + Z2 * rk * lift).project(camera);
-      return { x: (pv.x + 1) / 2 * W, y: (1 - pv.y) / 2 * H, d: Z2 };
-    };
-    // runs of points stroked in two passes, the far side and then the near
-    const runs = (paths, nearA, farA) => {
-      for (const [near, a] of [[false, farA], [true, nearA]]) {
-        tg.globalAlpha = a; tg.beginPath();
-        for (const pts of paths) for (let i = 1; i < pts.length; i++) {
-          const p = pts[i - 1], q = pts[i];
-          if ((p.d + q.d > 0) !== near) continue;
-          tg.moveTo(p.x, p.y); tg.lineTo(q.x, q.y);
-        }
-        tg.stroke();
+  // ---- the callouts (?track=orbit): each named track's keyword drawn out from the ice and set off
+  // round it, as a technical drawing calls out its parts. The tag stands on an ellipse round the
+  // rooster, on the ray from its middle through the bright place it follows, kept to the rooster's two
+  // sides (never over its head or its foot) and apart from the others on its side; a hairline leads
+  // from a ring on the ice out to an elbow and along to the tag. A new one draws its leader out first,
+  // and its tag comes at the end of it; under the tag, the track's reading (its number, its strength) ----
+  const rad = d => d * Math.PI / 180;
+  function callouts(all) {
+    // (on a narrow screen the strongest few only: there is room for so many down its edges)
+    const shown = W < 600 ? [...all].sort((a, b) => b.n - a.n).slice(0, 5) : all;
+    const cx = roost.x, cy = roost.y, top = Math.max(1, ...shown.map(b => b.n));
+    tg.font = '500 13px "ABC Areal", sans-serif';
+    const rx = roost.h * ORBIT.reach, ry = roost.h * ORBIT.rise, M = 16;   // (M: the screen's margin, which the tags keep inside)
+    // where each wants to stand: its angle off the middle, turned out to the side it is on and kept
+    // within ORBIT.side of the horizontal; eased there from where it stood
+    const side = rad(ORBIT.side);
+    for (const b of shown) {
+      const ax = b.x + b.w / 2, ay = b.y + b.h / 2;
+      let a = Math.atan2((ay - cy) / ry, (ax - cx) / rx);
+      const right = Math.cos(a) >= 0, off = Math.max(-side, Math.min(side, right ? a : (a > 0 ? Math.PI - a : -Math.PI - a)));
+      b.goal = right ? off : Math.PI - off;
+      if (b.ang === undefined || (Math.cos(b.ang) >= 0) !== right) b.ang = b.goal; else b.ang += (b.goal - b.ang) * .25;
+      b.grow = Math.min(1, (b.grow ?? 0) + ORBIT.grow);
+    }
+    // kept apart on each side: by their height down it, pushed out from each other to the least gap
+    const gap = rad(ORBIT.gap);
+    for (const right of [true, false]) {
+      const col = shown.filter(b => (Math.cos(b.ang) >= 0) === right).map(b => ({ b, t: right ? b.ang : Math.PI - b.ang })).sort((p, q) => p.t - q.t);
+      for (let pass = 0; pass < 4; pass++) for (let i = 1; i < col.length; i++) {
+        const d = col[i].t - col[i - 1].t;
+        if (d < gap) { const push = (gap - d) / 2; col[i - 1].t -= push; col[i].t += push; }
       }
-    };
-    tg.lineWidth = 1; tg.strokeStyle = MAG;
-    const lines = [];
-    for (const deg of GLOBE.lats) {
-      const la = deg * Math.PI / 180, pts = [];
-      for (let i = 0; i <= 72; i++) pts.push(P(...unit(la, i / 72 * Math.PI * 2)));
-      lines.push(pts);
+      for (const c of col) { c.t = Math.max(-side - gap, Math.min(side + gap, c.t)); c.b.ang = right ? c.t : Math.PI - c.t; }
     }
-    for (let j = 0; j < GLOBE.lons; j++) {
-      const lo = j / GLOBE.lons * Math.PI * 2, pts = [];
-      for (let i = 0; i <= 36; i++) pts.push(P(...unit(-Math.PI / 2 + i / 36 * Math.PI, lo)));
-      lines.push(pts);
-    }
-    runs(lines, .32, .08);
-    // the small squares, smaller and fainter round the far side
-    tg.strokeStyle = ICE.pink;
-    for (const o of dots) {
-      const p = P(o.x, o.y, o.z), near = (p.d + 1) / 2, q = Math.round((3 + 8 * o.s) * (.55 + .45 * near));
-      tg.globalAlpha = p.d > 0 ? 1 : .22;
-      tg.strokeRect(Math.round(p.x - q / 2) + .5, Math.round(p.y - q / 2) + .5, q, q);
-    }
-    // the pins: where each is now, and its keyword (given again once it has gone round the far side)
-    const at = pins.map(pin => {
-      const p = P(...unit(pin.lat, pin.lon));
-      if (p.d < -.3) pin.word = null;
-      else if (!pin.word && p.d > -.1) {
-        const used = new Set(pins.map(q => q.word));
-        let word = KEYWORDS[nextWord % KEYWORDS.length];
-        for (let i = 0; i < KEYWORDS.length && used.has(word); i++) word = KEYWORDS[++nextWord % KEYWORDS.length];
-        nextWord++; pin.word = word;
+    tg.lineWidth = 1; tg.lineCap = 'square';
+    for (const b of shown) {
+      const ax = b.x + b.w / 2, ay = b.y + b.h / 2, right = Math.cos(b.ang) >= 0, dir = right ? 1 : -1;
+      const tw = tg.measureText(b.word).width, w = Math.round(tw + 14), h = 22;
+      // (its end on the ellipse, but the tag kept inside the screen: on a narrow one, down its edges)
+      const py = cy + ry * Math.sin(b.ang), px = right ? Math.min(cx + rx * Math.cos(b.ang), W - M - w) : Math.max(cx + rx * Math.cos(b.ang), M + w);
+      const ex = px - dir * 18, alpha = Math.min(1, b.life * 2);
+      if (b.grow < 1) calling = true;
+      // the leader: anchor, out to the elbow, along to the tag; drawn out as far as it has grown
+      const legs = [[ax, ay], [ex, py], [px, py]];
+      const len = [Math.hypot(ex - ax, py - ay), Math.abs(px - ex)], total = len[0] + len[1];
+      let room = total * b.grow;
+      tg.globalAlpha = .75 * alpha; tg.strokeStyle = MAG;
+      tg.beginPath(); tg.moveTo(ax, ay);
+      for (let i = 0; i < 2 && room > 0; i++) {
+        const u = Math.min(1, room / Math.max(1e-3, len[i])), [x0, y0] = legs[i], [x1, y1] = legs[i + 1];
+        tg.lineTo(x0 + (x1 - x0) * u, y0 + (y1 - y0) * u); room -= len[i];
       }
-      return { pin, p };
-    });
-    // the arcs, pin to pin in turn, lifted off the globe midway (a great circle, slerped)
-    tg.strokeStyle = MAG;
-    const arcs = [];
-    for (let i = 0; i < pins.length; i++) {
-      const n = pins[(i + 1) % pins.length], a = unit(pins[i].lat, pins[i].lon), b = unit(n.lat, n.lon);
-      const om = Math.acos(Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])), so = Math.sin(om) || 1, pts = [];
-      for (let k = 0; k <= 28; k++) {
-        const u = k / 28, wa = Math.sin((1 - u) * om) / so, wb = Math.sin(u * om) / so;
-        pts.push(P(a[0] * wa + b[0] * wb, a[1] * wa + b[1] * wb, a[2] * wa + b[2] * wb, 1 + .22 * Math.sin(Math.PI * u) * om / Math.PI));
-      }
-      arcs.push(pts);
+      tg.stroke();
+      // the anchor: a ring round the bright place, a dot in it
+      tg.globalAlpha = alpha; tg.strokeStyle = ICE.pink; tg.fillStyle = ICE.pink;
+      tg.beginPath(); tg.arc(ax, ay, 5, 0, Math.PI * 2); tg.stroke();
+      tg.fillRect(Math.round(ax) - 1, Math.round(ay) - 1, 2, 2);
+      if (b.grow < 1) continue;
+      // the tag at the leader's end, its reading under it
+      const x0 = Math.round(right ? px : px - w), y0 = Math.round(py - h / 2);
+      tg.fillStyle = ICE.pink; tg.fillRect(x0, y0, w, h);
+      tg.fillStyle = '#fff'; tg.textAlign = 'center'; tg.textBaseline = 'middle';
+      tg.font = '500 13px "ABC Areal", sans-serif'; tg.fillText(b.word, x0 + w / 2, y0 + h / 2 + .5);
+      tg.font = '400 10px "ABC Areal", sans-serif'; tg.fillStyle = MAG; tg.textAlign = right ? 'left' : 'right'; tg.textBaseline = 'top';
+      tg.fillText(`T${String(b.id % 100).padStart(2, '0')}  ${(b.n / top).toFixed(2)}`, right ? x0 : x0 + w, y0 + h + 5);
+      tg.font = '500 13px "ABC Areal", sans-serif';
     }
-    runs(arcs, .7, .12);
-    // the pins themselves, the far ones first: a mark on the globe, a stem up from it, the tag on top
-    tg.font = '500 13px "ABC Areal", sans-serif'; tg.textAlign = 'center'; tg.textBaseline = 'middle';
-    for (const { pin, p } of at.sort((a, b) => a.p.d - b.p.d)) {
-      const fade = Math.min(1, Math.max(0, (p.d + .1) / .35));
-      tg.globalAlpha = Math.max(.18, fade);
-      tg.fillStyle = ICE.pink; tg.fillRect(Math.round(p.x) - 2, Math.round(p.y) - 2, 5, 5);
-      if (!pin.word || fade <= 0) continue;
-      const stem = Math.round(14 + 14 * fade), tw = tg.measureText(pin.word).width, w = Math.round(tw + 14), h = 22;
-      const tx = Math.round(p.x), ty = Math.round(p.y) - stem - h / 2;
-      tg.globalAlpha = fade;
-      tg.strokeStyle = ICE.pink; tg.beginPath(); tg.moveTo(tx + .5, Math.round(p.y) - 2); tg.lineTo(tx + .5, ty + h / 2); tg.stroke();
-      tg.fillRect(tx - Math.round(w / 2), ty - h / 2, w, h);
-      tg.fillStyle = '#fff'; tg.fillText(pin.word, tx, ty + .5);
-    }
-    tg.textAlign = 'left'; tg.textBaseline = 'alphabetic'; tg.globalAlpha = 1;
+    tg.textAlign = 'left'; tg.textBaseline = 'alphabetic'; tg.globalAlpha = 1; tg.lineCap = 'butt';
   }
 }
 
