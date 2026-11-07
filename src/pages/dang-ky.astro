@@ -476,6 +476,15 @@ main { container-type: inline-size; }
     gsap.to(lines, { y: 0, duration: 1.8, ease: 'expo.inOut', stagger: .12, delay: HOLD, onComplete: risen });
     gsap.to(rest, { autoAlpha: 1, duration: .8, ease: 'power2.out', stagger: .04, delay: HOLD + 1.15, clearProps: 'opacity,visibility',
       onStart: () => document.dispatchEvent(new Event('signup-lines')) });
+    // (where no frame is drawn, the entrance never runs: the page set out all the same, the title in place,
+    // the form, the QR and the rest shown, after twice the entrance's time)
+    setTimeout(() => {
+      if (h1.classList.contains('risen')) return;
+      gsap.killTweensOf([...lines, ...rest]);
+      gsap.set(rest, { clearProps: 'opacity,visibility' });
+      document.dispatchEvent(new Event('signup-lines'));
+      risen();
+    }, 4500);
   });
 </script>
 </body>
