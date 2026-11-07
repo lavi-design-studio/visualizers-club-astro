@@ -50,6 +50,16 @@ const KEYWORDS = ['WEBSITE', 'LANDING PAGE', 'HERO', 'LAYOUT', 'GRID', 'BREAKPOI
   'HTML', 'CSS', 'SCROLL', 'HOVER', 'INTERACTION', 'MOTION', 'ANIMATION', 'WEBGL', 'SHADER', '3D', 'CTA', 'SEO',
   'FIGMA', 'FIGMA → AI', 'CLAUDE', 'PROMPT', 'DEPLOY', 'DOMAIN', 'GO LIVE', 'QA', 'BRIEF', 'MOODBOARD', 'CONCEPT',
   'TENSION', 'NHỊP', 'CRITIQUE'].sort(() => Math.random() - .5);
+// the tracking's look: 'blobs' (the bright places on the ice, followed as a blob tracker does) or, to
+// try, ?track=globe: a globe round the rooster, turning with it, the keywords pinned on it
+const TRACK = new URLSearchParams(location.search).get('track') === 'globe' ? 'globe' : 'blobs';
+const GLOBE = {
+  R: .56,          // its radius, a share of the rooster's height
+  tilt: .36,       // how far it leans toward us (radians): seen a little from above, its rings ellipses
+  pins: 7,         // the keywords pinned on it
+  dots: 48,        // the small squares spread over it
+  lats: [-60, -30, 0, 30, 60], lons: 12,   // its lines
+};
 const IOR = { r: 1.15, y: 1.16, g: 1.18, c: 1.22, b: 1.22, v: 1.22 };
 
 const stage = document.getElementById('fanStage'), hero = document.getElementById('hero'), slot = document.getElementById('fanSlot'), fan = document.getElementById('fan'), finale = document.getElementById('finale');
@@ -487,13 +497,13 @@ async function build() {
     const cageOn = cage.visible;
     cage.visible = false;
     renderer.render(scene, camera);
-    if (tr > 0) { pgx.clearRect(0, 0, probe.width, probe.height); pgx.drawImage(canvas, 0, 0, probe.width, probe.height); }
+    if (tr > 0 && TRACK === 'blobs') { pgx.clearRect(0, 0, probe.width, probe.height); pgx.drawImage(canvas, 0, 0, probe.width, probe.height); }
     if (cageOn) {
       cage.visible = true; logo.visible = false; halo.visible = false;
       renderer.autoClear = false; renderer.render(scene, camera); renderer.autoClear = true;
       logo.visible = true;
     }
-    blobTrack(tr);
+    if (TRACK === 'globe') globeTrack(tr, yaw); else blobTrack(tr);
   });
 
   // ---- the tracking, as a blob tracker does it: each frame drawn small, its bright places found (a
@@ -608,6 +618,108 @@ async function build() {
     }
     tg.textAlign = 'left'; tg.textBaseline = 'alphabetic';
     tg.globalAlpha = 1;
+  }
+
+  // ---- the globe (?track=globe): a sphere round the rooster's mast, as big as the rooster, leaning
+  // toward us and turning with it; its rings and meridians hairlines (the far side faint, behind the
+  // ice), the keywords pinned on it with a stem and a pink tag, joined in turn by arcs lifted off its
+  // surface as a flight map draws them, and small squares spread over it. A pin that turns round to the
+  // far side gives up its keyword and comes back round with the next one ----
+  const pins = Array.from({ length: GLOBE.pins }, (_, i) => ({
+    lat: (-35 + Math.random() * 85) * Math.PI / 180, lon: (i / GLOBE.pins + (Math.random() - .5) * .08) * Math.PI * 2, word: null, id: i }));
+  const dots = Array.from({ length: GLOBE.dots }, (_, i) => {   // (a Fibonacci sphere: evenly spread)
+    const y = 1 - (i + .5) / GLOBE.dots * 2, r = Math.sqrt(1 - y * y), a = i * Math.PI * (3 - Math.sqrt(5));
+    return { x: Math.cos(a) * r, y, z: Math.sin(a) * r, s: .35 + .65 * Math.random() };
+  });
+  const unit = (lat, lon) => [Math.cos(lat) * Math.cos(lon), Math.sin(lat), Math.cos(lat) * Math.sin(lon)];
+  const pv = new THREE.Vector3();
+  function globeTrack(t, yaw) {
+    tg.clearRect(0, 0, W, H);
+    if (t < .5) return;   // (on or off with the hero half gone, as the tracking)
+    // (as big as GLOBE.R of the rooster, but kept inside the screen's width, as on a phone)
+    const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
+    const c = pivot.position, rk = Math.min(LOGO_H * GLOBE.R * pivot.scale.x, W * .45 / H * 2 * halfH);
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), ct = Math.cos(GLOBE.tilt), st = Math.sin(GLOBE.tilt);
+    // a point on (or, lift > 1, over) the globe, by its unit vector in the globe's frame, to the screen;
+    // d: how far round toward us it is, -1 (the far side) to 1
+    const P = (x, y, z, lift = 1) => {
+      const X = x * cy + z * sy, Z = -x * sy + z * cy;
+      const Y2 = y * ct - Z * st, Z2 = y * st + Z * ct;
+      pv.set(c.x + X * rk * lift, c.y + Y2 * rk * lift, c.z + Z2 * rk * lift).project(camera);
+      return { x: (pv.x + 1) / 2 * W, y: (1 - pv.y) / 2 * H, d: Z2 };
+    };
+    // runs of points stroked in two passes, the far side and then the near
+    const runs = (paths, nearA, farA) => {
+      for (const [near, a] of [[false, farA], [true, nearA]]) {
+        tg.globalAlpha = a; tg.beginPath();
+        for (const pts of paths) for (let i = 1; i < pts.length; i++) {
+          const p = pts[i - 1], q = pts[i];
+          if ((p.d + q.d > 0) !== near) continue;
+          tg.moveTo(p.x, p.y); tg.lineTo(q.x, q.y);
+        }
+        tg.stroke();
+      }
+    };
+    tg.lineWidth = 1; tg.strokeStyle = MAG;
+    const lines = [];
+    for (const deg of GLOBE.lats) {
+      const la = deg * Math.PI / 180, pts = [];
+      for (let i = 0; i <= 72; i++) pts.push(P(...unit(la, i / 72 * Math.PI * 2)));
+      lines.push(pts);
+    }
+    for (let j = 0; j < GLOBE.lons; j++) {
+      const lo = j / GLOBE.lons * Math.PI * 2, pts = [];
+      for (let i = 0; i <= 36; i++) pts.push(P(...unit(-Math.PI / 2 + i / 36 * Math.PI, lo)));
+      lines.push(pts);
+    }
+    runs(lines, .32, .08);
+    // the small squares, smaller and fainter round the far side
+    tg.strokeStyle = ICE.pink;
+    for (const o of dots) {
+      const p = P(o.x, o.y, o.z), near = (p.d + 1) / 2, q = Math.round((3 + 8 * o.s) * (.55 + .45 * near));
+      tg.globalAlpha = p.d > 0 ? 1 : .22;
+      tg.strokeRect(Math.round(p.x - q / 2) + .5, Math.round(p.y - q / 2) + .5, q, q);
+    }
+    // the pins: where each is now, and its keyword (given again once it has gone round the far side)
+    const at = pins.map(pin => {
+      const p = P(...unit(pin.lat, pin.lon));
+      if (p.d < -.3) pin.word = null;
+      else if (!pin.word && p.d > -.1) {
+        const used = new Set(pins.map(q => q.word));
+        let word = KEYWORDS[nextWord % KEYWORDS.length];
+        for (let i = 0; i < KEYWORDS.length && used.has(word); i++) word = KEYWORDS[++nextWord % KEYWORDS.length];
+        nextWord++; pin.word = word;
+      }
+      return { pin, p };
+    });
+    // the arcs, pin to pin in turn, lifted off the globe midway (a great circle, slerped)
+    tg.strokeStyle = MAG;
+    const arcs = [];
+    for (let i = 0; i < pins.length; i++) {
+      const n = pins[(i + 1) % pins.length], a = unit(pins[i].lat, pins[i].lon), b = unit(n.lat, n.lon);
+      const om = Math.acos(Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])), so = Math.sin(om) || 1, pts = [];
+      for (let k = 0; k <= 28; k++) {
+        const u = k / 28, wa = Math.sin((1 - u) * om) / so, wb = Math.sin(u * om) / so;
+        pts.push(P(a[0] * wa + b[0] * wb, a[1] * wa + b[1] * wb, a[2] * wa + b[2] * wb, 1 + .22 * Math.sin(Math.PI * u) * om / Math.PI));
+      }
+      arcs.push(pts);
+    }
+    runs(arcs, .7, .12);
+    // the pins themselves, the far ones first: a mark on the globe, a stem up from it, the tag on top
+    tg.font = '500 13px "ABC Areal", sans-serif'; tg.textAlign = 'center'; tg.textBaseline = 'middle';
+    for (const { pin, p } of at.sort((a, b) => a.p.d - b.p.d)) {
+      const fade = Math.min(1, Math.max(0, (p.d + .1) / .35));
+      tg.globalAlpha = Math.max(.18, fade);
+      tg.fillStyle = ICE.pink; tg.fillRect(Math.round(p.x) - 2, Math.round(p.y) - 2, 5, 5);
+      if (!pin.word || fade <= 0) continue;
+      const stem = Math.round(14 + 14 * fade), tw = tg.measureText(pin.word).width, w = Math.round(tw + 14), h = 22;
+      const tx = Math.round(p.x), ty = Math.round(p.y) - stem - h / 2;
+      tg.globalAlpha = fade;
+      tg.strokeStyle = ICE.pink; tg.beginPath(); tg.moveTo(tx + .5, Math.round(p.y) - 2); tg.lineTo(tx + .5, ty + h / 2); tg.stroke();
+      tg.fillRect(tx - Math.round(w / 2), ty - h / 2, w, h);
+      tg.fillStyle = '#fff'; tg.fillText(pin.word, tx, ty + .5);
+    }
+    tg.textAlign = 'left'; tg.textBaseline = 'alphabetic'; tg.globalAlpha = 1;
   }
 }
 
