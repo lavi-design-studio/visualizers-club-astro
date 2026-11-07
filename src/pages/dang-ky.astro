@@ -1,0 +1,305 @@
+---
+// The sign-up page: a place in the first season, nine at most. The form is sent to a Google Sheet by
+// its Apps Script web app (tools/signup-apps-script.gs: one row a sign-up, the ninth the last, a lock
+// so two at once never make a tenth), whose address goes in SIGNUP_URL below; the page asks it how
+// many places are taken as it opens. Set as the landing page is: black, the magenta, PP Neue World
+// and Migra for the title, ABC Areal for the small type on hairline rules. The bank's QR code is
+// public/assets/bank-qr.png (a frame says so while it is not there yet)
+const SIGNUP_URL = '';   // the Apps Script web app's address (…/exec)
+const CAP = 9;
+---
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Giữ chỗ · The Visualizers Club</title>
+<meta name="description" content="Đăng ký giữ chỗ cho mùa đầu tiên của The Visualizers Club: 9 chỗ, 5.000.000đ.">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://visualizers.lavidesign.studio/dang-ky">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Visualizers Club">
+<meta property="og:locale" content="vi_VN">
+<meta property="og:url" content="https://visualizers.lavidesign.studio/dang-ky">
+<meta property="og:title" content="Giữ chỗ · The Visualizers Club">
+<meta property="og:description" content="9 chỗ cho mùa đầu tiên. Điền tên, nick Discord và điều bạn muốn có sau khoá học.">
+<meta property="og:image" content="https://visualizers.lavidesign.studio/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="/fonts/PPNeueWorld-SemiExtendedUltralight.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/PPMigra-ExtralightItalic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/ABCAreal-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<script is:inline>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+<script is:inline defer src="/_vercel/insights/script.js"></script>
+<style is:global>
+@font-face { font-family: "PP Neue World"; src: url(/fonts/PPNeueWorld-SemiExtendedUltralight.woff2) format("woff2"); font-weight: 200; font-display: swap; }
+@font-face { font-family: "PP Migra"; src: url(/fonts/PPMigra-ExtralightItalic.woff2) format("woff2"); font-weight: 200; font-style: italic; font-display: swap; }
+@font-face { font-family: "ABC Areal"; src: url(/fonts/ABCAreal-Regular.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "ABC Areal"; src: url(/fonts/ABCAreal-Medium.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+:root { --ground: #000; --magenta: #c239c7; --ink: #fff; color-scheme: dark; }
+* { box-sizing: border-box; }
+html { background: var(--ground); }
+body {
+  margin: 0; background: var(--ground); color: var(--magenta);
+  font: 400 16px/1.2 "ABC Areal", system-ui, sans-serif; text-transform: uppercase; letter-spacing: -.01em;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, p, ol, ul, fieldset, legend { margin: 0; padding: 0; font: inherit; border: 0; }
+ol, ul { list-style: none; }
+a { color: inherit; text-underline-position: from-font; }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.serif { font-family: "PP Migra", serif; font-style: italic; font-weight: 200; letter-spacing: -.01em; }
+.display { font-family: "PP Neue World", serif; font-weight: 200; line-height: 1; letter-spacing: -.02em; }
+
+/* the page on the landing page's grid: 12 columns, the margins and gutters 16 at 1728, scaled */
+.page {
+  --px: calc(100vw / 1728); --gap: max(16px, calc(16 * var(--px)));
+  --f20: max(14px, calc(20 * var(--px))); --f40: max(22px, calc(40 * var(--px)));
+  --f160: clamp(48px, calc(160 * var(--px)), 200px);
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap);
+  padding: 0 var(--gap) max(var(--gap), env(safe-area-inset-bottom, 0px)); min-height: 100svh; align-content: start;
+}
+.bar { grid-column: 1 / -1; display: flex; justify-content: space-between; padding-top: max(21px, calc(21 * var(--px))); font-size: max(12px, calc(16 * var(--px))); }
+.bar a { text-decoration: none; }
+.bar a:hover { text-decoration: underline; }
+
+/* the title, the hero's size, and the places: nine squares, the taken ones filled */
+.head { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: end; margin-top: calc(120 * var(--px) + 32px); }
+.head h1 { grid-column: 1 / span 8; font-size: var(--f160); display: flex; flex-direction: column; gap: calc(16 * var(--px)); }
+.head h1 .serif { padding-left: 1.2em; }
+.places { grid-column: 9 / -1; display: flex; flex-direction: column; gap: 12px; align-items: flex-end; font-size: var(--f20); }
+.places ol { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; width: min(100%, 360px); }
+.places li { aspect-ratio: 1; border: 1px solid var(--magenta); position: relative; transition: background-color .5s; }
+.places li.taken { background: var(--magenta); }
+.places li span { position: absolute; left: 4px; bottom: 3px; font-size: 10px; color: var(--magenta); }
+.places li.taken span { color: #000; }
+.places .left { font-family: "PP Neue World", serif; font-weight: 200; font-size: var(--f40); letter-spacing: -.02em; }
+
+.rule { grid-column: 1 / -1; height: 1px; background: var(--magenta); margin-top: calc(48 * var(--px) + 16px); }
+
+/* the steps, each a label in the left columns and its body on the right, on hairlines */
+.step { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding-block: calc(40 * var(--px) + 16px); border-bottom: 1px solid var(--magenta); }
+.step > h2 { grid-column: 1 / span 3; font-size: var(--f20); display: flex; gap: .6em; align-items: baseline; }
+.step > h2 .serif { font-size: 1.1em; }
+.step > .body { grid-column: 5 / -1; }
+
+/* the fields: a label, then the line to write on */
+.field { display: grid; gap: 10px; padding-block: 0 28px; }
+.field + .field { padding-top: 4px; }
+.field label { font-size: var(--f20); display: flex; justify-content: space-between; gap: 1em; }
+.field label small { font-size: 12px; opacity: .6; }
+.field input, .field textarea {
+  width: 100%; background: transparent; color: var(--ink); border: 0; border-bottom: 1px solid var(--magenta); border-radius: 0;
+  padding: 8px 0 10px; font: 400 max(18px, calc(24 * var(--px)))/1.3 "ABC Areal", system-ui, sans-serif; letter-spacing: -.01em; text-transform: none;
+  caret-color: var(--magenta); resize: vertical; appearance: none;
+}
+.field textarea { min-height: 7.5em; line-height: 1.5; background-image: repeating-linear-gradient(transparent 0 calc(1.5em - 1px), rgba(194, 57, 199, .35) calc(1.5em - 1px) 1.5em); background-attachment: local; }
+.field input::placeholder, .field textarea::placeholder { color: rgba(194, 57, 199, .45); }
+.field input:focus, .field textarea:focus { outline: none; border-bottom-width: 2px; padding-bottom: 9px; }
+.field input:focus-visible, .field textarea:focus-visible { outline: none; }
+.field [aria-invalid="true"] { border-bottom-color: #ff4d8d; }
+.trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+/* the payment: the bank's QR in a magenta frame, the amount and what to write beside it */
+.pay { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: calc(32 * var(--px) + 16px); align-items: start; }
+.qr { aspect-ratio: 1; border: 1px solid var(--magenta); padding: 12px; background: #fff; position: relative; }
+.qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.qr .none { position: absolute; inset: 0; display: grid; place-items: center; background: #000; text-align: center; padding: 16px; font-size: 13px; line-height: 1.4; }
+.amount { display: grid; gap: 16px; font-size: var(--f20); }
+.amount .was { font-family: "PP Migra", serif; font-style: italic; font-weight: 200; font-size: var(--f40); text-decoration: line-through; text-decoration-thickness: 1px; }
+.amount .now { font-size: clamp(40px, calc(96 * var(--px)), 120px); }
+.amount dl { display: grid; grid-template-columns: auto 1fr; gap: 10px 24px; margin: 8px 0 0; }
+.amount dt { opacity: .7; }
+.amount dd { margin: 0; color: var(--ink); text-transform: none; }
+.amount dd b { font-weight: 500; }
+
+/* the send: a magenta plate, black type, turned about under the pointer, as the landing page's */
+.send { grid-column: 5 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding-top: calc(40 * var(--px) + 16px); }
+.send button {
+  display: inline-flex; align-items: center; gap: .5em; min-height: 56px; padding: 0 28px;
+  background: var(--magenta); color: #000; border: 0; box-shadow: inset 0 0 0 1px var(--magenta); border-radius: 0;
+  font: 500 var(--f20)/1 "ABC Areal", system-ui, sans-serif; text-transform: uppercase; letter-spacing: -.01em; cursor: pointer;
+  transition: background-color .25s, color .25s;
+}
+.send button .serif { font-weight: 200; }
+.send button:hover:not(:disabled) { background: #000; color: var(--magenta); }
+.send button:disabled { opacity: .45; cursor: not-allowed; }
+.status { font-size: var(--f20); min-height: 1.2em; max-width: 36em; line-height: 1.4; }
+.status.good { color: var(--ink); }
+.status.bad { color: #ff4d8d; }
+
+/* when the nine are taken, or once you have signed up: the form put away, a word in its place */
+.done { grid-column: 1 / -1; padding-block: calc(80 * var(--px) + 24px); display: grid; grid-template-columns: subgrid; }
+.done h2 { grid-column: 1 / span 8; font-size: clamp(40px, calc(96 * var(--px)), 120px); }
+.done p { grid-column: 9 / -1; align-self: end; font-size: var(--f20); line-height: 1.4; }
+
+.foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; padding-top: calc(80 * var(--px) + 24px); font-size: var(--f20); }
+.foot ul { display: flex; gap: 24px; }
+.foot .serif { text-transform: none; }
+
+@media (max-width: 899px) {
+  .page { --px: calc(100vw / 768); }
+  .head h1 { grid-column: 1 / -1; }
+  .places { grid-column: 1 / -1; align-items: flex-start; margin-top: 32px; }
+  .step > h2 { grid-column: 1 / -1; margin-bottom: 24px; }
+  .step > .body, .send { grid-column: 1 / -1; }
+  .done h2, .done p { grid-column: 1 / -1; }
+  .done p { margin-top: 24px; }
+}
+@media (max-width: 599px) {
+  .head { margin-top: 64px; }
+  .head h1 .serif { padding-left: .6em; }
+  .pay { grid-template-columns: 1fr; }
+  .qr { max-width: 280px; }
+  .send button { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <nav class="bar" aria-label="Điều hướng">
+    <a href="/">← The Visualizers Club</a>
+    <span>Mùa đầu tiên · 11 (2026)</span>
+  </nav>
+
+  <header class="head">
+    <h1 class="display"><span>giữ chỗ</span><span class="serif">mùa đầu tiên</span></h1>
+    <div class="places" aria-live="polite">
+      <ol aria-hidden="true">{Array.from({ length: CAP }, (_, i) => <li><span>{String(i + 1).padStart(2, '0')}</span></li>)}</ol>
+      <p><span class="left" data-left>(0{CAP})</span> <span data-left-word>chỗ còn trống</span></p>
+    </div>
+  </header>
+  <div class="rule" aria-hidden="true"></div>
+
+  <form class="form" data-form novalidate style="display: contents">
+    <section class="step" aria-labelledby="s1">
+      <h2 id="s1"><span class="serif">(1)</span> thông tin của bạn</h2>
+      <div class="body">
+        <div class="field">
+          <label for="name">Tên <small>như bạn muốn được gọi</small></label>
+          <input id="name" name="name" autocomplete="name" required maxlength="80" placeholder="Nguyễn Văn A">
+        </div>
+        <div class="field">
+          <label for="discord">Nick Discord <small>để thầy thêm bạn vào lớp</small></label>
+          <input id="discord" name="discord" autocomplete="off" autocapitalize="off" spellcheck="false" required maxlength="40" placeholder="vd. lavi.designer">
+        </div>
+        <div class="field">
+          <label for="wish">Mong muốn khi tham gia <small>bạn muốn làm được gì sau khoá học</small></label>
+          <textarea id="wish" name="wish" required maxlength="1000" rows="5" placeholder="Mình muốn tự dựng được website portfolio, hiểu vì sao một bố cục đẹp…"></textarea>
+        </div>
+        <input class="trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      </div>
+    </section>
+
+    <section class="step" aria-labelledby="s2">
+      <h2 id="s2"><span class="serif">(2)</span> chuyển khoản</h2>
+      <div class="body pay">
+        <figure class="qr" style="margin: 0">
+          <img src="/assets/bank-qr.png" alt="Mã QR chuyển khoản ngân hàng" width="600" height="600" data-qr>
+          <p class="none" data-qr-none hidden>QR ngân hàng<br>sẽ có ở đây</p>
+        </figure>
+        <div class="amount">
+          <p class="was"><span class="sr-only">Giá gốc </span>8.000.000đ</p>
+          <p class="now display">5.000.000đ</p>
+          <p>ưu đãi cho mùa đầu tiên</p>
+          <dl>
+            <dt>Nội dung</dt><dd><b data-memo>VSC tên Discord của bạn</b></dd>
+            <dt>Sau khi chuyển</dt><dd>Thầy xác nhận qua Discord trong 24 giờ</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <div class="send">
+      <button type="submit" data-send>gửi đăng ký <span class="serif">(→)</span></button>
+      <p class="status" role="status" data-status></p>
+    </div>
+  </form>
+
+  <section class="done" data-done hidden aria-live="polite">
+    <h2 class="display" data-done-title>đã đủ 9 bạn</h2>
+    <p data-done-text>Mùa đầu tiên đã kín chỗ. Theo dõi Discord để biết khi nào mở lớp sau.</p>
+  </section>
+
+  <footer class="foot">
+    <p>liên hệ qua</p>
+    <ul>
+      <li><a href="https://www.facebook.com/Lavi.Designer" target="_blank" rel="noopener" class="serif">(FB)</a></li>
+      <li><a href="https://www.instagram.com/lavi.uidesigner/" target="_blank" rel="noopener" class="serif">(IG)</a></li>
+      <li><a href="https://discord.gg/PnndZMQuf" target="_blank" rel="noopener" class="serif">(DC)</a></li>
+    </ul>
+  </footer>
+</main>
+
+<script define:vars={{ SIGNUP_URL, CAP }}>
+  const $ = s => document.querySelector(s);
+  const form = $('[data-form]'), send = $('[data-send]'), status = $('[data-status]'), done = $('[data-done]');
+  const boxes = [...document.querySelectorAll('.places li')];
+  // the QR's frame says so while the image is not there yet
+  const qr = $('[data-qr]');
+  const noQr = () => { qr.hidden = true; $('[data-qr-none]').hidden = false; };
+  if (qr.complete && !qr.naturalWidth) noQr(); else qr.addEventListener('error', noQr);
+  // the memo follows the Discord nick as it is typed
+  const memo = $('[data-memo]');
+  $('#discord').addEventListener('input', e => { const v = e.target.value.trim(); memo.textContent = v ? `VSC ${v}` : 'VSC tên Discord của bạn'; });
+
+  const say = (text, kind = '') => { status.textContent = text; status.className = `status ${kind}`; };
+  // the places: the taken ones filled, the number left in the corner
+  const show = taken => {
+    const t = Math.min(CAP, Math.max(0, taken | 0)), left = CAP - t;
+    boxes.forEach((b, i) => b.classList.toggle('taken', i < t));
+    $('[data-left]').textContent = `(${String(left).padStart(2, '0')})`;
+    $('[data-left-word]').textContent = left ? 'chỗ còn trống' : 'hết chỗ';
+    return left;
+  };
+  const close = (title, text) => {
+    form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = true; });
+    for (const s of form.querySelectorAll('.step, .send')) s.hidden = true;
+    $('[data-done-title]').textContent = title; $('[data-done-text]').textContent = text;
+    done.hidden = false;
+  };
+  const full = () => close(`đã đủ ${CAP} bạn`, 'Mùa đầu tiên đã kín chỗ. Theo dõi Discord để biết khi nào mở lớp sau.');
+
+  if (!SIGNUP_URL) {
+    send.disabled = true;
+    say('Form sắp mở. Trong lúc chờ, nhắn thầy qua Discord để giữ chỗ.');
+  } else {
+    fetch(SIGNUP_URL).then(r => r.json()).then(d => { if (show(d.taken) <= 0) full(); }).catch(() => {});
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!SIGNUP_URL) return;
+    const data = Object.fromEntries(new FormData(form));
+    let bad = null;
+    for (const name of ['name', 'discord', 'wish']) {
+      const el = form.elements[name], empty = !String(data[name] || '').trim();
+      el.setAttribute('aria-invalid', String(empty));
+      if (empty && !bad) bad = el;
+    }
+    if (bad) { bad.focus(); say('Điền đủ tên, nick Discord và mong muốn của bạn nhé.', 'bad'); return; }
+    send.disabled = true; say('Đang gửi…');
+    try {
+      // (text/plain, so the browser sends it straight, with no preflight the script would not answer)
+      const r = await fetch(SIGNUP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
+      const d = await r.json();
+      if (d.ok) {
+        show(d.taken);
+        window.va?.('event', { name: 'signup' });
+        close('đã giữ chỗ', `Cảm ơn ${data.name.trim()}. Chuyển khoản theo QR với nội dung "VSC ${data.discord.trim()}", thầy sẽ xác nhận qua Discord trong 24 giờ.`);
+        // (the payment stays in view under the word, the QR to pay by)
+        const pay = form.querySelectorAll('.step')[1]; pay.hidden = false; done.after(pay);
+      } else if (d.error === 'full') { show(CAP); full(); }
+      else if (d.error === 'dup') { send.disabled = false; say('Nick Discord này đã đăng ký rồi. Nếu là nhầm lẫn, nhắn thầy qua Discord.', 'bad'); }
+      else { send.disabled = false; say('Thiếu thông tin, kiểm tra lại các ô nhé.', 'bad'); }
+    } catch {
+      send.disabled = false; say('Chưa gửi được. Thử lại sau ít phút, hoặc nhắn thầy qua Discord.', 'bad');
+    }
+  });
+</script>
+</body>
+</html>
