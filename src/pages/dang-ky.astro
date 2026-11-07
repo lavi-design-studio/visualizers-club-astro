@@ -4,7 +4,8 @@
 // so two at once never make a tenth), whose address goes in SIGNUP_URL below; the page asks it how
 // many places are taken as it opens. Set as the landing page is: black, the magenta, PP Neue World
 // and Migra for the title, ABC Areal for the small type on hairline rules. The bank's QR code is
-// public/assets/bank-qr.png (a frame says so while it is not there yet)
+// public/assets/bank-qr.png (a frame says so while it is not there yet). Laid on the landing page's grid:
+// each row's label in columns 4-5, its body from column 6, the title centred as the hero's
 const SIGNUP_URL = '';   // the Apps Script web app's address (…/exec)
 const CAP = 9;
 ---
@@ -39,122 +40,147 @@ const CAP = 9;
 @font-face { font-family: "ABC Areal"; src: url(/fonts/ABCAreal-Medium.woff2) format("woff2"); font-weight: 500; font-display: swap; }
 :root { --ground: #000; --magenta: #c239c7; --ink: #fff; color-scheme: dark; }
 * { box-sizing: border-box; }
-html { background: var(--ground); }
+html { background: var(--ground); scrollbar-gutter: stable; }
 body {
   margin: 0; background: var(--ground); color: var(--magenta);
-  font: 400 16px/1.2 "ABC Areal", system-ui, sans-serif; text-transform: uppercase; letter-spacing: -.01em;
-  -webkit-font-smoothing: antialiased;
+  font: 400 16px/1 "ABC Areal", system-ui, sans-serif; text-transform: uppercase;
+  overflow-x: clip; -webkit-font-smoothing: antialiased;
 }
-h1, h2, p, ol, ul, fieldset, legend { margin: 0; padding: 0; font: inherit; border: 0; }
+h1, h2, p, ol, ul, dl, dd, figure { margin: 0; padding: 0; font: inherit; }
 ol, ul { list-style: none; }
 a { color: inherit; text-underline-position: from-font; }
 :focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .serif { font-family: "PP Migra", serif; font-style: italic; font-weight: 200; letter-spacing: -.01em; }
-.display { font-family: "PP Neue World", serif; font-weight: 200; line-height: 1; letter-spacing: -.02em; }
+.display { font-family: "PP Neue World", serif; font-weight: 200; line-height: 1; }
+/* text sits on its caps, as the landing page trims it (Figma's) */
+main :is(h1, h2, p, li, dt, dd, label, .line, .cap) { text-box: trim-both cap alphabetic; }
 
-/* the page on the landing page's grid: 12 columns, the margins and gutters 16 at 1728, scaled */
+/* the landing page's grid and its sizes (landing.css): 1728 wide, 12 columns, 16 margins and gutters,
+   every length in --px; the small type 20, the titles 160 (the hero's, smaller where the screen is
+   short for it), the larger small type 40 */
+main { container-type: inline-size; }
 .page {
-  --px: calc(100vw / 1728); --gap: max(16px, calc(16 * var(--px)));
-  --f20: max(14px, calc(20 * var(--px))); --f40: max(22px, calc(40 * var(--px)));
-  --f160: clamp(48px, calc(160 * var(--px)), 200px);
+  --px: calc(100cqi / 1728); --tpx: min(100cqi / 1728, 100svh / 1117);
+  --gap: calc(16 * var(--px));
+  --f16: max(11px, calc(16 * var(--px)));
+  --f20: max(12px, calc(20 * var(--px)));
+  --f40: max(20px, calc(40 * var(--px)));
+  --f160: calc(160 * var(--tpx));
   display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap);
-  padding: 0 var(--gap) max(var(--gap), env(safe-area-inset-bottom, 0px)); min-height: 100svh; align-content: start;
+  padding: 0 var(--gap) max(var(--gap), env(safe-area-inset-bottom, 0px)); align-content: start; position: relative;
 }
-.bar { grid-column: 1 / -1; display: flex; justify-content: space-between; padding-top: max(21px, calc(21 * var(--px))); font-size: max(12px, calc(16 * var(--px))); }
-.bar a { text-decoration: none; }
-.bar a:hover { text-decoration: underline; }
+/* the hero's bar: its corners 21 down */
+.bar { position: absolute; top: calc(21 * var(--px)); left: var(--gap); right: var(--gap); display: flex; justify-content: space-between; font-size: var(--f16); letter-spacing: -.02em; }
+.bar a { position: relative; }
+.bar a::before { content: ""; position: absolute; inset: -8px; }
+/* the title as the hero's: centred on the page, 16 between its lines (columns 2 to 11: its Migra line
+   is wider than the hero's 4 to 9), each line whole */
+.title { grid-column: 2 / span 10; white-space: nowrap; margin-top: calc(21 * var(--px) + 64px); font-size: var(--f160); display: flex; flex-direction: column; gap: .3em; text-align: center; letter-spacing: 0; }   /* (more than the hero's 16: the Vietnamese marks over the second line need it) */
+.title .serif { letter-spacing: -.01em; }
 
-/* the title, the hero's size, and the places: nine squares, the taken ones filled */
-.head { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: end; margin-top: calc(120 * var(--px) + 32px); }
-.head h1 { grid-column: 1 / span 8; font-size: var(--f160); display: flex; flex-direction: column; gap: calc(16 * var(--px)); }
-.head h1 .serif { padding-left: 1.2em; }
-.places { grid-column: 9 / -1; display: flex; flex-direction: column; gap: 12px; align-items: flex-end; font-size: var(--f20); }
-.places ol { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; width: min(100%, 360px); }
-.places li { aspect-ratio: 1; border: 1px solid var(--magenta); position: relative; transition: background-color .5s; }
+/* the rows: a hairline across the page, the label two columns to the left of the body (columns 4-5),
+   the body from column 6 (as the price's "cái giá phải trả" and the footer's "liên hệ qua") */
+.row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: relative; padding-block: calc(32 * var(--px)) calc(64 * var(--px)); }
+.row::before { content: ""; position: absolute; left: calc(-1 * var(--gap)); right: calc(-1 * var(--gap)); top: 0; height: 1px; background: var(--magenta); }
+.places { margin-top: calc(120 * var(--px)); }
+.label { grid-column: 4 / span 2; font-size: var(--f20); letter-spacing: -.02em; line-height: 1.2; }
+.label .serif { margin-right: .4em; }
+.body { grid-column: 6 / span 6; }
+
+/* the places: nine squares, the taken ones filled, and how many are left */
+.places .body { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--gap); }
+.places ol { display: grid; grid-template-columns: repeat(9, calc(48 * var(--px) + 12px)); gap: calc(8 * var(--px)); }
+.places li { aspect-ratio: 1; border: 1px solid var(--magenta); position: relative; transition: background-color .5s; text-box: normal; }
 .places li.taken { background: var(--magenta); }
-.places li span { position: absolute; left: 4px; bottom: 3px; font-size: 10px; color: var(--magenta); }
+.places li span { position: absolute; left: 4px; bottom: 4px; font-size: 10px; line-height: 1; }
 .places li.taken span { color: #000; }
-.places .left { font-family: "PP Neue World", serif; font-weight: 200; font-size: var(--f40); letter-spacing: -.02em; }
+.places p { font-size: var(--f20); letter-spacing: -.02em; white-space: nowrap; }
+.places .left { font-family: "PP Neue World", serif; font-weight: 200; font-size: var(--f40); letter-spacing: -.02em; margin-right: .2em; }
 
-.rule { grid-column: 1 / -1; height: 1px; background: var(--magenta); margin-top: calc(48 * var(--px) + 16px); }
-
-/* the steps, each a label in the left columns and its body on the right, on hairlines */
-.step { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding-block: calc(40 * var(--px) + 16px); border-bottom: 1px solid var(--magenta); }
-.step > h2 { grid-column: 1 / span 3; font-size: var(--f20); display: flex; gap: .6em; align-items: baseline; }
-.step > h2 .serif { font-size: 1.1em; }
-.step > .body { grid-column: 5 / -1; }
-
-/* the fields: a label, then the line to write on */
-.field { display: grid; gap: 10px; padding-block: 0 28px; }
-.field + .field { padding-top: 4px; }
-.field label { font-size: var(--f20); display: flex; justify-content: space-between; gap: 1em; }
-.field label small { font-size: 12px; opacity: .6; }
+/* the fields: their name in the small type, the line to write on under it */
+.field { display: grid; gap: calc(16 * var(--px) + 6px); }
+.field + .field { margin-top: calc(40 * var(--px) + 8px); }
+.field label { font-size: var(--f20); letter-spacing: -.02em; display: flex; justify-content: space-between; gap: 1em; }
+.field label small { font-size: var(--f16); opacity: .6; }
 .field input, .field textarea {
   width: 100%; background: transparent; color: var(--ink); border: 0; border-bottom: 1px solid var(--magenta); border-radius: 0;
-  padding: 8px 0 10px; font: 400 max(18px, calc(24 * var(--px)))/1.3 "ABC Areal", system-ui, sans-serif; letter-spacing: -.01em; text-transform: none;
+  padding: 4px 0 10px; font: 400 max(17px, calc(24 * var(--px)))/1.3 "ABC Areal", system-ui, sans-serif; letter-spacing: -.01em; text-transform: none;
   caret-color: var(--magenta); resize: vertical; appearance: none;
 }
-.field textarea { min-height: 7.5em; line-height: 1.5; background-image: repeating-linear-gradient(transparent 0 calc(1.5em - 1px), rgba(194, 57, 199, .35) calc(1.5em - 1px) 1.5em); background-attachment: local; }
+.field textarea { min-height: 7.8em; line-height: 1.5; padding-top: 0; background-image: repeating-linear-gradient(transparent 0 calc(1.5em - 1px), rgba(194, 57, 199, .35) calc(1.5em - 1px) 1.5em); background-attachment: local; }
 .field input::placeholder, .field textarea::placeholder { color: rgba(194, 57, 199, .45); }
 .field input:focus, .field textarea:focus { outline: none; border-bottom-width: 2px; padding-bottom: 9px; }
-.field input:focus-visible, .field textarea:focus-visible { outline: none; }
 .field [aria-invalid="true"] { border-bottom-color: #ff4d8d; }
 .trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 
-/* the payment: the bank's QR in a magenta frame, the amount and what to write beside it */
-.pay { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: calc(32 * var(--px) + 16px); align-items: start; }
-.qr { aspect-ratio: 1; border: 1px solid var(--magenta); padding: 12px; background: #fff; position: relative; }
+/* the payment, as the price's own block: the QR two columns wide, the old price and the new beside it */
+.pay .body { display: grid; grid-template-columns: subgrid; grid-column: 6 / span 6; }
+.qr { grid-column: 1 / span 2; aspect-ratio: 1; border: 1px solid var(--magenta); padding: calc(12 * var(--px) + 4px); background: #fff; position: relative; align-self: start; }
 .qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.qr .none { position: absolute; inset: 0; display: grid; place-items: center; background: #000; text-align: center; padding: 16px; font-size: 13px; line-height: 1.4; }
-.amount { display: grid; gap: 16px; font-size: var(--f20); }
-.amount .was { font-family: "PP Migra", serif; font-style: italic; font-weight: 200; font-size: var(--f40); text-decoration: line-through; text-decoration-thickness: 1px; }
-.amount .now { font-size: clamp(40px, calc(96 * var(--px)), 120px); }
-.amount dl { display: grid; grid-template-columns: auto 1fr; gap: 10px 24px; margin: 8px 0 0; }
+.qr .none { position: absolute; inset: 0; display: grid; place-items: center; background: #000; text-align: center; padding: 12px; font-size: var(--f16); line-height: 1.4; text-box: normal; }
+.amount { grid-column: 3 / -1; display: flex; flex-direction: column; gap: var(--gap); }
+.amount .was { font-family: "PP Migra", serif; font-style: italic; font-weight: 200; font-size: var(--f40); text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-skip-ink: none; }
+.amount .now { font-size: calc(96 * var(--px)); letter-spacing: -.02em; }
+.amount .terms { font-size: var(--f20); letter-spacing: -.02em; }
+.amount dl { display: grid; grid-template-columns: max-content 1fr; gap: calc(12 * var(--px) + 4px) var(--gap); margin-top: calc(16 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; }
 .amount dt { opacity: .7; }
-.amount dd { margin: 0; color: var(--ink); text-transform: none; }
+.amount dd { color: var(--ink); text-transform: none; }
 .amount dd b { font-weight: 500; }
 
-/* the send: a magenta plate, black type, turned about under the pointer, as the landing page's */
-.send { grid-column: 5 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding-top: calc(40 * var(--px) + 16px); }
+/* the send: the price's button, a magenta plate, black type, turned about under the pointer */
+.send { padding-bottom: calc(96 * var(--px)); }
+.send .body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap) calc(24 * var(--px) + 8px); }
 .send button {
-  display: inline-flex; align-items: center; gap: .5em; min-height: 56px; padding: 0 28px;
+  display: inline-flex; align-items: center; gap: .5em; min-height: 48px; padding: 0 max(16px, calc(24 * var(--px)));
   background: var(--magenta); color: #000; border: 0; box-shadow: inset 0 0 0 1px var(--magenta); border-radius: 0;
-  font: 500 var(--f20)/1 "ABC Areal", system-ui, sans-serif; text-transform: uppercase; letter-spacing: -.01em; cursor: pointer;
+  font: 400 var(--f20)/1 "ABC Areal", system-ui, sans-serif; text-transform: uppercase; letter-spacing: -.02em; cursor: pointer;
   transition: background-color .25s, color .25s;
 }
-.send button .serif { font-weight: 200; }
 .send button:hover:not(:disabled) { background: #000; color: var(--magenta); }
 .send button:disabled { opacity: .45; cursor: not-allowed; }
-.status { font-size: var(--f20); min-height: 1.2em; max-width: 36em; line-height: 1.4; }
+.status { font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; max-width: 34em; text-box: normal; }
 .status.good { color: var(--ink); }
 .status.bad { color: #ff4d8d; }
 
-/* when the nine are taken, or once you have signed up: the form put away, a word in its place */
-.done { grid-column: 1 / -1; padding-block: calc(80 * var(--px) + 24px); display: grid; grid-template-columns: subgrid; }
-.done h2 { grid-column: 1 / span 8; font-size: clamp(40px, calc(96 * var(--px)), 120px); }
-.done p { grid-column: 9 / -1; align-self: end; font-size: var(--f20); line-height: 1.4; }
+/* once signed up, or the nine taken: a word at the size of the price, in the body's columns */
+.done h2 { font-size: calc(96 * var(--px)); letter-spacing: -.02em; }
+.done p { margin-top: calc(32 * var(--px) + 8px); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; max-width: 30em; text-box: normal; }
 
-.foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; padding-top: calc(80 * var(--px) + 24px); font-size: var(--f20); }
-.foot ul { display: flex; gap: 24px; }
-.foot .serif { text-transform: none; }
+/* the footer's contacts: "liên hệ qua" two columns to the left of the links, which are the footer's own */
+.foot ul { display: grid; grid-template-columns: subgrid; grid-column: 6 / -1; }
+.foot li { font-size: var(--f40); letter-spacing: -.05em; }
+.foot li a { text-decoration: none; }
+.foot li a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
 
+/* a tablet and a phone: the columns stacked, as the landing page's (16 margins; the title 80 and 48;
+   the small type 14 and 16), each row's label over its body */
 @media (max-width: 899px) {
-  .page { --px: calc(100vw / 768); }
-  .head h1 { grid-column: 1 / -1; }
-  .places { grid-column: 1 / -1; align-items: flex-start; margin-top: 32px; }
-  .step > h2 { grid-column: 1 / -1; margin-bottom: 24px; }
-  .step > .body, .send { grid-column: 1 / -1; }
-  .done h2, .done p { grid-column: 1 / -1; }
-  .done p { margin-top: 24px; }
+  .page { --gap: 16px; --f16: 12px; --f20: 14px; --f40: 24px; display: flex; flex-direction: column; padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+  .bar { position: static; margin-top: max(16px, env(safe-area-inset-top, 0px)); }
+  .title { margin-top: 48px; font-size: 80px; letter-spacing: -.02em; }
+  .title .serif { letter-spacing: -.04em; }
+  .row { display: flex; flex-direction: column; gap: 24px; padding-block: 24px 48px; }
+  .places { margin-top: 64px; }
+  .places .body { flex-direction: column; align-items: flex-start; }
+  .places ol { grid-template-columns: repeat(9, minmax(0, 1fr)); width: 100%; max-width: 480px; gap: 6px; }
+  .field + .field { margin-top: 32px; }
+  .field input, .field textarea { font-size: 18px; }
+  .pay .body { display: flex; flex-direction: column; gap: 32px; }
+  .qr { width: min(100%, 280px); padding: 12px; }
+  .amount .now, .done h2 { font-size: 64px; }
+  .amount dl { margin-top: 8px; gap: 10px 16px; }
+  .send { padding-bottom: 64px; }
+  .foot ul { display: flex; gap: 32px; }
 }
 @media (max-width: 599px) {
-  .head { margin-top: 64px; }
-  .head h1 .serif { padding-left: .6em; }
-  .pay { grid-template-columns: 1fr; }
-  .qr { max-width: 280px; }
+  .page { --f16: 12px; --f20: 16px; }
+  .title { font-size: 48px; }
+  .amount .now, .done h2 { font-size: 44px; }
+  .field label { flex-direction: column; gap: 8px; }
   .send button { width: 100%; justify-content: center; }
+  :root main :is(p, li, span, a, label, dt, dd, button):not(.serif, .serif *, .display, .display *) { letter-spacing: -.01em; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -162,22 +188,23 @@ a { color: inherit; text-underline-position: from-font; }
 <body>
 <main class="page">
   <nav class="bar" aria-label="Điều hướng">
-    <a href="/">← The Visualizers Club</a>
-    <span>Mùa đầu tiên · 11 (2026)</span>
+    <span>© 2026</span>
+    <a href="/">trang chủ</a>
   </nav>
 
-  <header class="head">
-    <h1 class="display"><span>giữ chỗ</span><span class="serif">mùa đầu tiên</span></h1>
-    <div class="places" aria-live="polite">
-      <ol aria-hidden="true">{Array.from({ length: CAP }, (_, i) => <li><span>{String(i + 1).padStart(2, '0')}</span></li>)}</ol>
-      <p><span class="left" data-left>(0{CAP})</span> <span data-left-word>chỗ còn trống</span></p>
-    </div>
-  </header>
-  <div class="rule" aria-hidden="true"></div>
+  <h1 class="title display"><span class="line">giữ chỗ</span><span class="line serif">mùa đầu tiên</span></h1>
 
-  <form class="form" data-form novalidate style="display: contents">
-    <section class="step" aria-labelledby="s1">
-      <h2 id="s1"><span class="serif">(1)</span> thông tin của bạn</h2>
+  <section class="row places" aria-label="Số chỗ">
+    <p class="label"><span class="serif">(*)</span>số chỗ</p>
+    <div class="body" aria-live="polite">
+      <ol aria-hidden="true">{Array.from({ length: CAP }, (_, i) => <li><span>{String(i + 1).padStart(2, '0')}</span></li>)}</ol>
+      <p><span class="left" data-left>(0{CAP})</span><span data-left-word>chỗ còn trống</span></p>
+    </div>
+  </section>
+
+  <form data-form novalidate style="display: contents">
+    <section class="row step" aria-labelledby="s1">
+      <h2 class="label" id="s1"><span class="serif">(1)</span>thông tin của bạn</h2>
       <div class="body">
         <div class="field">
           <label for="name">Tên <small>như bạn muốn được gọi</small></label>
@@ -195,17 +222,17 @@ a { color: inherit; text-underline-position: from-font; }
       </div>
     </section>
 
-    <section class="step" aria-labelledby="s2">
-      <h2 id="s2"><span class="serif">(2)</span> chuyển khoản</h2>
-      <div class="body pay">
-        <figure class="qr" style="margin: 0">
+    <section class="row step pay" aria-labelledby="s2">
+      <h2 class="label" id="s2"><span class="serif">(2)</span>chuyển khoản</h2>
+      <div class="body">
+        <figure class="qr">
           <img src="/assets/bank-qr.png" alt="Mã QR chuyển khoản ngân hàng" width="600" height="600" data-qr>
           <p class="none" data-qr-none hidden>QR ngân hàng<br>sẽ có ở đây</p>
         </figure>
         <div class="amount">
           <p class="was"><span class="sr-only">Giá gốc </span>8.000.000đ</p>
           <p class="now display">5.000.000đ</p>
-          <p>ưu đãi cho mùa đầu tiên</p>
+          <p class="terms">ưu đãi cho mùa đầu tiên</p>
           <dl>
             <dt>Nội dung</dt><dd><b data-memo>VSC tên Discord của bạn</b></dd>
             <dt>Sau khi chuyển</dt><dd>Thầy xác nhận qua Discord trong 24 giờ</dd>
@@ -214,23 +241,28 @@ a { color: inherit; text-underline-position: from-font; }
       </div>
     </section>
 
-    <div class="send">
-      <button type="submit" data-send>gửi đăng ký <span class="serif">(→)</span></button>
-      <p class="status" role="status" data-status></p>
+    <div class="row send">
+      <div class="body">
+        <button type="submit" data-send>gửi đăng ký <span class="serif">(→)</span></button>
+        <p class="status" role="status" data-status></p>
+      </div>
     </div>
   </form>
 
-  <section class="done" data-done hidden aria-live="polite">
-    <h2 class="display" data-done-title>đã đủ 9 bạn</h2>
-    <p data-done-text>Mùa đầu tiên đã kín chỗ. Theo dõi Discord để biết khi nào mở lớp sau.</p>
+  <section class="row done" data-done hidden aria-live="polite">
+    <p class="label"><span class="serif">(✓)</span>đăng ký</p>
+    <div class="body">
+      <h2 class="display" data-done-title>đã đủ 9 bạn</h2>
+      <p data-done-text>Mùa đầu tiên đã kín chỗ. Theo dõi Discord để biết khi nào mở lớp sau.</p>
+    </div>
   </section>
 
-  <footer class="foot">
-    <p>liên hệ qua</p>
+  <footer class="row foot">
+    <p class="label">liên hệ qua</p>
     <ul>
-      <li><a href="https://www.facebook.com/Lavi.Designer" target="_blank" rel="noopener" class="serif">(FB)</a></li>
-      <li><a href="https://www.instagram.com/lavi.uidesigner/" target="_blank" rel="noopener" class="serif">(IG)</a></li>
-      <li><a href="https://discord.gg/PnndZMQuf" target="_blank" rel="noopener" class="serif">(DC)</a></li>
+      <li><a href="https://www.facebook.com/Lavi.Designer" target="_blank" rel="noopener" class="serif" aria-label="Facebook">(FB)</a></li>
+      <li><a href="https://www.instagram.com/lavi.uidesigner/" target="_blank" rel="noopener" class="serif" aria-label="Instagram">(IG)</a></li>
+      <li><a href="https://discord.gg/PnndZMQuf" target="_blank" rel="noopener" class="serif" aria-label="Discord">(DC)</a></li>
     </ul>
   </footer>
 </main>
