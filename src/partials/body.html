@@ -196,14 +196,26 @@
     const lines = title.querySelectorAll('.line');
     const centre = () => { lines.forEach(l => { l.style.transform = ''; }); const r = title.getBoundingClientRect(), y = (innerHeight / 2 - (r.top + r.height / 2)).toFixed(1); lines.forEach(l => { l.style.transform = `translateY(${y}px)`; }); };
     // the title's two stars turn while it loads, each about the middle of its own drawn shape (the star
-    // sits high in its line: its turning point from the font's own measures of it)
+    // sits high in its line). Its ink is found by drawing it and reading the pixels back (Safari's
+    // measureText gives the glyph's whole box, not its ink), its baseline in the box by a probe set on
+    // it; the point in ems, so it holds at any size the title is set at
     const pivot = () => {
       for (const s of title.querySelectorAll('.star')) {
-        const cs = getComputedStyle(s), g = document.createElement('canvas').getContext('2d');
+        const cs = getComputedStyle(s), em = parseFloat(cs.fontSize), S = Math.ceil(em * 2);
+        const c = document.createElement('canvas'); c.width = c.height = S;
+        const g = c.getContext('2d', { willReadFrequently: true });
         g.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-        const m = g.measureText('*'), em = parseFloat(cs.fontSize), box = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
-        const base = (s.offsetHeight - box) / 2 + m.fontBoundingBoxAscent;   // the baseline, down the star's box
-        s.style.transformOrigin = `${((m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2).toFixed(2)}px ${(base - (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2).toFixed(2)}px`;
+        g.textBaseline = 'alphabetic'; g.fillText('*', em / 2, em);
+        const d = g.getImageData(0, 0, S, S).data;
+        let x0 = S, x1 = -1, y0 = S, y1 = -1;
+        for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (d[(y * S + x) * 4 + 3] > 64) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        if (x1 < 0) continue;
+        const probe = document.createElement('i'); probe.style.cssText = 'display:inline-block;width:0;height:0';
+        s.append(probe);
+        const base = probe.getBoundingClientRect().top - s.getBoundingClientRect().top;   // the baseline, down the star's box
+        probe.remove();
+        const cx = (x0 + x1 + 1) / 2 - em / 2, cy = base + (y0 + y1 + 1) / 2 - em;
+        s.style.transformOrigin = `${(cx / em).toFixed(4)}em ${(cy / em).toFixed(4)}em`;
       }
     };
     // shown only once it is set, in its own fonts, where it is to be (landing.css hides it till then), so

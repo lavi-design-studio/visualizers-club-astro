@@ -477,6 +477,9 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
 .price-label { grid-column: 4 / span 2; grid-row: 4; margin-top: calc(69 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; }   /* on the old price's baseline, as Figma's box of 27 sets it */
 .price-tag { grid-column: 6 / span 6; grid-row: 4; margin-top: calc(56 * var(--px)); display: flex; flex-direction: column; gap: var(--gap); }
 .price-was { font-size: var(--f40); text-decoration: line-through; text-decoration-skip-ink: none; text-underline-position: from-font; }
+/* the price's 5 stands .03em in from its own box (the face's side bearing, at its size some pixels): set
+   out by that, so its ink starts on the edge the old price, the terms and the button keep */
+.price-now { margin-left: -.03em; }
 .price-terms { display: grid; grid-template-columns: calc(412 * var(--tu)) auto; column-gap: var(--gap); font-size: var(--f20); letter-spacing: -.02em; }
 .price-terms span:last-child { white-space: nowrap; }
 /* the way to sign up, under the price: a magenta plate as Level up's tags are, black type, at least 48
