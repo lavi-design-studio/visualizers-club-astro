@@ -533,7 +533,7 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
 }
 .foot h2 .line { width: 100%; }
 .foot h2 .serif { letter-spacing: -.01em; }
-.foot h2 .line:last-child { width: calc(555 * var(--px)); }
+.foot h2 .line:last-of-type { width: calc(555 * var(--px)); }   /* (of type: the ice's canvas comes after it, title-shader.js) */
 .foot-media { grid-column: 9 / span 3; grid-row: 1; display: flex; flex-direction: column; gap: calc(32 * var(--px)); }
 /* the clip, dithered as the portrait is (dither.js draws each frame onto the canvas over it) */
 .foot-clip { position: relative; aspect-ratio: 412 / 308; }
@@ -646,7 +646,7 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
 
   .foot { padding-bottom: max(var(--section), env(safe-area-inset-bottom, 0px)); }
   .foot h2 { margin-top: 0; gap: 12px; }
-  .foot h2 .line:last-child { width: 62%; }
+  .foot h2 .line:last-of-type { width: 62%; }
   .foot-media { margin-top: 40px; gap: 12px; }
   .foot-label { margin-top: 40px; }
   .foot-links { margin-top: 20px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }

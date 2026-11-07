@@ -99,7 +99,7 @@ main { container-type: inline-size; }
    places left, as a big number (columns 2-4), the step's name (columns 5-7, its number hanging in the
    gutter before it, as the fields' A. B. C.), and the fields, a name on one line and what you write on
    the next (columns 8 on). On the second: the step's name, the QR over five lines (columns 8-9), the
-   price over two (column 6 on), and "ưu đãi cho mùa đầu tiên" on the line under it. Then "sign up",
+   price over two (column 7 on), and "ưu đãi cho mùa đầu tiên" on the line under it. Then "sign up",
    large, as the button, and under it what the page has to say.
    Each line is its own element (.rl, a row of the sheet's grid: its foot is the line), so the lines are
    drawn in one after another, the lowest first, from both ends to the middle (--d, 0 to 50, as every
@@ -114,7 +114,7 @@ main { container-type: inline-size; }
   grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; grid-auto-rows: var(--line);
   position: relative; isolation: isolate;
 }
-.sheet.info { margin-top: calc(292 * var(--px)); }   /* (the first line 619 down, as Figma's) */
+.sheet.info { margin-top: calc(42 * var(--px)); }   /* (the first line 369 down, as Figma's) */
 .sheet.pay { --line: max(46px, calc(58 * var(--px))); }
 .sheet > *, .fields > * { grid-row: var(--r) / span var(--s, 1); align-self: center; min-width: 0; }
 .rl {
@@ -132,8 +132,8 @@ main { container-type: inline-size; }
 .lab .n, .field-name .n { position: absolute; right: calc(100% + var(--gap)); letter-spacing: 0; }
 .places-lab { grid-column: 2 / span 3; }
 .step-lab { grid-column: 5 / span 3; }
-/* the places left: Migra 160, from just under the second line */
-.left { grid-column: 2 / span 3; align-self: start; margin-top: calc(5 * var(--px)); font-size: calc(160 * var(--px)); letter-spacing: -.01em; line-height: 1; white-space: nowrap; }
+/* the places left: Migra 160, its caps 37 under the second line */
+.left { grid-column: 2 / span 3; align-self: start; margin-top: calc(37 * var(--px)); font-size: calc(160 * var(--px)); letter-spacing: -.01em; line-height: 1; white-space: nowrap; }
 
 /* the fields: a name on one line, what you write on the next (the wish on four), the magenta whole, the
    hint at half; where you are writing, its lines a little lit; a field left empty, in the warning pink */
@@ -153,30 +153,48 @@ main { container-type: inline-size; }
 .field-name:has(+ [aria-invalid="true"]) { color: #ff4d8d; }
 .trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 
-/* once signed up, or the nine taken: where the fields were, a word in Migra over two lines, then what it
-   means, a line of type to a ruled line */
-.done { grid-column: 8 / -1; align-self: start; font-size: var(--f20); letter-spacing: -.02em; }
-.done :is(h2, p, dt, dd) { text-box: normal; }
-.done h2 { height: calc(2 * var(--line)); display: flex; align-items: center; font-size: calc(110 * var(--px)); letter-spacing: -.01em; line-height: 1; white-space: nowrap; }
-.done p, .done dl { line-height: var(--line); }
-.done dl { display: grid; grid-template-columns: max-content 1fr; column-gap: var(--gap); }
+/* once signed up, or the places taken (Figma's "Sign up / Desktop / Reserved", "Confirmed" and "Fully
+   booked"): the title says so in its own words (body[data-state], set by the script below), the form is
+   put away and a sheet of its own takes its place, its first line 523 down (the title over it, however
+   many lines it has), its lines as the frames draw them: 35, 27, 20, five of 24, then fourteen of 36.
+   On it, from just under its first line: what it means on the left (columns 1-4), its state on the
+   right (columns 10-12, set right, its name in Migra over it); on Confirmed and Fully booked the
+   rooster weathervane in the middle, over the lines and past them (/signup/vane.svg, Figma's trace); on
+   Reserved the QR (column 8) and the price under it. The footer's title 131 under the last line */
+[data-state] .title { min-height: calc(502 * var(--px) - 64px); }
+.sheet.done {
+  grid-template-rows: calc(35 * var(--px)) calc(27 * var(--px)) calc(20 * var(--px)) repeat(5, calc(24 * var(--px))) repeat(14, calc(36 * var(--px)));
+  grid-auto-rows: 0;
+}
+.done > :not(.rl), .done-pay > * { position: absolute; margin: 0; grid-column: auto; grid-row: auto; }
+.done-pay { display: contents; }
+.done-left { left: 0; top: calc(15 * var(--px)); width: calc(554 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; }
+[data-state="reserved"] .done-left { line-height: 1.2; }
+.done-right { right: 0; top: calc(15 * var(--px)); width: calc(411 * var(--px)); text-align: right; font-size: var(--f20); letter-spacing: -.02em; line-height: 1.2; }
+.done-right .serif { letter-spacing: 0; }
+.vane { left: 50%; translate: -50% 0; top: calc(-50 * var(--px)); width: calc(598 * var(--px)); height: auto; pointer-events: none; }
+[data-state="full"] .vane { top: calc(-79 * var(--px)); }
+.done .bank-qr { position: absolute; grid-column: auto; grid-row: auto; left: calc(999 * var(--px)); top: calc(183 * var(--px)); width: calc(267 * var(--px)); height: auto; }
+.done .fee { grid-column: auto; grid-row: auto; left: calc(764 * var(--px)); top: calc(462 * var(--px)); }
+[data-state="full"] .done-left { width: calc(412 * var(--px)); }
+@media (min-width: 900px) { [data-state] .foot { padding-top: calc(131 * var(--px) - var(--gap)); } }   /* (less the page's own 16 under the sheet) */
 
 /* the payment */
 .bank-qr { grid-column: 8 / span 2; height: calc(5 * var(--line) - 22 * var(--px)); aspect-ratio: 1; justify-self: start; border: 1px solid var(--magenta); padding: calc(16 * var(--px)); background: #fff; position: relative; }
 .bank-qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .bank-qr .none { position: absolute; inset: 0; display: grid; place-items: center; background: #000; text-align: center; padding: 12px; font-size: var(--f16); line-height: 1.4; text-box: normal; }
-.fee { grid-column: 6 / -1; font-size: calc(160 * var(--px)); white-space: nowrap; }   /* (not .price: the landing page's section) */
-/* under the price, on the next line, from where it starts (as the landing page's price has it) */
-.terms { grid-column: 6 / -1; font-size: var(--f20); letter-spacing: -.02em; }
+.fee { grid-column: 7 / -1; font-size: calc(160 * var(--px)); white-space: nowrap; }   /* (not .price: the landing page's section) */
+/* under the price, on the next line, under the QR (column 8) */
+.terms { grid-column: 8 / -1; font-size: var(--f20); letter-spacing: -.02em; }
 /* what the page has to say about the sending, under the button */
 .status { margin-top: calc(40 * var(--px) + 8px); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; max-width: 34em; text-box: normal; }
 .status:empty { display: none; }
 .status.bad { color: #ff4d8d; }
 
-/* the button: "sign up" in Migra 160 from column 8, 48 under the last line, its rule under it. Under the
+/* the button: "sign up" in Migra 160 from column 6, 48 under the last line, its rule under it. Under the
    pointer (or held, or in focus) its rule goes back to its ends and is drawn in again to the middle, as
    the site's rules are; the arrow steps on */
-.send { grid-column: 8 / -1; padding: calc(48 * var(--px)) 0 calc(110 * var(--px)); }
+.send { grid-column: 6 / -1; padding: calc(48 * var(--px)) 0 calc(110 * var(--px)); }
 .cta {
   display: inline-flex; padding: 0; margin: 0; background: none; border: 0; color: var(--magenta); cursor: pointer;
   font-size: calc(160 * var(--px)); letter-spacing: -.01em; line-height: 1; text-transform: uppercase; white-space: nowrap;
@@ -214,7 +232,19 @@ main { container-type: inline-size; }
   .lab .n, .field-name .n { position: static; margin-right: .5em; }
   .left { justify-self: end; align-self: center; margin: 0; font-size: 96px; }
   .info input, .info textarea { font-size: 16px; }
-  .done h2 { height: var(--line); font-size: min(72px, calc((100cqi - 32px) / 5.6)); }
+  /* once signed up or full: the sheet's lines 28 apart under each line of its type, one thing after
+     another: what it means, its state, the QR and the price, the weathervane last */
+  [data-state] .title { min-height: 0; }
+  .sheet.done {
+    --line: 28px; display: flex; flex-direction: column; gap: var(--line); margin: 48px calc(-1 * var(--gap)) 0; padding: 0 var(--gap) var(--line);
+    background: repeating-linear-gradient(to bottom, var(--magenta) 0 1px, transparent 1px var(--line));
+  }
+  .sheet.done .rl { display: none; }
+  .done > :not(.rl), .done-pay > * { position: static; translate: none; width: auto; align-self: stretch; }
+  .done :is(.done-left, .done-right) { line-height: var(--line); text-box: normal; text-align: left; }
+  .done .bank-qr { position: static; width: calc(8 * var(--line)); }
+  .done .fee { font-size: min(56px, calc((100cqi - 32px) / 4.9)); line-height: calc(2 * var(--line)); text-box: normal; }
+  .done .vane { height: calc(14 * var(--line)); width: auto; align-self: center; }
   .bank-qr { height: calc(6 * var(--line) - 22px); padding: 12px; }
   .fee { font-size: min(72px, calc((100cqi - 32px) / 4.9)); }
   .send { padding: 40px 0 72px; }
@@ -251,6 +281,39 @@ main { container-type: inline-size; }
 
   <h1 class="title signup-title display"><span class="line">sign up</span><span class="line serif">first season</span></h1>
 
+  <!-- once signed up, or the places taken: a sheet of its own in the form's place (the script below) -->
+  <section class="sheet done" data-done hidden aria-live="polite">
+      <i class="rl top" style="--r: 1" aria-hidden="true"></i>
+      <i class="rl" style="--r: 2" aria-hidden="true"></i>
+      <i class="rl" style="--r: 3" aria-hidden="true"></i>
+      <i class="rl" style="--r: 4" aria-hidden="true"></i>
+      <i class="rl" style="--r: 5" aria-hidden="true"></i>
+      <i class="rl" style="--r: 6" aria-hidden="true"></i>
+      <i class="rl" style="--r: 7" aria-hidden="true"></i>
+      <i class="rl" style="--r: 8" aria-hidden="true"></i>
+      <i class="rl" style="--r: 9" aria-hidden="true"></i>
+      <i class="rl" style="--r: 10" aria-hidden="true"></i>
+      <i class="rl" style="--r: 11" aria-hidden="true"></i>
+      <i class="rl" style="--r: 12" aria-hidden="true"></i>
+      <i class="rl" style="--r: 13" aria-hidden="true"></i>
+      <i class="rl" style="--r: 14" aria-hidden="true"></i>
+      <i class="rl" style="--r: 15" aria-hidden="true"></i>
+      <i class="rl" style="--r: 16" aria-hidden="true"></i>
+      <i class="rl" style="--r: 17" aria-hidden="true"></i>
+      <i class="rl" style="--r: 18" aria-hidden="true"></i>
+      <i class="rl" style="--r: 19" aria-hidden="true"></i>
+      <i class="rl" style="--r: 20" aria-hidden="true"></i>
+      <i class="rl" style="--r: 21" aria-hidden="true"></i>
+      <i class="rl" style="--r: 22" aria-hidden="true"></i>
+    <p class="done-left" data-done-text></p>
+    <p class="done-right" data-done-note></p>
+    <img class="vane" src="/signup/vane.svg" alt="" width="598" height="849" data-vane>
+    <div class="done-pay" data-done-pay hidden>
+      <figure class="bank-qr"><img src="/pay/vpbank-qr.png" alt="Mã QR chuyển khoản VPBank (VietQR)" width="647" height="648" loading="lazy"></figure>
+      <p class="fee display"><span class="sr-only">Học phí </span>5.000.000đ</p>
+    </div>
+  </section>
+
   <form data-form novalidate style="display: contents">
     <!-- what you write: the places, your name, your Discord, your wish; ruled 50 apart -->
     <section class="sheet info" aria-labelledby="s1">
@@ -277,13 +340,6 @@ main { container-type: inline-size; }
         <label class="field-name" for="wish" style="--r: 5; --mr: 8"><span class="n serif">C.</span>Mong muốn khi tham gia</label>
         <textarea id="wish" name="wish" style="--r: 6; --s: 4; --mr: 9; --ms: 4" required maxlength="1000" rows="4" placeholder="Mình muốn tự dựng được website portfolio…"></textarea>
         <input class="trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      </div>
-      <div class="done" data-done hidden aria-live="polite" style="--r: 1; --s: 9; --mr: 4; --ms: 9">
-        <h2 class="serif" data-done-title>fully booked</h2>
-        <p data-done-text>All nine places of the first season are taken. Follow the Discord to hear when the next class opens.</p>
-        <dl data-mine hidden>
-          <dt>Status</dt><dd data-state></dd>
-        </dl>
       </div>
     </section>
 
@@ -321,21 +377,24 @@ main { container-type: inline-size; }
 <script define:vars={{ SIGNUP_URL, CAP }}>
   // the lines drawn in: each row's, the lowest first, as the row comes into view (not under reduced
   // motion); from when the title starts going up ('signup-lines', below), or at once if that never comes
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  // (a sheet shown later, the done one, is made ready the same way and drawn in when it comes into view)
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hostsOf = row => row.matches('.send') ? [row] : [...row.querySelectorAll('.rl')].filter(r => r.offsetParent);
+  const draw = row => hostsOf(row).sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)
+    .forEach((h, i) => { h.style.setProperty('--wait', `${(i * .06).toFixed(2)}s`); h.classList.remove('off'); });
+  const io = still ? null : new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); draw(e.target); } }), { rootMargin: '0px 0px -20% 0px' });
+  let started = false;
+  const drawIn = row => { if (still) return; hostsOf(row).forEach(h => h.classList.add('off')); if (started) io.observe(row); };
+  if (!still) {
     const rows = [...document.querySelectorAll('.sheet, .send')];
-    const hostsOf = row => row.matches('.send') ? [row] : [...row.querySelectorAll('.rl')].filter(r => r.offsetParent);
     rows.forEach(r => hostsOf(r).forEach(h => h.classList.add('off')));
-    const draw = row => hostsOf(row).sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)
-      .forEach((h, i) => { h.style.setProperty('--wait', `${(i * .06).toFixed(2)}s`); h.classList.remove('off'); });
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); draw(e.target); } }), { rootMargin: '0px 0px -20% 0px' });
-    let started = false;
     const start = () => { if (started) return; started = true; rows.forEach(r => io.observe(r)); };
     document.addEventListener('signup-lines', start, { once: true });
     setTimeout(start, 4000);
   }
   const $ = s => document.querySelector(s);
   const form = $('[data-form]'), send = $('[data-send]'), status = $('[data-status]'), done = $('[data-done]');
-  const pay = $('.sheet.pay');
+  const pay = $('.sheet.pay'), h1 = $('.signup-title');
   // the QR's frame says so while the image is not there yet
   const qr = $('[data-qr]');
   const noQr = () => { qr.hidden = true; $('[data-qr-none]').hidden = false; };
@@ -348,17 +407,36 @@ main { container-type: inline-size; }
     $('[data-left]').textContent = `(${String(left).padStart(2, '0')})`;
     return left;
   };
-  // the fields put away and a word in their place, the step named for it (the payment kept under it while
-  // it is still to pay)
-  const close = (title, text, keepPay = false) => {
+  // the page once signed up or full (Figma's Reserved, Confirmed and Fully booked): the title in its own
+  // words (its lines Neue World, Migra, Neue World, as the page's own), the form put away and the done
+  // sheet in its place, what it means on the left and its state on the right; the payment's QR and price
+  // on it while it is still to pay, the weathervane once it is settled. The title's ice is made again for
+  // its new words ('retitle', the script at the foot)
+  const WORDS = { reserved: ['You’ve', 'reserved', 'a slot'], confirmed: ['You’re', 'in the game'], full: ['fully', 'booked'] };
+  const setState = (kind, m = {}) => {
     form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = true; });
-    $('[data-fields]').hidden = true; send.parentElement.hidden = true;
-    $('[data-step-n]').textContent = '(✓)'; $('[data-step-name]').textContent = 'sign-up';
-    $('[data-done-title]').textContent = title; $('[data-done-text]').textContent = text;
-    done.hidden = false;
-    pay.hidden = !keepPay;
+    for (const s of [$('.sheet.info'), pay, send.parentElement]) s.hidden = true;
+    if (document.body.dataset.state !== kind) {
+      document.body.dataset.state = kind;
+      h1.replaceChildren(...WORDS[kind].map((w, i) => Object.assign(document.createElement('span'), { className: i % 2 ? 'line serif' : 'line', textContent: w })));
+      h1.dispatchEvent(new Event('retitle'));
+    }
+    const note = $('[data-done-note]'), mark = t => `<span class="serif">${t}</span>`;
+    if (kind === 'reserved') {
+      $('[data-done-text]').textContent = `Thank you, ${m.name}. Transfer 5.000.000đ with the QR below, with your Discord nick (${m.discord || 'your Discord nick'}) as the transfer`;
+      note.innerHTML = `${mark('(*)')} note.<br>Once it arrives, this page will confirm your place.`;
+    } else if (kind === 'confirmed') {
+      $('[data-done-text]').textContent = `Welcome to the first season, ${m.name}. Your transfer has arrived and your place is confirmed. See you on the class Discord.`;
+      note.innerHTML = `${mark('Status')}<br>confirmed`;
+    } else {
+      $('[data-done-text]').textContent = `All ${CAP} places of the first season are taken. Follow the Discord to hear when the next class opens.`;
+      note.innerHTML = `${mark('Status')}<br>closed`;
+    }
+    $('[data-done-pay]').hidden = kind !== 'reserved';
+    $('[data-vane]').hidden = kind === 'reserved';
+    if (done.hidden) { done.hidden = false; drawIn(done); }
   };
-  const full = () => close('fully booked', 'All nine places of the first season are taken. Follow the Discord to hear when the next class opens.');
+  const full = () => setState('full');
 
   // the sign-up made on this browser: its code, kept so the page can say how it stands when it is opened again
   const KEY = 'vsc-signup';
@@ -368,15 +446,9 @@ main { container-type: inline-size; }
   const remember = m => { mine = m; try { localStorage.setItem(KEY, JSON.stringify(m)); } catch {} };
   let polling = 0;
   const view = st => {
-    $('[data-mine]').hidden = false;
-    if (st === 'paid') {
-      clearInterval(polling);
-      close('you’re in', `Welcome to the first season, ${mine.name}. Your transfer has arrived and your place is confirmed. See you on the class Discord.`);
-      pay.hidden = true;
-      $('[data-state]').textContent = 'confirmed';
-    } else {
-      close('reserved', `Thank you, ${mine.name}. Transfer 5.000.000đ with the QR below, with your Discord nick (${mine.discord || 'your Discord nick'}) as the transfer note. Once it arrives, this page will confirm your place.`, true);
-      $('[data-state]').textContent = 'waiting for your transfer to be confirmed';
+    if (st === 'paid') { clearInterval(polling); setState('confirmed', mine); }
+    else {
+      setState('reserved', mine);
       // (asked again every 20 s while the page is in view)
       if (!polling) polling = setInterval(() => { if (!document.hidden) ask(); }, 20000);
     }
@@ -391,12 +463,13 @@ main { container-type: inline-size; }
       if (dropped) say('Đăng ký trước của bạn đã được huỷ. Bạn có thể đăng ký lại.', 'bad');
     }
     if (!mine && CAP - (d.paid ?? 0) - (d.wait ?? 0) <= 0 && done.hidden) full();
-  }).catch(() => {});
+  }).catch(() => {}).finally(() => document.dispatchEvent(new Event('signup-state')));
 
 
   if (!SIGNUP_URL) {
     send.disabled = true;
     say('Form sắp mở. Trong lúc chờ, nhắn thầy qua Discord để giữ chỗ.');
+    document.dispatchEvent(new Event('signup-state'));
   } else ask();
 
   form.addEventListener('submit', async e => {
@@ -420,7 +493,7 @@ main { container-type: inline-size; }
         window.va?.('event', { name: 'signup' });
         // (the sheet's older script gives no code: thanked all the same, the payment kept in view)
         if (d.code) { remember({ code: d.code, name: data.name.trim(), discord: data.discord.trim() }); view('wait'); }
-        else close('reserved', `Thank you, ${data.name.trim()}. Transfer 5.000.000đ with the QR below, with your Discord nick as the transfer note.`, true);
+        else setState('reserved', { name: data.name.trim(), discord: data.discord.trim() });
       } else if (d.error === 'full') { show(d); full(); }
       else if (d.error === 'dup') { send.disabled = false; say('Nick Discord này đã đăng ký rồi. Nếu là nhầm lẫn, nhắn thầy qua Discord.', 'bad'); }
       else { send.disabled = false; say('Thiếu thông tin, kiểm tra lại các ô nhé.', 'bad'); }
@@ -434,16 +507,23 @@ main { container-type: inline-size; }
   // their places one after another (1.8 s, expo.inOut, .12 apart) while the rest of the page comes in;
   // once they are at rest the ice takes them over, growing in from the foot (title-shader.js, on 'risen')
   import { gsap } from 'gsap';
-  import '../scripts/title-shader.js';
   // the footer, the landing page's own (src/partials/foot.html): its clip dithered, its ring of work, its
   // rules round its type and its links that open out
   import '../scripts/dither.js';
   import '../scripts/ring.js';
   import { footRules, socials } from '../scripts/rules.js';
-  const root = document.documentElement, h1 = document.querySelector('.signup-title'), lines = [...h1.querySelectorAll('.line')];
-  // (the footer is not held back: far under the fold, and its title's ice reads its letters as it is set)
-  const rest = [...document.querySelectorAll('.page > *')].filter(e => e !== h1);
+  const root = document.documentElement, h1 = document.querySelector('.signup-title');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // the page's state first (the sign-up script says when it knows it, 'signup-state'; a second and a half
+  // at most), so the title comes in in its own words and its ice is made for them (title-shader.js, which
+  // reads the titles' letters as it comes in); its words changed later ('retitle'), the ice made again,
+  // and the footer's rules laid again where its title now stands
+  const settled = new Promise(r => { document.addEventListener('signup-state', r, { once: true }); setTimeout(r, 1500); });
+  const shader = settled.then(() => import('../scripts/title-shader.js'));
+  h1.addEventListener('retitle', () => {
+    if (h1.classList.contains('risen')) shader.then(m => m.reshade(h1));
+    requestAnimationFrame(() => footRules());
+  });
 
   // the footer as the landing page sets it: its title in ice at once (title-shader.js, on 'risen'), its
   // rules laid round its type and drawn in as it comes into view (from both ends to the middle, the
@@ -467,9 +547,12 @@ main { container-type: inline-size; }
     let t = 0;
     addEventListener('resize', () => { cancelAnimationFrame(t); t = requestAnimationFrame(() => footRules()); });
   });
-  const risen = () => { lines.forEach(l => { l.style.transform = ''; }); h1.classList.add('risen'); h1.dispatchEvent(new Event('risen')); };
-  if (reduce) risen();
-  else document.fonts.ready.then(() => {
+  const risen = () => { h1.querySelectorAll('.line').forEach(l => { l.style.transform = ''; }); h1.classList.add('risen'); h1.dispatchEvent(new Event('risen')); };
+  if (reduce) shader.then(risen);
+  else Promise.all([document.fonts.ready, shader]).then(() => {
+    // (the title's lines and the rest as they are once the state is known; the footer is not held back:
+    // far under the fold, and its title's ice reads its letters as it is set)
+    const lines = [...h1.querySelectorAll('.line')], rest = [...document.querySelectorAll('.page > *')].filter(e => e !== h1);
     const r = h1.getBoundingClientRect(), y = innerHeight / 2 - (r.top + r.height / 2);
     gsap.set(lines, { y }); gsap.set(rest, { autoAlpha: 0 });
     root.classList.remove('intro');

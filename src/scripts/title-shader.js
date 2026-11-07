@@ -361,8 +361,19 @@ function shade(el) {
     if (el.closest('.hero-title')) heroDone();
     seen.observe(el);
     let t;
-    addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { remake(); gpu.draw(canvas, now(), ptr); }, 150); });
+    addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { if (!canvas.isConnected) return; remake(); gpu.draw(canvas, now(), ptr); }, 150); });
   });
+}
+
+// a title whose words have changed (the sign-up page's, as its sign-up stands): its old ice taken off and
+// each of its lines read and shaded again
+export function reshade(h) {
+  for (const c of h.querySelectorAll('.title-shader')) c.remove();
+  for (const el of h.querySelectorAll('.line')) {
+    if (el.__title) { seen.unobserve(el); shown.delete(el.__title); el.__title = null; }
+    el.classList.remove('shading', 'shaded');
+    if (gpu) shade(el);
+  }
 }
 
 if (!gpu) document.dispatchEvent(new Event('title-shaded'));   // (the loader waits for it no longer)
