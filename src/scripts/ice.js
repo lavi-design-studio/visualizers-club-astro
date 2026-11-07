@@ -665,6 +665,19 @@ async function build() {
       for (const c of col) { c.t = Math.max(-side - gap, Math.min(side + gap, c.t)); c.b.ang = right ? c.t : Math.PI - c.t; }
     }
     tg.lineWidth = 1; tg.lineCap = 'square';
+    // the tags joined to each other: round the rooster in the order they stand on the ellipse, each
+    // from where its leader meets it to the next's, closed into one ring (under the tags)
+    if (shown.length > 1) {
+      const ends = shown.map(b => {
+        const right = Math.cos(b.ang) >= 0, w = Math.round(tg.measureText(b.word).width + 14);
+        const x = right ? Math.min(cx + rx * Math.cos(b.ang), W - M - w) : Math.max(cx + rx * Math.cos(b.ang), M + w);
+        return { a: Math.atan2(Math.sin(b.ang), Math.cos(b.ang)), x, y: cy + ry * Math.sin(b.ang) };
+      }).sort((p, q) => p.a - q.a);
+      tg.globalAlpha = .4; tg.strokeStyle = MAG;
+      tg.beginPath();
+      ends.forEach((e, i) => { if (i) tg.lineTo(e.x, e.y); else tg.moveTo(e.x, e.y); });
+      tg.closePath(); tg.stroke();
+    }
     for (const b of shown) {
       const ax = b.x + b.w / 2, ay = b.y + b.h / 2, right = Math.cos(b.ang) >= 0, dir = right ? 1 : -1;
       const tw = tg.measureText(b.word).width, w = Math.round(tw + 14), h = 22;
