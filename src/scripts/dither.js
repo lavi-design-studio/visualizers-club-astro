@@ -73,7 +73,8 @@ const canvas = document.getElementById('laviDither'), img = document.getElementB
 // (drawn from a bitmap decoded off the page's thread: drawn from the image, the first frame that
 // reads it back decodes it then)
 let src = img;
-const ready = (img.complete && img.naturalWidth ? Promise.resolve() : new Promise(r => img.addEventListener('load', r, { once: true })))
+// (a page without the portrait, the sign-up page: never ready, the clip below still dithered)
+const ready = (!img || !canvas ? new Promise(() => {}) : img.complete && img.naturalWidth ? Promise.resolve() : new Promise(r => img.addEventListener('load', r, { once: true })))
   .then(() => createImageBitmap(img)).then(b => { src = b; }, () => {});
 let loaded = false, box = [1, 1];
 export const photo = {

@@ -14,6 +14,8 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger.js';
 import { photo, tile, roundEven, draw as ditherDraw } from './dither.js';
+// the letters' ink and the rules laid round it, the footer's rules and its links (shared with the sign-up page)
+import { glyph, inkOf, inkOfSliced, lay, snapRules, snapSoon, layer, tidy, footRules, socials } from './rules.js';
 
 gsap.registerPlugin(ScrollTrigger);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -138,68 +140,7 @@ const riseIn = lines => lines.map(line => {
 // breaks round the ink of every letter it would run through (the letter's own ink, measured, as
 // text-decoration-skip-ink does)
 const RULED = '.hero-intro p, .hero-refund, .hero-promise .stack > *';
-// the ink of some runs of text, against origin (a DOMRect): every letter's box and its glyph's own ink
-// (measured), and the lines' cap middles, the middles of their marks too (a Vietnamese capital's mark
-// over it to the dot under), and pitch (but not of the runs skip names, as numbers in another face), the
-// what is only for a screen reader left out.
-// The baseline is the browser's own, read off a probe set on it (the canvas's ascent is whole pixels).
-// With only lines asked for (inkOf.LINES), each run of text is read a line at a time, not a letter
-const inkG = document.createElement('canvas').getContext('2d'), inkCache = new Map();
-const glyph = (font, ch) => {                            // a letter's ink in a font, measured once
-  const key = font + ' ' + ch;
-  let m = inkCache.get(key);
-  if (!m) { inkG.font = font; const t = inkG.measureText(ch); m = { a: t.actualBoundingBoxAscent, d: t.actualBoundingBoxDescent, fa: t.fontBoundingBoxAscent }; inkCache.set(key, m); }
-  return m;
-};
-function inkOf(els, origin, skip = () => false, only = '') {
-  const range = document.createRange();
-  const lines = [], ink = [];
-  for (const el of els) {
-    const cs = getComputedStyle(el), fs = parseFloat(cs.fontSize), up = cs.textTransform === 'uppercase', counts = !skip(el);
-    const font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-    if (only === inkOf.LINES && !counts) continue;
-    const mH = glyph(font, 'H'), cap = mH.a;
-    const marks = (glyph(font, 'Ẩ').a - glyph(font, 'Ọ').d) / 2;
-    let asc = mH.fa;
-    {
-      const first = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: t => t.data.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP }).nextNode();
-      if (first && first.parentElement === el) {
-        const k = first.data.search(/\S/), probe = document.createElement('span');
-        probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
-        range.setStart(first, k); range.setEnd(first, k + 1);
-        const top = range.getBoundingClientRect().top;
-        el.insertBefore(probe, first);    // on the first line's baseline, the space before it collapsed
-        const base = probe.getBoundingClientRect().bottom;
-        probe.remove();
-        if (Math.abs(base - top - asc) < 2) asc = base - top;
-      }
-    }
-    const pitch = parseFloat(cs.lineHeight) || fs * 1.2;
-    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: t => t.parentElement.closest('.sr-only, .unfold') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
-    const line = base => { if (counts && !lines.some(l => Math.abs(l.base - base) < 1)) lines.push({ base, mid: base - cap / 2, marks: base - marks, pitch, fs }); };
-    if (only === inkOf.LINES) {
-      // a line of a run is a box of its own (its letters' boxes share its top)
-      for (let t; (t = walk.nextNode());) {
-        if (!t.data.trim()) continue;
-        range.selectNodeContents(t);
-        for (const r of range.getClientRects()) if (r.width) line(r.top - origin.top + asc);
-      }
-      continue;
-    }
-    for (let t; (t = walk.nextNode());) for (let k = 0; k < t.length; k++) {
-      const ch = t.data[k];
-      if (!ch.trim()) continue;
-      range.setStart(t, k); range.setEnd(t, k + 1);
-      const r = range.getBoundingClientRect();
-      if (!r.width) continue;
-      const base = r.top - origin.top + asc, m = glyph(font, up ? ch.toUpperCase() : ch);
-      ink.push({ x0: r.left - origin.left, x1: r.right - origin.left, top: base - m.a, bottom: base + m.d, fs });
-      line(base);
-    }
-  }
-  return { lines: lines.sort((a, b) => a.mid - b.mid), ink };
-}
-inkOf.LINES = 'lines';
+// (the letters' ink, inkOf, and the rules laid round it, lay: rules.js)
 // the letters the rules break round, measured ahead under the loader, a few elements a task (glyph
 // keeps them), so the rules' own measures are quick: every run of type byRules, pageRules and rules read
 const INKED = [RULED, '.by-label, .by-syllabus li > *, .by-note div p:last-child',
@@ -215,62 +156,6 @@ async function warmGlyphs(pause) {
     }
   }
 }
-// inkOf a few elements a task (pause as byRules takes it; without it, one call), the same as one call
-async function inkOfSliced(els, origin, skip, only, pause) {
-  if (!pause) return inkOf(els, origin, skip, only);
-  const lines = [], ink = [];
-  let t = performance.now();
-  for (const el of els) {
-    const r = inkOf([el], origin, skip, only);
-    for (const l of r.lines) if (!lines.some(m => Math.abs(m.base - l.base) < 1)) lines.push(l);
-    ink.push(...r.ink);
-    if (performance.now() - t > 8) { await pause(); t = performance.now(); }
-  }
-  return { lines: lines.sort((a, b) => a.mid - b.mid), ink };
-}
-// hairlines at ys across left to right, in box, each broken round the ink of every letter it would run
-// through, a little either side of it, as text-decoration-skip-ink does: no mark is ever crossed
-// (each on a whole device pixel of the page, not of its box, which may sit between two, and as thick
-// as the others: --hair, a whole number of device pixels)
-function lay(box, ys, left, right, ink, cls = '', keep = false) {
-  const dpr = devicePixelRatio || 1, off = box.getBoundingClientRect().top - root.getBoundingClientRect().top;   // against the page, not the rounded scroll
-  root.style.setProperty('--hair', `${Math.max(1, Math.round(dpr)) / dpr}px`);
-  if (!box._watched) { box._watched = true; queueMicrotask(() => watchRules(box)); }
-  if (!keep) box.replaceChildren();
-  return ys.map(y => {
-    const want = y;
-    y = Math.round((off + y) * dpr) / dpr - off;
-    const gaps = ink.filter(c => c.top - 1.5 <= y + 1 && c.bottom + 1.5 >= y).map(c => [c.x0 - .14 * c.fs, c.x1 + .14 * c.fs]).sort((a, b) => a[0] - b[0]);
-    const rule = document.createElement('div');
-    if (cls) rule.className = cls;
-    rule.style.top = `${y}px`; rule.dataset.y = want;
-    let x = left;
-    for (const [g0, g1] of [...gaps, [right, right]]) {
-      const end = Math.min(g0, right);
-      if (end - x > 1.5) { const i = document.createElement('i'); i.style.left = `${x}px`; i.style.width = `${end - x}px`; rule.append(i); }
-      x = Math.max(x, g1);
-    }
-    box.append(rule);
-    return rule;
-  });
-}
-// the rules put back on whole device pixels when what is above them moves them by a fraction of one
-// (Level up's pin making room, the fan's stage, a resize): each from where it was meant to be
-function snapRules(boxes = $$('.hero-rules, .by-rules, .page-rules')) {
-  const dpr = devicePixelRatio || 1;
-  root.style.setProperty('--hair', `${Math.max(1, Math.round(dpr)) / dpr}px`);
-  for (const box of boxes) {
-    const off = box.getBoundingClientRect().top - root.getBoundingClientRect().top;
-    for (const rule of box.children) if (rule.dataset.y) rule.style.top = `${Math.round((off + +rule.dataset.y) * dpr) / dpr - off}px`;
-  }
-}
-// and again as each set comes near the screen, whatever moved it since
-const nearing = new IntersectionObserver(es => snapRules(es.filter(e => e.isIntersecting).map(e => e.target)), { rootMargin: '50% 0px' });
-const watchRules = box => nearing.observe(box);
-let snapping = 0;
-const snapSoon = () => { cancelAnimationFrame(snapping); snapping = requestAnimationFrame(() => snapRules()); };
-{ const ro = new ResizeObserver(snapSoon); for (const el of [document.body, $('main'), ...$$('main > *')]) ro.observe(el); }
-addEventListener('load', snapSoon);
 function rules() {
   const hero = $('.hero');
   let box = $('.hero-rules', hero);
@@ -355,14 +240,7 @@ addEventListener('resize', () => { cancelAnimationFrame(byRuling); byRuling = re
 // (pause as byRules takes it)
 async function pageRules(pause) {
   root.classList.add('measuring');
-  const layer = sec => {
-    let b = $(':scope > .page-rules', sec);
-    if (!b) { b = document.createElement('div'); b.className = 'page-rules'; b.setAttribute('aria-hidden', 'true'); sec.prepend(b); }
-    return b;
-  };
   const fsOf = el => parseFloat(getComputedStyle(el).fontSize);
-  // no stubs: a piece of a rule shorter than 12 between a letter and the page's edge is left out
-  const tidy = rules => rules.forEach(r => [...r.children].forEach(i => { if (parseFloat(i.style.width) < 12) i.remove(); }));
   {
     const sec = $('.price'), sr = sec.getBoundingClientRect();
     const small = $$('.price-first p, .price-fund p, .price-fund li > :last-child, .price-year, .price-gets p, .price-gets li > :last-child', sec);
@@ -379,29 +257,7 @@ async function pageRules(pause) {
     }
   }
   if (pause) await pause();
-  {
-    const sec = $('.foot'), sr = sec.getBoundingClientRect();
-    const at = el => { const r = el.getBoundingClientRect(); return { top: r.top - sr.top, bottom: r.bottom - sr.top }; };
-    const lines = $$('h2 .line', sec), note = $('.foot-note', sec);
-    // the note's row lowered (--nudge) so "liên hệ qua" is a whole number of its lines over it
-    sec.style.setProperty('--nudge', '0px');
-    {
-      const [n0] = inkOf([note], sr, undefined, inkOf.LINES).lines, [l0] = inkOf([$('.foot-label', sec)], sr, undefined, inkOf.LINES).lines;
-      if (n0 && l0) { const d = n0.marks - l0.marks, k = Math.max(1, Math.round(d / n0.pitch)); sec.style.setProperty('--nudge', `${k * n0.pitch - d}px`); }
-    }
-    const nt = at(note).top, ys = [], { lines: rows } = inkOf([note], sr, undefined, inkOf.LINES);
-    if (rows.length) {
-      // at the note's 24: half a line either side of each line's middle (from a capital's mark over it
-      // to the dot under), the rest 24 apart up to 20 or more under the title
-      const P = rows[0].pitch, above = Math.max(...[...lines, $('.foot-media', sec)].map(at).map(b => b.bottom).filter(b => b < nt));
-      ys.push(...rows.map(r => r.marks + P / 2));
-      do ys.unshift(ys[0] - P); while (ys[0] - P >= above + 5 * P / 6);
-    }
-    if (pause) await pause();
-    const { ink } = await inkOfSliced($$('h2 .line, .foot-media figcaption, .foot-note span, .foot-label, .foot-links a, .foot-mark, .foot-made > span', sec), sr, undefined, '', pause);
-    { const q = $('.qr', sec).getBoundingClientRect(); if (q.width) ink.push({ x0: q.left - sr.left, x1: q.right - sr.left, top: q.top - sr.top, bottom: q.bottom - sr.top, fs: 12 }); }   // the QR code broken round too
-    tidy(lay(layer(sec), ys, 0, sr.width, ink));
-  }
+  await footRules(pause);
   root.classList.remove('measuring');
 }
 let pageRuling = 0;
@@ -1141,23 +997,6 @@ function warp(lenis) {
 // each link in the footer unfolds its short name into the whole one on hover (index.html); where the
 // whole name would run into the next thing in its row (on the wide screen, Facebook into Instagram),
 // that one steps aside by as much (--push), a letter's width left between them
-function socials() {
-  const items = $$('.foot-links li'), range = document.createRange();
-  const measure = () => items.forEach((li, i) => {
-    const a = $('a', li), next = items[i + 1];
-    if (!a || !next) return;
-    // what it grows by: the hidden letters' own width, laid out in full under their clip (the link's
-    // box can't say, as it never grows past its column)
-    const r = a.getBoundingClientRect();
-    const grow = $$('.unfold > span', a).reduce((w, s) => { range.selectNodeContents(s); return w + range.getBoundingClientRect().width; }, 0);
-    const n = next.firstElementChild.getBoundingClientRect(), fs = parseFloat(getComputedStyle(a).fontSize);
-    const row = n.top < r.bottom && n.bottom > r.top && n.left >= r.right;
-    // at least a letter's width (1em) left between the open name and the next
-    next.style.setProperty('--push', `${row ? Math.max(0, Math.round(r.right + grow + fs - n.left)) : 0}px`);
-  });
-  document.fonts.ready.then(measure);
-  addEventListener('resize', () => requestAnimationFrame(measure));
-}
 
 // ----- 5. the price -----
 function price() {

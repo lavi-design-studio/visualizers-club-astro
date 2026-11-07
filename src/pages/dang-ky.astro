@@ -9,6 +9,8 @@
 // and Migra for the title, ABC Areal for the small type on hairline rules. The bank's QR code is
 // public/assets/bank-qr.png (the VPBank VietQR, cut from the bank app; a frame says so if it is missing). Laid on the landing page's grid:
 // each row's label in columns 4-5, its body from column 6, the title centred as the hero's
+import '../styles/landing.css';   // (the landing page's styles: its footer, shared, is set by them)
+import foot from '../partials/foot.html?raw';
 const SIGNUP_URL = 'https://script.google.com/macros/s/AKfycbx3DCU2X8QmRxVt0Q6uzFBMPDvXh92wKVFffXJy3wS_8Oz-t7Rg8_yWqaAKFFgn1O9NIA/exec';   // the Apps Script web app's address (…/exec)
 const CAP = 9;
 ---
@@ -163,17 +165,18 @@ main { container-type: inline-size; }
 
 /* the payment, as the price's own block: the QR two columns wide, the old price and the new beside it */
 .pay .body { display: grid; grid-template-columns: subgrid; grid-column: 6 / span 6; }
-.qr { grid-column: 1 / span 2; aspect-ratio: 1; border: 1px solid var(--magenta); padding: calc(12 * var(--px) + 4px); background: #fff; position: relative; align-self: start; }
-.qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.qr .none { position: absolute; inset: 0; display: grid; place-items: center; background: #000; text-align: center; padding: 12px; font-size: var(--f16); line-height: 1.4; text-box: normal; }
+.bank-qr { grid-column: 1 / span 2; aspect-ratio: 1; border: 1px solid var(--magenta); padding: calc(12 * var(--px) + 4px); background: #fff; position: relative; align-self: start; }
+.bank-qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.bank-qr .none { position: absolute; inset: 0; display: grid; place-items: center; background: #000; text-align: center; padding: 12px; font-size: var(--f16); line-height: 1.4; text-box: normal; }
 .amount { grid-column: 3 / -1; display: flex; flex-direction: column; gap: var(--gap); }
 .amount .was { font-family: "PP Migra", serif; font-style: italic; font-weight: 200; font-size: var(--f40); text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-skip-ink: none; }
 .amount .now { font-size: calc(96 * var(--px)); letter-spacing: -.02em; }
 .amount .terms { font-size: var(--f20); letter-spacing: -.02em; }
-.amount dl { display: grid; grid-template-columns: max-content 1fr; gap: calc(12 * var(--px) + 4px) var(--gap); margin-top: calc(16 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; }
-.amount dt { opacity: .7; }
-.amount dd { color: var(--magenta); text-transform: none; }
-.amount dd b { font-weight: 500; }
+/* the payment's details in the page's small type, as the landing page's: ABC Areal in capitals, the
+   magenta whole, 1.2 its line, a name and its value on one line grid (no fading, no bold) */
+.amount dl { display: grid; grid-template-columns: max-content 1fr; gap: 0 var(--gap); margin-top: calc(16 * var(--px)); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.2; }
+.amount :is(dt, dd) { text-box: normal; }
+.amount dd b { font-weight: 400; }
 
 /* the send: the price's button, a magenta plate, black type, turned about under the pointer */
 .send { padding-bottom: calc(96 * var(--px)); }
@@ -195,17 +198,12 @@ main { container-type: inline-size; }
 .done p { margin-top: calc(32 * var(--px) + 8px); font-size: var(--f20); letter-spacing: -.02em; line-height: 1.4; max-width: 30em; text-box: normal; }
 /* the sign-up's own code and where it stands, as the payment's details are set */
 .done dl { display: grid; grid-template-columns: max-content 1fr; gap: calc(16 * var(--px) + 6px) var(--gap); margin-top: calc(40 * var(--px) + 8px); font-size: var(--f20); letter-spacing: -.02em; align-items: baseline; }
-.done dt { opacity: .7; }
+.done :is(dt, dd) { text-box: normal; line-height: 1.2; }
 .done dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6em 1.2em; }
 .done .code { font-family: "PP Neue World", serif; font-weight: 200; font-size: var(--f40); letter-spacing: 0; }
 .done button, .again { appearance: none; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-transform: uppercase; text-decoration: underline; text-underline-position: from-font; cursor: pointer; }
 .again { display: inline-block; margin-top: calc(40 * var(--px) + 8px); font-size: var(--f16); letter-spacing: -.02em; }
 
-/* the footer's contacts: "liên hệ qua" two columns to the left of the links, which are the footer's own */
-.foot ul { display: grid; grid-template-columns: subgrid; grid-column: 6 / -1; }
-.foot li { font-size: var(--f40); letter-spacing: -.05em; }
-.foot li a { text-decoration: none; }
-.foot li a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
 
 /* a tablet and a phone: the columns stacked, as the landing page's (16 margins; the title 80 and 48;
    the small type 14 and 16), each row's label over its body */
@@ -223,11 +221,10 @@ main { container-type: inline-size; }
   .info { padding-top: 24px; }
   .info > .label { min-height: 0; }
   .pay .body { display: flex; flex-direction: column; gap: 32px; }
-  .qr { width: min(100%, 280px); padding: 12px; }
+  .bank-qr { width: min(100%, 280px); padding: 12px; }
   .amount .now, .done h2 { font-size: 64px; }
-  .amount dl { margin-top: 8px; gap: 10px 16px; }
+  .amount dl { margin-top: 8px; gap: 0 16px; }
   .send { padding-bottom: 64px; }
-  .foot ul { display: flex; gap: 32px; }
 }
 @media (max-width: 599px) {
   .page { --f16: 12px; --f20: 16px; }
@@ -252,7 +249,8 @@ main { container-type: inline-size; }
 </style>
 </head>
 <body>
-<main class="page">
+<main>
+<div class="page">
   <nav class="bar" aria-label="Điều hướng">
     <span>© 2026</span>
     <a href="/">trang chủ</a>
@@ -294,7 +292,7 @@ main { container-type: inline-size; }
     <section class="row step pay" aria-labelledby="s2">
       <h2 class="label" id="s2"><span class="serif">(2)</span>chuyển khoản</h2>
       <div class="body">
-        <figure class="qr">
+        <figure class="bank-qr">
           <img src="/assets/bank-qr.png" alt="Mã QR chuyển khoản VPBank (VietQR)" width="647" height="648" data-qr>
           <p class="none" data-qr-none hidden>QR ngân hàng<br>sẽ có ở đây</p>
         </figure>
@@ -331,14 +329,8 @@ main { container-type: inline-size; }
     </div>
   </section>
 
-  <footer class="row foot">
-    <p class="label">liên hệ qua</p>
-    <ul>
-      <li><a href="https://www.facebook.com/Lavi.Designer" target="_blank" rel="noopener" class="serif" aria-label="Facebook">(FB)</a></li>
-      <li><a href="https://www.instagram.com/lavi.uidesigner/" target="_blank" rel="noopener" class="serif" aria-label="Instagram">(IG)</a></li>
-      <li><a href="https://discord.gg/PnndZMQuf" target="_blank" rel="noopener" class="serif" aria-label="Discord">(DC)</a></li>
-    </ul>
-  </footer>
+</div>
+<Fragment set:html={foot} />
 </main>
 
 <script define:vars={{ SIGNUP_URL, CAP }}>
@@ -464,10 +456,39 @@ main { container-type: inline-size; }
   // once they are at rest the ice takes them over, growing in from the foot (title-shader.js, on 'risen')
   import { gsap } from 'gsap';
   import '../scripts/title-shader.js';
+  // the footer, the landing page's own (src/partials/foot.html): its clip dithered, its ring of work, its
+  // rules round its type and its links that open out
+  import '../scripts/dither.js';
+  import '../scripts/ring.js';
+  import { footRules, socials } from '../scripts/rules.js';
   const root = document.documentElement, h1 = document.querySelector('.signup-title'), lines = [...h1.querySelectorAll('.line')];
-  const rest = [...document.querySelectorAll('.page > *')].filter(e => e !== h1);
+  const rest = [...document.querySelectorAll('.page > *'), document.querySelector('.foot')].filter(e => e && e !== h1);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // the footer as the landing page sets it: its title in ice at once (title-shader.js, on 'risen'), its
+  // rules laid round its type and drawn in as it comes into view (from both ends to the middle, the
+  // lowest first, as all the rules are), laid again on a resize; its links opening out on hover
+  const SIDES = a => `polygon(0% 0%, ${a}% 0%, ${a}% 100%, ${100 - a}% 100%, ${100 - a}% 0%, 100% 0%, 100% 100%, 0% 100%)`;
+  document.fonts.ready.then(async () => {
+    const fh = document.querySelector('.foot h2');
+    fh?.classList.add('risen'); fh?.dispatchEvent(new Event('risen'));
+    socials();
+    const laid = await footRules();
+    if (!reduce && laid.length) {
+      const order = [...laid].sort((a, b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top);
+      gsap.set(order, { clipPath: SIDES(0) });
+      const io = new IntersectionObserver(([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        gsap.to(order, { clipPath: SIDES(50), duration: .9, ease: 'expo.inOut', stagger: Math.min(.06, 1.2 / order.length), clearProps: 'clipPath' });
+      }, { rootMargin: '0px 0px -25% 0px' });
+      io.observe(document.querySelector('.foot'));
+    }
+    let t = 0;
+    addEventListener('resize', () => { cancelAnimationFrame(t); t = requestAnimationFrame(() => footRules()); });
+  });
   const risen = () => { lines.forEach(l => { l.style.transform = ''; }); h1.classList.add('risen'); h1.dispatchEvent(new Event('risen')); };
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) risen();
+  if (reduce) risen();
   else document.fonts.ready.then(() => {
     const r = h1.getBoundingClientRect(), y = innerHeight / 2 - (r.top + r.height / 2);
     gsap.set(lines, { y }); gsap.set(rest, { autoAlpha: 0 });

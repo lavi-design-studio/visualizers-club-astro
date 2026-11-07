@@ -4,7 +4,9 @@
 // (src/styles/landing.css) and its scripts (src/scripts), bundled; GSAP, Lenis and three from npm,
 // where the static page took them from a CDN by an import map
 import '../styles/landing.css';
-import body from '../partials/body.html?raw';
+import page from '../partials/body.html?raw';
+import foot from '../partials/foot.html?raw';
+const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/foot.html, shared with the sign-up page)
 ---
 <!doctype html>
 <html lang="vi">
