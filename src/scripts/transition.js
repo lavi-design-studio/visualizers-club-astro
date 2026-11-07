@@ -50,7 +50,8 @@ function setup() {
   canvas.className = 'pass'; canvas.setAttribute('aria-hidden', 'true');
   Object.assign(canvas.style, { position: 'fixed', inset: '0', width: '100%', height: '100%', zIndex: '2147483647', pointerEvents: 'none', display: 'none' });
   document.body.append(canvas);
-  const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, alpha: true, antialias: false });
+  // (its drawing kept, so the last frame can be read back: it is the card the next page opens on)
+  const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, alpha: true, antialias: false, preserveDrawingBuffer: true });
   if (!gl) { canvas.remove(); return null; }
   const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
   const prog = gl.createProgram();
@@ -107,14 +108,18 @@ const fontsFor = () => Promise.race([Promise.all(['200 40px "PP Neue World"', 'i
 let gfx = null, running = null;
 const ready = () => (gfx ??= setup());
 
-// going: the cover drawn up the screen, then to the page
+// going: the cover drawn up the screen, then to the page. Its last frame, the card, is kept with the way
+// (a picture of it): the next page opens on that picture from its first paint (html.passing, its head),
+// so the card never leaves the screen while the page loads, and the same card drawn again takes over
 function go(href, to) {
   const g = ready();
   if (!g) { location.href = href; return; }
   g.size();
   fontsFor().then(() => {
     nameAndRun(g, to, 0, () => {
-      try { sessionStorage.setItem(KEY, JSON.stringify({ to, at: Date.now() })); } catch {}
+      let img = '';
+      try { img = g.canvas.toDataURL('image/webp', .9); } catch {}
+      try { sessionStorage.setItem(KEY, JSON.stringify({ to, at: Date.now(), img })); } catch { try { sessionStorage.setItem(KEY, JSON.stringify({ to, at: Date.now() })); } catch {} }
       location.href = href;
     });
   });
@@ -123,13 +128,15 @@ function go(href, to) {
 function nameAndRun(g, to, mode, done, wait = Promise.resolve()) {
   g.name(to);
   g.canvas.style.display = 'block';
-  const s = { p: 0, t: 0 };
+  // (the front's time is the clock's, so it moves as evenly as the frames come; it runs on a little past
+  // the screen's top going, so the card is whole when it is kept)
+  const s = { p: 0 }, t0 = performance.now(), at = () => (performance.now() - t0) / 1000;
   g.draw(0, mode, 0);
   if (mode) root.classList.remove('passing');   // (the card is drawn: the page's own cover can go)
   running?.kill();
   wait.then(() => {
-    running = gsap.to(s, { p: 1, duration: mode ? 1.1 : .8, ease: mode ? 'power2.inOut' : 'power2.in', delay: mode ? .1 : 0,
-      onUpdate: () => { s.t += 1 / 60; g.draw(s.p, mode, s.t); }, onComplete: done });
+    running = gsap.to(s, { p: mode ? 1 : 1.12, duration: mode ? 1.25 : .9, ease: 'power3.inOut', delay: mode ? .05 : 0,
+      onUpdate: () => g.draw(s.p, mode, at()), onComplete: done });
   });
 }
 
@@ -166,9 +173,10 @@ if (root.classList.contains('passing')) {
   const g = pass && !reduce ? ready() : null;
   if (!g) root.classList.remove('passing');
   else {
-    // (a page that sets itself out first, the sign-up page its title in the screen's middle, says when
-    // it is ready to be seen: html[data-pass-wait], 'pass-ready'; the card waits for it, 2.5 s at most)
-    const wait = root.hasAttribute('data-pass-wait') ? new Promise(r => { document.addEventListener('pass-ready', r, { once: true }); setTimeout(r, 2500); }) : undefined;
+    // (a page that sets itself out first says when it is ready to be seen, html[data-pass-wait],
+    // 'pass-ready': the sign-up page once its title is in the screen's middle, the landing page once its
+    // shaders are built, so the front never stutters over its work; the card waits, 2.5 s at most)
+    const wait = root.hasAttribute('data-pass-wait') ? new Promise(r => { for (const ev of ['pass-ready', 'title-shaded']) document.addEventListener(ev, r, { once: true }); setTimeout(r, 2500); }) : undefined;
     g.size(); fontsFor().then(() => nameAndRun(g, pass.to, 1, () => { g.canvas.style.display = 'none'; }, wait));
   }
 }

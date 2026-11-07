@@ -9,7 +9,7 @@ import foot from '../partials/foot.html?raw';
 const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/foot.html, shared with the sign-up page)
 ---
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-pass-wait>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -50,8 +50,10 @@ const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/f
   try {
     const t = JSON.parse(sessionStorage.getItem('vsc-pass') || 'null');
     if (t && Date.now() - t.at < 5000 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.documentElement.classList.add('passing');
-      setTimeout(() => document.documentElement.classList.remove('passing'), 2500);
+      // (the card itself, as the last page left it, under the magenta)
+      if (t.img) document.documentElement.style.setProperty('--pass-img', `url("${t.img}")`);
+      document.documentElement.classList.add('passing', 'passed');
+      setTimeout(() => document.documentElement.classList.remove('passing'), 3000);
     }
   } catch {}
 </script>

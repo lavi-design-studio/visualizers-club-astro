@@ -44,8 +44,10 @@ import { SIGNUP_URL, CAP } from '../signup.js';   // the sheet's web app (…/ex
   try {
     const t = JSON.parse(sessionStorage.getItem('vsc-pass') || 'null');
     if (t && Date.now() - t.at < 5000 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.documentElement.classList.add('passing');
-      setTimeout(() => document.documentElement.classList.remove('passing'), 2500);
+      // (the card itself, as the last page left it, under the magenta)
+      if (t.img) document.documentElement.style.setProperty('--pass-img', `url("${t.img}")`);
+      document.documentElement.classList.add('passing', 'passed');
+      setTimeout(() => document.documentElement.classList.remove('passing'), 3000);
     }
   } catch {}
 </script>
@@ -544,7 +546,6 @@ main { container-type: inline-size; }
   // the footer, the landing page's own (src/partials/foot.html): its clip dithered, its ring of work, its
   // rules round its type and its links that open out
   import '../scripts/dither.js';
-  import '../scripts/ring.js';
   import { footRules, socials } from '../scripts/rules.js';
   const root = document.documentElement, h1 = document.querySelector('.signup-title');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -552,7 +553,8 @@ main { container-type: inline-size; }
   // at most), so the title comes in in its own words and its ice is made for them (title-shader.js, which
   // reads the titles' letters as it comes in); its words changed later ('retitle'), the ice made again,
   // and the footer's rules laid again where its title now stands
-  const settled = new Promise(r => { document.addEventListener('signup-state', r, { once: true }); setTimeout(r, 1500); });
+  // (come by the way from the landing page, less: the card is waiting on it)
+  const settled = new Promise(r => { document.addEventListener('signup-state', r, { once: true }); setTimeout(r, root.classList.contains('passed') ? 700 : 1500); });
   const shader = settled.then(() => import('../scripts/title-shader.js'));
   h1.addEventListener('retitle', () => {
     if (h1.classList.contains('risen')) shader.then(m => m.reshade(h1));
@@ -574,11 +576,22 @@ main { container-type: inline-size; }
   // lowest first, as all the rules are), laid again on a resize; its links opening out on hover
   const SIDES = a => `polygon(0% 0%, ${a}% 0%, ${a}% 100%, ${100 - a}% 100%, ${100 - a}% 0%, 100% 0%, 100% 100%, 0% 100%)`;
   // (once the page's state is known: the footer comes up under a done sheet, and its rules are counted from its title)
-  Promise.all([document.fonts.ready, settled]).then(async () => {
+  // (far under the fold, it is set out when the page is idle, its letters read a few at a time, and come
+  // by the way from the landing page only once the way has opened: nothing it measures or builds holds
+  // up the title's entrance or the front going up)
+  const idle = () => new Promise(r => ('requestIdleCallback' in window ? requestIdleCallback(() => r(), { timeout: 2500 }) : setTimeout(r, 600)));
+  const pause = () => new Promise(r => setTimeout(r));
+  const opened = root.classList.contains('passed') ? new Promise(r => setTimeout(r, 1700)) : null;
+  Promise.all([document.fonts.ready, settled, opened]).then(idle).then(async () => {
     const fh = document.querySelector('.foot h2');
     fh?.classList.add('risen'); fh?.dispatchEvent(new Event('risen'));
     socials();
-    const laid = await footRules();
+    // its ring of work (three.js built: a quarter of a second's work) once the title is at rest and the
+    // footer is a screen or so away
+    const near = new IntersectionObserver(([e]) => { if (!e.isIntersecting) return; near.disconnect(); ('requestIdleCallback' in window ? requestIdleCallback : setTimeout)(() => import('../scripts/ring.js'), { timeout: 1500 }); }, { rootMargin: '0px 0px 100% 0px' });
+    const rested = h1.classList.contains('risen') ? Promise.resolve() : new Promise(r => h1.addEventListener('risen', r, { once: true }));
+    rested.then(() => near.observe(document.querySelector('.foot')));
+    const laid = await footRules(pause);
     if (!reduce && laid.length) {
       const order = [...laid].sort((a, b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top);
       gsap.set(order, { clipPath: SIDES(0) });
@@ -601,14 +614,15 @@ main { container-type: inline-size; }
   else Promise.all([document.fonts.ready, shader]).then(() => {
     // (the title's lines and the rest as they are once the state is known; the footer is not held back:
     // far under the fold, and its title's ice reads its letters as it is set)
-    const lines = [...h1.querySelectorAll('.line')], rest = [...document.querySelectorAll('.page > *')].filter(e => e !== h1);
+    const lines = [...h1.querySelectorAll('.line')], rest = [...document.querySelectorAll('.page > :not(form), .page > form > *')].filter(e => e !== h1 && !e.hidden);
+    // (faded, not hidden: drawn while unseen, so the first frame they are seen in has nothing left to draw)
     const r = h1.getBoundingClientRect(), y = innerHeight / 2 - (r.top + r.height / 2);
-    gsap.set(lines, { y }); gsap.set(rest, { autoAlpha: 0 });
+    gsap.set(lines, { y }); gsap.set(rest, { opacity: 0 });
     root.classList.remove('intro');
     document.dispatchEvent(new Event('pass-ready'));   // (set out: the way here can open on it, transition.js)
     const HOLD = .35;
     gsap.to(lines, { y: 0, duration: 1.8, ease: 'expo.inOut', stagger: .12, delay: HOLD, onComplete: risen });
-    gsap.to(rest, { autoAlpha: 1, duration: .8, ease: 'power2.out', stagger: .04, delay: HOLD + 1.15, clearProps: 'opacity,visibility',
+    gsap.to(rest, { opacity: 1, duration: .8, ease: 'power2.out', stagger: .04, delay: HOLD + 1.15, clearProps: 'opacity,visibility',
       onStart: () => document.dispatchEvent(new Event('signup-lines')) });
     // (where no frame is drawn, the entrance never runs: the page set out all the same, the title in place,
     // the form, the QR and the rest shown, after twice the entrance's time)
