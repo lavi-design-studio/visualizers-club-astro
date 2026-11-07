@@ -45,6 +45,17 @@ const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/f
 }
 </script>
 <script is:inline>
+  // reached by the way between the pages (transition.js): opened under the magenta it was left on, till
+  // its card is drawn over it (2.5 s at most)
+  try {
+    const t = JSON.parse(sessionStorage.getItem('vsc-pass') || 'null');
+    if (t && Date.now() - t.at < 5000 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('passing');
+      setTimeout(() => document.documentElement.classList.remove('passing'), 2500);
+    }
+  } catch {}
+</script>
+<script is:inline>
   // the page opens on the loader (#loader) and the hero waits for its intro (motion.js); if they never
   // come, the page shows anyway. The loader starts at the top, so it can hand its pile to the hero
   document.documentElement.classList.add('loading');
@@ -63,6 +74,10 @@ const body = page.replace('<!--foot-->', foot);   // (the footer: src/partials/f
 </head>
 <body>
 <Fragment set:html={body} />
+<script>
+  // the way to the sign-up page and back (transition.js), ready from the start
+  import '../scripts/transition.js';
+</script>
 <script>
   // fetched once the first frame is painted (the loader up), so that paint never waits on them; a tab
   // in the background paints no frame, and fetches them a moment later all the same

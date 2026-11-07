@@ -15,7 +15,7 @@ import foot from '../partials/foot.html?raw';
 import { SIGNUP_URL, CAP } from '../signup.js';   // the sheet's web app (…/exec) and the places
 ---
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-pass-wait>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -38,6 +38,17 @@ import { SIGNUP_URL, CAP } from '../signup.js';   // the sheet's web app (…/ex
 <link rel="preload" href="/fonts/ABCAreal-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <script is:inline>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
 <script is:inline defer src="/_vercel/insights/script.js"></script>
+<script is:inline>
+  // reached by the way between the pages (transition.js): opened under the magenta it was left on, till
+  // its card is drawn over it (2.5 s at most)
+  try {
+    const t = JSON.parse(sessionStorage.getItem('vsc-pass') || 'null');
+    if (t && Date.now() - t.at < 5000 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('passing');
+      setTimeout(() => document.documentElement.classList.remove('passing'), 2500);
+    }
+  } catch {}
+</script>
 <script is:inline>
   // the title comes in as the landing page's hero title does (the script at the foot): the page held
   // hidden till it is set in the screen's middle, and shown anyway if that never comes
@@ -511,6 +522,7 @@ main { container-type: inline-size; }
   // their places one after another (1.8 s, expo.inOut, .12 apart) while the rest of the page comes in;
   // once they are at rest the ice takes them over, growing in from the foot (title-shader.js, on 'risen')
   import { gsap } from 'gsap';
+  import '../scripts/transition.js';   // (the way to the landing page and back)
   // the footer, the landing page's own (src/partials/foot.html): its clip dithered, its ring of work, its
   // rules round its type and its links that open out
   import '../scripts/dither.js';
@@ -575,6 +587,7 @@ main { container-type: inline-size; }
     const r = h1.getBoundingClientRect(), y = innerHeight / 2 - (r.top + r.height / 2);
     gsap.set(lines, { y }); gsap.set(rest, { autoAlpha: 0 });
     root.classList.remove('intro');
+    document.dispatchEvent(new Event('pass-ready'));   // (set out: the way here can open on it, transition.js)
     const HOLD = .35;
     gsap.to(lines, { y: 0, duration: 1.8, ease: 'expo.inOut', stagger: .12, delay: HOLD, onComplete: risen });
     gsap.to(rest, { autoAlpha: 1, duration: .8, ease: 'power2.out', stagger: .04, delay: HOLD + 1.15, clearProps: 'opacity,visibility',

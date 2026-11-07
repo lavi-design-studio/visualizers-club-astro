@@ -52,6 +52,8 @@ br.tb { display: none; }                 /* a line break only the tablet's layou
 }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 :focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+/* a page reached by the way between the pages (transition.js), under its magenta till its card is drawn */
+html.passing::after { content: ""; position: fixed; inset: 0; z-index: 2147483646; background: #c239c7; }
 
 /* ----- the site's one button -----
    every button on both pages: the price's "giữ chỗ", the sign-up's send, the picture frame's three and

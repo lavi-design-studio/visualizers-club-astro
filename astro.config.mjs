@@ -14,14 +14,14 @@ const preloadScripts = () => ({
     'astro:build:done': ({ dir }) => {
       const out = fileURLToPath(dir), page = `${out}index.html`;
       let html = readFileSync(page, 'utf8');
-      const src = html.match(/<script type="module" src="\/(_astro\/[^"]+\.js)"><\/script>/)?.[1];
-      if (!src) throw new Error('preload-scripts: the page has no module script');
-      const js = readFileSync(`${out}${src}`, 'utf8');
-      const deps = [...new Set([
-        ...[...js.matchAll(/from"\.\/([^"]+\.js)"/g)].map(m => `_astro/${m[1]}`),
-        ...JSON.parse(js.match(/m\.f=(\[[^\]]*\])/)?.[1] ?? '[]'),
-      ])];
-      if (!deps.length) throw new Error('preload-scripts: no chunks found in ' + src);
+      // (each of the page's module scripts: the one that imports the rest, and any beside it)
+      const srcs = [...html.matchAll(/<script type="module" src="\/(_astro\/[^"]+\.js)"><\/script>/g)].map(m => m[1]);
+      if (!srcs.length) throw new Error('preload-scripts: the page has no module script');
+      const deps = [...new Set(srcs.flatMap(src => {
+        const js = readFileSync(`${out}${src}`, 'utf8');
+        return [...[...js.matchAll(/from"\.\/([^"]+\.js)"/g)].map(m => `_astro/${m[1]}`), ...JSON.parse(js.match(/m\.f=(\[[^\]]*\])/)?.[1] ?? '[]')];
+      }))];
+      if (!deps.length) throw new Error('preload-scripts: no chunks found in ' + srcs.join(', '));
       html = html.replace('</head>', deps.map(d => `<link rel="modulepreload" href="/${d}">`).join('') + '</head>');
       writeFileSync(page, html);
     },
