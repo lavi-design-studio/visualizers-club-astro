@@ -197,10 +197,9 @@ async function byRules(pause) {
   if (!lines.length) { root.classList.remove('measuring'); return; }
   if (pause) await pause();
   const P = lines[0].pitch;
-  // (on a narrow screen, where the lines are loose, each is centred with its marks: from a capital's
-  // mark over it to the dot under, so the rule over it is as far from its marks as the one under from
-  // its foot)
-  ruled.style.marginTop = `${first + P / 2 - (narrow ? lines[0].marks : lines[0].mid)}px`;
+  // (each line's capitals in the middle between two rules, on every screen: its lines as close as every
+  // set's on the site, a line of the small type apart)
+  ruled.style.marginTop = `${first + P / 2 - lines[0].mid}px`;
   fr = frame.getBoundingClientRect();
   let last;
   if (narrow) {
@@ -217,12 +216,19 @@ async function byRules(pause) {
   for (let y = first + P; y < last - P / 2; y += P) ys.push(y);
   lay(box, ys, 0, narrow ? fr.width : stripEl.getBoundingClientRect().left - fr.left, ink);
   if (pause) await pause();
-  // on the right, the list under "chuẩn bị" ruled the same way, from the strip to the page's edge: a
-  // rule over its first line, one under each
+  // on the right, the list under "chuẩn bị" ruled on the left's own lines, from the strip to the page's
+  // edge: set down onto them (its lines as far apart: landing.css), a rule over its first line and one
+  // under each
   if (!narrow) {
-    const list = $('.by-note div p:last-child'), { lines: rows, ink: marks } = inkOf([list], fr);
+    const list = $('.by-note div p:last-child');
+    list.style.marginTop = '';
+    const { lines: rows } = inkOf([list], frame.getBoundingClientRect());
     if (rows.length) {
-      const Q = rows[0].pitch, at = Array.from({ length: rows.length + 1 }, (_, k) => rows[0].mid - Q / 2 + k * Q);
+      const k = Math.ceil((rows[0].mid - P / 2 - first) / P);
+      list.style.marginTop = `${first + k * P + P / 2 - rows[0].mid}px`;
+      fr = frame.getBoundingClientRect();
+      const { lines: set, ink: marks } = inkOf([list], fr);
+      const at = Array.from({ length: set.length + 1 }, (_, i) => first + (k + i) * P);
       lay(box, at, stripEl.getBoundingClientRect().right - fr.left, fr.width, marks, '', true);
     }
   }

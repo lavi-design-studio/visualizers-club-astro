@@ -337,6 +337,8 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
   font-size: var(--f16); line-height: 1.25; letter-spacing: -.01em;
 }
 .by-note div { display: flex; flex-direction: column; gap: calc(8 * var(--tu)); }
+/* (its list ruled as the left's lines are, a line of the small type apart: motion.js byRules) */
+.by-note div p:last-child { line-height: calc(24 * var(--px)); }
 /* the picture frame (motion.js camera): a picture the visitor puts in, dithered as the portrait is, the class's name over its
    foot as a sticker (black type in a magenta outline) */
 .by-cam { grid-column: 1 / -1; justify-self: center; width: calc(412 * var(--px)); margin-top: calc(14 * var(--px)); padding-bottom: calc(21 * var(--px)); }
@@ -816,7 +818,7 @@ html:not(.hero-settled) .hero-title .line.shaded { color: var(--magenta); }
   /* the syllabus is long and its type small here: a looser line and looser letters to read it by (the
      rules follow it, a line apart, each line centred between two), and the (1)...(8) kept out of the
      lines' height so every line is the rules' pitch */
-  .by .by-ruled { line-height: 1.6; letter-spacing: -.02em; }
+  .by .by-ruled { line-height: 1.2; letter-spacing: -.02em; }   /* (a line of the small type apart, as every set of rules) */
   .by-syllabus .serif { line-height: 0; }
   .by-strip { margin-inline: -16px; height: 48px; }
   .by-strip-run { left: 0; top: 50%; font-size: 24px; }
