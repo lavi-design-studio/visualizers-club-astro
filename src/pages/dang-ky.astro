@@ -33,6 +33,14 @@ const CAP = 9;
 <link rel="preload" href="/fonts/ABCAreal-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <script is:inline>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
 <script is:inline defer src="/_vercel/insights/script.js"></script>
+<script is:inline>
+  // the title comes in as the landing page's hero title does (the script at the foot): the page held
+  // hidden till it is set in the screen's middle, and shown anyway if that never comes
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('intro');
+    setTimeout(() => document.documentElement.classList.remove('intro'), 4000);
+  }
+</script>
 <style is:global>
 @font-face { font-family: "PP Neue World"; src: url(/fonts/PPNeueWorld-SemiExtendedUltralight.woff2) format("woff2"); font-weight: 200; font-display: swap; }
 @font-face { font-family: "PP Migra"; src: url(/fonts/PPMigra-ExtralightItalic.woff2) format("woff2"); font-weight: 200; font-style: italic; font-display: swap; }
@@ -217,6 +225,16 @@ main { container-type: inline-size; }
   :root main :is(p, li, span, a, label, dt, dd, button):not(.serif, .serif *, .display, .display *) { letter-spacing: -.01em; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* the title made of the rooster's ice, as the landing page's titles are (title-shader.js): a canvas over
+   the type, seen through its letters, the type going clear under it once it draws, still there to be
+   read and selected */
+.shading { position: relative; }
+.title-shader { position: absolute; pointer-events: none; mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; opacity: 0; transition: opacity 1.2s; }
+.shaded > .title-shader { opacity: 1; }
+.signup-title .line { transition: color 1.2s; }
+.signup-title .line.shaded { color: transparent; }
+.measuring .signup-title .line { transform: none !important; }
+.intro .page > * { visibility: hidden; }
 </style>
 </head>
 <body>
@@ -226,7 +244,7 @@ main { container-type: inline-size; }
     <a href="/">trang chủ</a>
   </nav>
 
-  <h1 class="title display"><span class="line">sign up</span><span class="line serif">mùa đầu tiên</span></h1>
+  <h1 class="title signup-title display"><span class="line">sign up</span><span class="line serif">mùa đầu tiên</span></h1>
 
   <section class="row places" aria-label="Số chỗ">
     <p class="label"><span class="serif">(*)</span>số chỗ</p>
@@ -302,7 +320,8 @@ main { container-type: inline-size; }
 </main>
 
 <script define:vars={{ SIGNUP_URL, CAP }}>
-  // the lines drawn in: each row's, the lowest first, as the row comes into view (not under reduced motion)
+  // the lines drawn in: each row's, the lowest first, as the row comes into view (not under reduced
+  // motion); from when the title starts going up ('signup-lines', below), or at once if that never comes
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const rows = [...document.querySelectorAll('.row')];
     const hostsOf = row => [row, ...row.querySelectorAll('.field label, .field input, .field textarea')];
@@ -310,7 +329,10 @@ main { container-type: inline-size; }
     const draw = row => hostsOf(row).sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)
       .forEach((h, i) => { h.style.setProperty('--wait', `${(i * .06).toFixed(2)}s`); h.classList.remove('off'); });
     const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); draw(e.target); } }), { rootMargin: '0px 0px -20% 0px' });
-    rows.forEach(r => io.observe(r));
+    let started = false;
+    const start = () => { if (started) return; started = true; rows.forEach(r => io.observe(r)); };
+    document.addEventListener('signup-lines', start, { once: true });
+    setTimeout(start, 4000);
   }
   const $ = s => document.querySelector(s);
   const form = $('[data-form]'), send = $('[data-send]'), status = $('[data-status]'), done = $('[data-done]');
@@ -375,6 +397,26 @@ main { container-type: inline-size; }
     } catch {
       send.disabled = false; say('Chưa gửi được. Thử lại sau ít phút, hoặc nhắn thầy qua Discord.', 'bad');
     }
+  });
+</script>
+<script>
+  // the title's entrance, as the hero's (motion.js intro): set in the screen's middle, its lines go up to
+  // their places one after another (1.8 s, expo.inOut, .12 apart) while the rest of the page comes in;
+  // once they are at rest the ice takes them over, growing in from the foot (title-shader.js, on 'risen')
+  import { gsap } from 'gsap';
+  import '../scripts/title-shader.js';
+  const root = document.documentElement, h1 = document.querySelector('.signup-title'), lines = [...h1.querySelectorAll('.line')];
+  const rest = [...document.querySelectorAll('.page > *')].filter(e => e !== h1);
+  const risen = () => { lines.forEach(l => { l.style.transform = ''; }); h1.classList.add('risen'); h1.dispatchEvent(new Event('risen')); };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) risen();
+  else document.fonts.ready.then(() => {
+    const r = h1.getBoundingClientRect(), y = innerHeight / 2 - (r.top + r.height / 2);
+    gsap.set(lines, { y }); gsap.set(rest, { autoAlpha: 0 });
+    root.classList.remove('intro');
+    const HOLD = .35;
+    gsap.to(lines, { y: 0, duration: 1.8, ease: 'expo.inOut', stagger: .12, delay: HOLD, onComplete: risen });
+    gsap.to(rest, { autoAlpha: 1, duration: .8, ease: 'power2.out', stagger: .04, delay: HOLD + 1.15, clearProps: 'opacity,visibility',
+      onStart: () => document.dispatchEvent(new Event('signup-lines')) });
   });
 </script>
 </body>

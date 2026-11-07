@@ -33,7 +33,8 @@ const PAD = .3;   // the canvas reaches this many em past the title's box, for t
 // the titles on black: the hero's, the price's (its lines, as the title has no box of its own), the prices
 // themselves and the foot's (By Lavi's, on the magenta, stays as it is)
 // (the hero's by its lines: they go up to their places one after another, each with its own)
-const TITLES = ['.hero-title > .line', '.price h2 > .line', '.price-was', '.price-now', '.foot h2'];
+// (and the sign-up page's, by its lines, once they have gone up to their places: dang-ky.astro)
+const TITLES = ['.hero-title > .line', '.price h2 > .line', '.price-was', '.price-now', '.foot h2', '.signup-title > .line'];
 const HERO = document.querySelectorAll('.hero-title > .line').length;
 let heroReady = 0;
 const heroDone = () => { if (++heroReady === HERO) document.dispatchEvent(new Event('title-shaded')); };
