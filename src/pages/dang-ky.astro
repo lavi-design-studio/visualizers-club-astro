@@ -385,7 +385,7 @@ main { container-type: inline-size; }
       pay.hidden = true;
       $('[data-state]').textContent = 'confirmed';
     } else {
-      close('place held', `Thank you, ${mine.name}. Transfer 5.000.000đ with the QR below, with your Discord nick (${mine.discord || 'your Discord nick'}) as the transfer note. Once it arrives, this page will confirm your place.`, true);
+      close('reserved', `Thank you, ${mine.name}. Transfer 5.000.000đ with the QR below, with your Discord nick (${mine.discord || 'your Discord nick'}) as the transfer note. Once it arrives, this page will confirm your place.`, true);
       $('[data-state]').textContent = 'waiting for your transfer to be confirmed';
       // (asked again every 20 s while the page is in view)
       if (!polling) polling = setInterval(() => { if (!document.hidden) ask(); }, 20000);
@@ -430,7 +430,7 @@ main { container-type: inline-size; }
         window.va?.('event', { name: 'signup' });
         // (the sheet's older script gives no code: thanked all the same, the payment kept in view)
         if (d.code) { remember({ code: d.code, name: data.name.trim(), discord: data.discord.trim() }); view('wait'); }
-        else close('place held', `Thank you, ${data.name.trim()}. Transfer 5.000.000đ with the QR below, with your Discord nick as the transfer note.`, true);
+        else close('reserved', `Thank you, ${data.name.trim()}. Transfer 5.000.000đ with the QR below, with your Discord nick as the transfer note.`, true);
       } else if (d.error === 'full') { show(d); full(); }
       else if (d.error === 'dup') { send.disabled = false; say('Nick Discord này đã đăng ký rồi. Nếu là nhầm lẫn, nhắn thầy qua Discord.', 'bad'); }
       else { send.disabled = false; say('Thiếu thông tin, kiểm tra lại các ô nhé.', 'bad'); }
